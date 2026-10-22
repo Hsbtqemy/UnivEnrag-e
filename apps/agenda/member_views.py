@@ -17,6 +17,7 @@ from apps.actors.resolvers import remember_name
 from apps.actors.services import get_or_create_for_name
 from apps.core.dates import from_wall_clock
 from apps.rooms.models import Room
+from apps.spaces.models import Space
 
 from . import history, serializers, services
 from .forms import ActionForm, EventForm
@@ -48,6 +49,7 @@ def _calendar_url(event_or_date) -> str:
 @require_GET
 def calendar(request):
     rooms = list(Room.objects.filter(is_active=True))
+    spaces = list(Space.objects.open())
     config = {
         "eventsUrl": reverse("agenda:events_json"),
         "moveUrl": reverse("agenda:move", args=[0]),
@@ -55,13 +57,23 @@ def calendar(request):
         "canEdit": bool(request.actor_name),
         "date": request.GET.get("date", ""),
     }
-    return render(request, "agenda/calendar.html", {"calendar_config": config, "rooms": rooms})
+    return render(
+        request,
+        "agenda/calendar.html",
+        {
+            "calendar_config": config,
+            "rooms": rooms,
+            "spaces": spaces,
+            "selected_room": request.GET.get("salle", ""),
+            "selected_space": request.GET.get("espace", ""),
+        },
+    )
 
 
 @require_GET
 def events_json(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
-    events = Event.objects.select_related("owner", "room")
+    events = Event.objects.select_related("owner", "room", "space")
     if start and end:
         events = events.overlapping(start, end)
     manager = services.can_manage(request.user)
@@ -82,11 +94,17 @@ def check_slot(request):
     room = Room.objects.filter(pk=request.GET.get("room") or None).first()
     exclude = request.GET.get("exclude") or None
     if not (start and end and room) or end <= start:
-        return JsonResponse({"conflicts": [], "warnings": []})
-    conflicts = services.room_conflicts(room, start, end, exclude_id=exclude)
+        return JsonResponse({"conflicts": [], "closed": "", "approval": False, "warnings": []})
+    conflicts = [
+        f"« {e.title} » ({services.describe_slot(e)})"
+        for e in services.room_conflicts(room, start, end, exclude_id=exclude)
+    ]
+    closed = "" if room.is_open(start, end) else str(services.RoomClosedError(room))
     return JsonResponse(
         {
-            "conflicts": [f"« {e.title} » ({services.describe_slot(e)})" for e in conflicts],
+            "conflicts": conflicts,
+            "closed": closed,
+            "approval": room.needs_approval,
             "warnings": services.slot_warnings(room, start, end, exclude_id=exclude),
         }
     )
@@ -128,6 +146,7 @@ def new(request):
         initial=_initial_for_new(request) if request.method == "GET" else None,
         actor_name=request.actor_name,
         can_publish=can_publish,
+        can_override=services.can_override(request.user),
     )
     if request.method == "POST" and form.is_valid():
         try:
@@ -168,6 +187,7 @@ def detail(request, pk):
                 initial={"revision": event.revision}, actor_name=request.actor_name
             ),
             "can_manage": services.can_manage(request.user),
+            "can_validate_room": services.can_override(request.user),
             "can_publish": services.can_publish(request.user),
             "can_edit": event.status != Event.Status.CANCELLED
             and (not event.is_locked or services.can_manage(request.user)),
@@ -187,7 +207,9 @@ def edit(request, pk):
         request.POST or None,
         initial=EventForm.initial_from_event(event),
         actor_name=request.actor_name,
+        current_space=event.space,
         can_publish=services.can_publish(request.user),
+        can_override=services.can_override(request.user),
     )
     if request.method == "POST" and form.is_valid():
         try:
@@ -333,3 +355,46 @@ def public_requests(request):
         .order_by("start")
     )
     return render(request, "gestion/public_requests.html", {"events": events})
+
+
+# --- Salles ------------------------------------------------------------------------------
+
+
+@require_GET
+def rooms(request):
+    """Les salles du collectif : capacité, mode de réservation, horaires, accès (CDC §6)."""
+    rooms = Room.objects.filter(is_active=True).prefetch_related("opening_hours")
+    return render(request, "agenda/rooms.html", {"rooms": rooms})
+
+
+@require_capability("manage_rooms")
+def room_requests(request):
+    """Réservations en attente dans les salles soumises à validation (CLAUDE.md SAL-4)."""
+    if request.method == "POST":
+        event = get_object_or_404(Event, pk=request.POST.get("event"))
+        try:
+            if request.POST.get("decision") == "approve":
+                services.approve_room(event, user=request.user)
+                messages.success(request, f"Réservation validée : « {event.title} ».")
+            else:
+                services.refuse_room(
+                    event, user=request.user, reason=request.POST.get("reason", "")
+                )
+                messages.success(
+                    request, f"Réservation refusée : « {event.title} » garde sa date, sans salle."
+                )
+        except services.EventError as error:
+            messages.error(request, str(error))
+        target = request.POST.get("next", "")
+        if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+            target = reverse("agenda:room_requests")
+        return redirect(target)
+    pending = (
+        Event.objects.filter(room_status=Event.RoomStatus.PENDING, status=Event.Status.CONFIRMED)
+        .exclude(room=None)
+        .select_related("owner", "room")
+        .order_by("start")
+    )
+    for event in pending:
+        event.warnings = services.warnings_for(event)
+    return render(request, "gestion/room_requests.html", {"events": pending})

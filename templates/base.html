@@ -19,6 +19,7 @@
           {% if has_access %}
           <li><a href="{% url 'agenda:home' %}"{% if current == 'home' %} aria-current="page"{% endif %}>Accueil</a></li>
           <li><a href="{% url 'agenda:calendar' %}"{% if current == 'calendar' or current == 'detail' or current == 'new' or current == 'edit' %} aria-current="page"{% endif %}>Agenda</a></li>
+          <li><a href="{% url 'agenda:rooms' %}"{% if current == 'rooms' %} aria-current="page"{% endif %}>Salles</a></li>
           {% endif %}
           <li><a href="{% url 'agenda:public_list' %}"{% if current == 'public_list' or current == 'public_week' %} aria-current="page"{% endif %}>Agenda public</a></li>
           <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>

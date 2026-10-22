@@ -33,7 +33,10 @@
     const response = await fetch(`${form.dataset.checkUrl}?${params}`, { credentials: "same-origin" });
     if (!response.ok) return;
     const data = await response.json();
-    if (data.conflicts.length) {
+    if (data.closed) {
+      box.className = "room-check room-check--error";
+      box.textContent = data.closed;
+    } else if (data.conflicts.length) {
       box.className = "room-check room-check--error";
       const p = document.createElement("p");
       p.textContent = "Salle déjà réservée sur ce créneau : choisissez un autre horaire ou une autre salle.";
@@ -49,7 +52,9 @@
       box.append(p, ul);
     } else {
       box.className = "room-check room-check--ok";
-      box.textContent = "Salle libre sur ce créneau.";
+      box.textContent = data.approval
+        ? "Salle libre sur ce créneau. Elle est soumise à validation : la réservation restera en attente jusqu'à l'accord d'un gestionnaire."
+        : "Salle libre sur ce créneau.";
     }
   }
 

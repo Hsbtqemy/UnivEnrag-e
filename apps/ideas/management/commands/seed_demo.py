@@ -13,13 +13,15 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.actors.models import Actor
+from apps.actors.services import get_or_create_for_name
 from apps.agenda import services as agenda_services
 from apps.agenda.models import Event
 from apps.core.dates import combine
 from apps.core.models import SiteSettings
 from apps.ideas import services as ideas_services
 from apps.ideas.models import Idea, IdeaSlot
-from apps.rooms.models import Room
+from apps.rooms.models import OpeningHours, Room
+from apps.spaces.models import Space
 
 DEMO_ADMIN = "admin"
 DEMO_MANAGER = "camille"
@@ -43,6 +45,7 @@ class Command(BaseCommand):
                 Idea.objects.all().delete()
                 Actor.objects.all().delete()
                 Room.objects.all().delete()
+                Space.objects.all().delete()
             elif Idea.objects.exists():
                 raise CommandError(
                     "La base contient déjà des propositions : relancez avec --reset."
@@ -56,6 +59,7 @@ class Command(BaseCommand):
             site.set_access_code(code)
             rooms = self._rooms()
             self._ideas(rooms, admin)
+            self._members(rooms)
         self.stdout.write(self.style.SUCCESS("Démo chargée."))
         self.stdout.write(f"Code d'accès des membres : {code}")
         if password:
@@ -86,14 +90,71 @@ class Command(BaseCommand):
 
     def _rooms(self):
         specs = [
-            ("Salle du collectif", "Bât. A", 40, "#2f5d8c"),
-            ("Petite salle", "Bât. A", 12, "#2e7d4f"),
-            ("Salle de projection", "Bât. C", 60, "#8a4b9c"),
+            ("Salle du collectif", "Bât. A", 40, "#2f5d8c", Room.BookingMode.FREE),
+            ("Petite salle", "Bât. A", 12, "#2e7d4f", Room.BookingMode.FREE),
+            ("Salle de projection", "Bât. C", 60, "#8a4b9c", Room.BookingMode.APPROVAL),
         ]
-        return [
-            Room.objects.create(name=n, building=b, capacity=c, color=col, order=i)
-            for i, (n, b, c, col) in enumerate(specs)
+        rooms = [
+            Room.objects.create(
+                name=n,
+                building=b,
+                capacity=c,
+                color=col,
+                order=i,
+                booking_mode=mode,
+                access_notes="Badge à demander à l'accueil du bâtiment." if b == "Bât. C" else "",
+            )
+            for i, (n, b, c, col, mode) in enumerate(specs)
         ]
+        # Salle du collectif : du lundi au vendredi, 8 h - 21 h.
+        for weekday in range(5):
+            OpeningHours.objects.create(
+                room=rooms[0], weekday=weekday, opens=time(8), closes=time(21)
+            )
+        return rooms
+
+    def _members(self, rooms):
+        """Événements créés par des membres : espaces, salle sur validation."""
+        big, small, cinema = rooms
+        working = Space.objects.create(
+            name="Conditions de travail",
+            color="#c0392b",
+            description="Charge de travail, postes, précarité.",
+        )
+        seminar = Space.objects.create(
+            name="Séminaire permanent", color="#16a085", description="Lectures et invités."
+        )
+        today = date.today()
+        monday = today + timedelta(days=7 - today.weekday())
+
+        def at(day_offset, hour, minute=0):
+            return combine(monday + timedelta(days=day_offset), time(hour, minute))
+
+        agenda_services.create(
+            actor=get_or_create_for_name("Nora Diallo"),
+            title="Réunion du groupe",
+            start=at(0, 12),
+            end=at(0, 13, 30),
+            room=small,
+            space=working,
+        )
+        agenda_services.create(
+            actor=get_or_create_for_name("Hugo Petit"),
+            title="Séance : lire Bourdieu",
+            start=at(3, 14),
+            end=at(3, 16),
+            room=big,
+            space=seminar,
+        )
+        # Salle de projection : soumise à validation, la réservation reste en attente.
+        agenda_services.create(
+            actor=get_or_create_for_name("Inès Garnier"),
+            title="Projection du film du groupe",
+            start=at(4, 18),
+            end=at(4, 20),
+            room=cinema,
+            space=working,
+        )
 
     def _ideas(self, rooms, admin):
         big, small, cinema = rooms

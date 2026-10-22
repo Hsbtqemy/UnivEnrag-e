@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-head">
   <h1>Agenda</h1>
-  <p><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a></p>
+  <p class="actions"><a class="button button--secondary" href="{% url 'agenda:subscriptions' %}">S'abonner</a> <a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a></p>
 </div>
 
 {% if not request.actor_name %}
@@ -14,16 +14,25 @@
 {% endif %}
 
 <div class="calendar-bar">
+  {% if spaces %}
+  <label for="filtre-espace">Espace</label>
+  <select id="filtre-espace">
+    <option value="">Tous</option>
+    {% for space in spaces %}<option value="{{ space.pk }}"{% if selected_space == space.pk|stringformat:"s" or selected_space == space.slug %} selected{% endif %}>{{ space.name }}</option>{% endfor %}
+    <option value="aucun">Sans espace</option>
+  </select>
+  {% endif %}
   <label for="filtre-salle">Salle</label>
   <select id="filtre-salle">
     <option value="">Toutes</option>
-    {% for room in rooms %}<option value="{{ room.pk }}">{{ room.name }}</option>{% endfor %}
+    {% for room in rooms %}<option value="{{ room.pk }}"{% if selected_room == room.pk|stringformat:"s" %} selected{% endif %}>{{ room.name }}</option>{% endfor %}
     <option value="aucune">Hors salles du collectif</option>
   </select>
   <ul class="legend" aria-label="Légende">
     <li><span class="swatch swatch--confirmed"></span> Confirmé</li>
     <li><span class="swatch swatch--provisional"></span> Provisoire</li>
     <li><span class="swatch swatch--cancelled"></span> Annulé</li>
+    <li><span class="swatch swatch--room-pending"></span> Salle en attente de validation</li>
   </ul>
 </div>
 <p class="hint">Cliquez sur un créneau pour créer un événement, sur un événement pour l'ouvrir.</p>

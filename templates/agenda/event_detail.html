@@ -11,7 +11,8 @@
   </p>
   <dl class="facts">
     <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
-    <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
+    <div><dt>Où</dt><dd>{{ event.place_label }}{% if event.room_pending %} <span class="badge badge--locked">réservation en attente de validation</span>{% endif %}</dd></div>
+    {% if event.space %}<div><dt>Espace</dt><dd><span class="space-dot" style="--space-color: {{ event.space.color }}"></span>{{ event.space.name }}</dd></div>{% endif %}
     <div><dt>Porté par</dt><dd>{{ event.owner.display_name }}</dd></div>
     {% if event.visio_link %}<div><dt>Visio</dt><dd><a href="{{ event.visio_link }}" rel="noopener nofollow">{{ event.visio_link }}</a></dd></div>{% endif %}
   </dl>
@@ -38,6 +39,17 @@
   </details>
   {% elif event.is_locked %}
   <p class="hint">Verrouillé par un gestionnaire : il ne peut plus être modifié.</p>
+  {% endif %}
+
+  {% if can_validate_room and event.room_pending %}
+  <div class="manager-actions">
+    <h3>Réservation de « {{ event.room.name }} »</h3>
+    <div class="actions">
+      <form method="post" action="{% url 'agenda:room_requests' %}">{% csrf_token %}<input type="hidden" name="event" value="{{ event.pk }}"><input type="hidden" name="decision" value="approve"><input type="hidden" name="next" value="{{ request.path }}"><button class="button">Valider la salle</button></form>
+      <form method="post" action="{% url 'agenda:room_requests' %}" class="form--inline">{% csrf_token %}<input type="hidden" name="event" value="{{ event.pk }}"><input type="hidden" name="decision" value="refuse"><input type="hidden" name="next" value="{{ request.path }}">
+        <label for="motif-salle" class="visually-hidden">Motif du refus</label><input id="motif-salle" name="reason" placeholder="Motif (facultatif)"> <button class="button button--secondary">Refuser la salle</button></form>
+    </div>
+  </div>
   {% endif %}
 
   {% if can_manage or can_publish %}

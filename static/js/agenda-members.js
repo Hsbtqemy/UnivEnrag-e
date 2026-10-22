@@ -9,6 +9,7 @@
   const config = readConfig("calendar-config");
   const announcer = document.getElementById("annonce");
   const filter = document.getElementById("filtre-salle");
+  const spaceFilter = document.getElementById("filtre-espace");
 
   function announce(message, isError) {
     announcer.textContent = message;
@@ -59,10 +60,12 @@
     snapDuration: "00:15:00",
     noEventsContent: "Aucun événement sur cette période.",
     eventFilter(info) {
-      const wanted = filter.value;
-      if (!wanted) return true;
-      const roomId = info.event.extendedProps.roomId;
-      return wanted === "aucune" ? !roomId : String(roomId) === wanted;
+      const props = info.event.extendedProps;
+      const room = filter.value;
+      if (room && (room === "aucune" ? props.roomId : String(props.roomId) !== room)) return false;
+      const space = spaceFilter ? spaceFilter.value : "";
+      if (space && (space === "aucun" ? props.spaceId : String(props.spaceId) !== space)) return false;
+      return true;
     },
     eventContent(info) {
       const props = info.event.extendedProps;
@@ -71,7 +74,9 @@
       title.textContent = info.event.title;
       const meta = document.createElement("span");
       meta.className = "ev-meta";
-      meta.textContent = props.status === "confirmed" ? props.place : `${props.statusLabel} · ${props.place}`;
+      let place = props.place;
+      if (props.roomPending) place += " (en attente de validation)";
+      meta.textContent = props.status === "confirmed" ? place : `${props.statusLabel} · ${place}`;
       return { domNodes: [title, meta] };
     },
     eventClick(info) {
@@ -90,8 +95,9 @@
 
   const ec = window.EventCalendar.create(document.getElementById("calendrier"), baseOptions(options));
 
-  filter.addEventListener("change", () => {
-    // Réappliquer le filtre : on redonne la même fonction pour forcer le rendu.
-    ec.setOption("eventFilter", options.eventFilter);
-  });
+  // Réappliquer les filtres : la bibliothèque ne relance le rendu que si l'option change,
+  // il faut donc lui passer une nouvelle fonction (la même serait ignorée).
+  const refilter = () => ec.setOption("eventFilter", (info) => options.eventFilter(info));
+  filter.addEventListener("change", refilter);
+  if (spaceFilter) spaceFilter.addEventListener("change", refilter);
 })();

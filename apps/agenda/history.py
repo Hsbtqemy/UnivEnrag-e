@@ -5,6 +5,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from apps.rooms.models import Room
+from apps.spaces.models import Space
 
 from .models import Event, EventChange
 
@@ -14,6 +15,8 @@ FIELD_LABELS = {
     "start": "début",
     "end": "fin",
     "room": "salle",
+    "room_status": "réservation de salle",
+    "space": "espace",
     "place_text": "lieu libre",
     "description": "description",
     "visio_link": "lien visio",
@@ -23,15 +26,26 @@ FIELD_LABELS = {
     "is_locked": "verrouillé",
 }
 
+FOREIGN_KEYS = {"room": Room, "space": Space}
+
 # Champs qu'une restauration remet en place ; le verrou et la publication restent des
 # décisions du moment, pas des éléments de la version restaurée.
-RESTORABLE_FIELDS = ["title", "start", "end", "room", "place_text", "description", "visio_link"]
+RESTORABLE_FIELDS = [
+    "title",
+    "start",
+    "end",
+    "room",
+    "space",
+    "place_text",
+    "description",
+    "visio_link",
+]
 
 
 def snapshot(event: Event) -> dict:
     data = {}
     for name in FIELD_LABELS:
-        value = event.room_id if name == "room" else getattr(event, name)
+        value = getattr(event, f"{name}_id") if name in FOREIGN_KEYS else getattr(event, name)
         if isinstance(value, datetime):
             value = value.isoformat()
         data[name] = value
@@ -66,8 +80,8 @@ def restore_values(change: EventChange) -> dict:
         value = change.snapshot.get(name)
         if name in ("start", "end") and value:
             value = datetime.fromisoformat(value)
-        if name == "room":
-            value = Room.objects.filter(pk=value).first() if value else None
+        if name in FOREIGN_KEYS:
+            value = FOREIGN_KEYS[name].objects.filter(pk=value).first() if value else None
         values[name] = value
     return values
 
@@ -77,11 +91,13 @@ def _display(name: str, value) -> str:
         return "—"
     if name in ("start", "end"):
         return f"{timezone.localtime(datetime.fromisoformat(value)):%d/%m/%Y %H:%M}"
-    if name == "room":
-        room = Room.objects.filter(pk=value).first()
-        return room.name if room else "salle supprimée"
+    if name in FOREIGN_KEYS:
+        obj = FOREIGN_KEYS[name].objects.filter(pk=value).first()
+        return obj.name if obj else "supprimé"
     if name == "status":
         return Event.Status(value).label
+    if name == "room_status":
+        return Event.RoomStatus(value).label
     if isinstance(value, bool):
         return "oui" if value else "non"
     text = str(value)

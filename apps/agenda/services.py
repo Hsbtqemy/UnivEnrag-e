@@ -36,6 +36,15 @@ class LockedError(EventError):
         super().__init__("Cet événement est verrouillé : seul un gestionnaire peut le modifier.")
 
 
+class RoomClosedError(EventError):
+    """Réservation hors des plages d'ouverture de la salle (CLAUDE.md SAL-3)."""
+
+    def __init__(self, room):
+        super().__init__(
+            f"« {room.name} » n'est pas ouverte sur ce créneau ({room.opening_summary()})."
+        )
+
+
 class RoomConflictError(EventError):
     """Conflit de salle bloquant (CLAUDE.md SAL-2)."""
 
@@ -93,11 +102,62 @@ def _check_slot(start, end):
         raise EventError("La fin doit être après le début.")
 
 
-def _check_room(event_status, room, start, end, *, exclude_id=None):
-    if event_status == Event.Status.CONFIRMED:
-        conflicts = room_conflicts(room, start, end, exclude_id=exclude_id)
-        if conflicts.exists():
+def can_override(user) -> bool:
+    """Dérogation (salle occupée ou fermée) : droit « salles » seulement (SAL-2, SAL-3)."""
+    return has_capability(user, "manage_rooms")
+
+
+def _check_booking(status, room, start, end, *, exclude_id=None, user=None, override=False):
+    """Contrôle une réservation de salle ; renvoie les dérogations accordées.
+
+    Seul un événement confirmé réserve : un provisoire ne fait qu'avertir.
+    """
+    if status != Event.Status.CONFIRMED or room is None:
+        return []
+    forced = override and can_override(user)
+    derogations = []
+    if not room.is_open(start, end):
+        if not forced:
+            raise RoomClosedError(room)
+        derogations.append("hors des plages d'ouverture")
+    conflicts = room_conflicts(room, start, end, exclude_id=exclude_id)
+    if conflicts.exists():
+        if not forced:
             raise RoomConflictError(conflicts)
+        derogations.append("salle déjà occupée : " + ", ".join(e.title for e in conflicts))
+    return derogations
+
+
+def _new_booking_status(room, user) -> str:
+    """Une salle « soumise à validation » met la réservation en attente (SAL-4)."""
+    if room is None or not room.needs_approval or can_override(user):
+        return Event.RoomStatus.APPROVED
+    return Event.RoomStatus.PENDING
+
+
+def _room_status_for(event: Event, room, start, end, user) -> str:
+    """Comme `_new_booking_status`, mais garde la décision déjà prise tant que ni la salle
+    ni le créneau ne changent."""
+    unchanged = (
+        event.pk
+        and event.room_id == getattr(room, "pk", None)
+        and (event.start == start and event.end == end)
+    )
+    if unchanged and not can_override(user):
+        return event.room_status
+    return _new_booking_status(room, user)
+
+
+def _log_derogations(user, event, derogations):
+    if derogations:
+        audit.log(user, "rooms.derogation", event, reasons=derogations)
+
+
+def _check_space(space):
+    if space is not None and space.is_archived:
+        raise EventError(
+            f"L'espace « {space} » est archivé : on ne peut plus y ajouter d'événement."
+        )
 
 
 def _lock_for_update(event: Event, *, user, revision: int | None) -> Event:
@@ -149,23 +209,29 @@ def create(
     start,
     end,
     room=None,
+    space=None,
     place_text="",
     description="",
     visio_link="",
     wants_public=False,
+    override=False,
 ) -> Event:
     """Un participant crée un événement : confirmé d'emblée s'il ne bloque aucune salle.
 
     CLAUDE.md, décision 10 : seuls les événements issus d'une idée commencent provisoires.
     """
     _check_slot(start, end)
-    _check_room(Event.Status.CONFIRMED, room, start, end)
+    _check_space(space)
+    derogations = _check_booking(
+        Event.Status.CONFIRMED, room, start, end, user=user, override=override
+    )
     event = Event(
         owner=actor,
         title=title,
         start=start,
         end=end,
         room=room,
+        space=space,
         place_text=place_text,
         description=description,
         visio_link=visio_link,
@@ -173,10 +239,12 @@ def create(
         confirmed_at=timezone.now(),
         confirmed_by=user if can_manage(user) else None,
     )
+    event.room_status = _room_status_for(event, room, start, end, user)
     _apply_public_wish(event, wants_public, user)
     event.save()
     history.record(event, Action.CREATED, actor=actor, user=user, before={})
     audit.log(user, "agenda.event_created", event)
+    _log_derogations(user, event, derogations)
     return event
 
 
@@ -215,23 +283,31 @@ def update(
     start,
     end,
     room=None,
+    space=None,
     place_text="",
     description="",
     visio_link="",
     wants_public=None,
+    override=False,
 ) -> Event:
     """Modification par le formulaire. `wants_public=None` laisse la publication en l'état."""
     event = _lock_for_update(event, user=user, revision=revision)
     if event.status == Event.Status.CANCELLED:
         raise EventError("Un événement annulé ne se modifie plus.")
     _check_slot(start, end)
-    _check_room(event.status, room, start, end, exclude_id=event.pk)
+    if space is not None and space.pk != event.space_id:
+        _check_space(space)
+    derogations = _check_booking(
+        event.status, room, start, end, exclude_id=event.pk, user=user, override=override
+    )
     before = history.snapshot(event)
+    event.room_status = _room_status_for(event, room, start, end, user)
     event.title, event.start, event.end, event.room = title, start, end, room
+    event.space = space
     event.place_text, event.description, event.visio_link = place_text, description, visio_link
     if wants_public is not None:
         _apply_public_wish(event, wants_public, user)
-    return _save(
+    _save(
         event,
         Action.UPDATED,
         actor=actor,
@@ -239,17 +315,25 @@ def update(
         before=before,
         audit_action="agenda.event_updated",
     )
+    _log_derogations(user, event, derogations)
+    return event
 
 
 @transaction.atomic
-def move(event: Event, *, start, end, room, revision: int, actor=None, user=None) -> Event:
+def move(
+    event: Event, *, start, end, room, revision: int, actor=None, user=None, override=False
+) -> Event:
     """Déplace ou redimensionne un événement (glisser-déposer ou formulaire)."""
     event = _lock_for_update(event, user=user, revision=revision)
     if event.status == Event.Status.CANCELLED:
         raise EventError("Un événement annulé ne se déplace pas.")
     _check_slot(start, end)
-    _check_room(event.status, room, start, end, exclude_id=event.pk)
+    derogations = _check_booking(
+        event.status, room, start, end, exclude_id=event.pk, user=user, override=override
+    )
+    _log_derogations(user, event, derogations)
     before = history.snapshot(event)
+    event.room_status = _room_status_for(event, room, start, end, user)
     event.start, event.end, event.room = start, end, room
     return _save(
         event,
@@ -280,7 +364,7 @@ def cancel(event: Event, *, actor, user=None, revision: int) -> Event:
 
 
 @transaction.atomic
-def confirm(event: Event, *, user, actor=None) -> Event:
+def confirm(event: Event, *, user, actor=None, override=False) -> Event:
     """Passe un événement en confirmé. Seul un conflit de salle l'empêche."""
     from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
 
@@ -291,8 +375,19 @@ def confirm(event: Event, *, user, actor=None) -> Event:
         return event
     if event.status == Event.Status.CANCELLED:
         raise EventError("Un événement annulé ne peut pas être confirmé.")
-    _check_room(Event.Status.CONFIRMED, event.room, event.start, event.end, exclude_id=event.pk)
+    derogations = _check_booking(
+        Event.Status.CONFIRMED,
+        event.room,
+        event.start,
+        event.end,
+        exclude_id=event.pk,
+        user=user,
+        override=override,
+    )
+    _log_derogations(user, event, derogations)
     before = history.snapshot(event)
+    # Confirmer, c'est réserver : une salle soumise à validation passe en attente.
+    event.room_status = _new_booking_status(event.room, user)
     event.status = Event.Status.CONFIRMED
     event.confirmed_at = timezone.now()
     event.confirmed_by = user
@@ -369,8 +464,13 @@ def restore(event: Event, change: EventChange, *, user) -> Event:
     event = Event.objects.select_for_update().get(pk=event.pk)
     values = history.restore_values(change)
     _check_slot(values["start"], values["end"])
-    _check_room(event.status, values["room"], values["start"], values["end"], exclude_id=event.pk)
+    _check_booking(
+        event.status, values["room"], values["start"], values["end"], exclude_id=event.pk, user=user
+    )
     before = history.snapshot(event)
+    event.room_status = _room_status_for(
+        event, values["room"], values["start"], values["end"], user
+    )
     for name, value in values.items():
         setattr(event, name, value)
     return _save(
@@ -381,3 +481,49 @@ def restore(event: Event, change: EventChange, *, user) -> Event:
         before=before,
         audit_action="agenda.event_restored",
     )
+
+
+# --- Validation des réservations de salle -------------------------------------------------
+
+
+@transaction.atomic
+def approve_room(event: Event, *, user) -> Event:
+    if not can_override(user):
+        raise EventError("Seul un gestionnaire des salles peut valider une réservation.")
+    event = Event.objects.select_for_update().get(pk=event.pk)
+    if not event.room_pending:
+        return event
+    before = history.snapshot(event)
+    event.room_status = Event.RoomStatus.APPROVED
+    return _save(
+        event,
+        Action.ROOM,
+        actor=None,
+        user=user,
+        before=before,
+        audit_action="rooms.booking_approved",
+    )
+
+
+@transaction.atomic
+def refuse_room(event: Event, *, user, reason: str = "") -> Event:
+    """Refus : l'événement garde sa date mais perd la salle (« Lieu à préciser »)."""
+    if not can_override(user):
+        raise EventError("Seul un gestionnaire des salles peut refuser une réservation.")
+    event = Event.objects.select_for_update().get(pk=event.pk)
+    if not event.room_pending:
+        raise EventError("Cette réservation n'est pas en attente.")
+    before = history.snapshot(event)
+    room_name = event.room.name
+    event.room = None
+    event.room_status = Event.RoomStatus.APPROVED
+    _save(
+        event,
+        Action.ROOM,
+        actor=None,
+        user=user,
+        before=before,
+        audit_action="rooms.booking_refused",
+    )
+    audit.log(user, "rooms.booking_refused_reason", event, room=room_name, reason=reason)
+    return event

@@ -1,9 +1,16 @@
 from django import forms
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.actors.forms import ActorNameFormMixin
 from apps.core.dates import combine
 from apps.rooms.models import Room
+from apps.spaces.models import Space
+
+
+class RoomChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, room):
+        return f"{room.name} (sur validation)" if room.needs_approval else room.name
 
 
 class EventForm(ActorNameFormMixin, forms.Form):
@@ -23,7 +30,13 @@ class EventForm(ActorNameFormMixin, forms.Form):
     end_time = forms.TimeField(
         label="Fin", widget=forms.TimeInput(format="%H:%M", attrs={"type": "time", "step": 300})
     )
-    room = forms.ModelChoiceField(
+    space = forms.ModelChoiceField(
+        label="Espace",
+        queryset=Space.objects.open(),
+        required=False,
+        empty_label="Aucun",
+    )
+    room = RoomChoiceField(
         label="Salle du collectif",
         queryset=Room.objects.filter(is_active=True),
         required=False,
@@ -40,13 +53,25 @@ class EventForm(ActorNameFormMixin, forms.Form):
     )
     visio_link = forms.URLField(label="Lien visio", required=False, assume_scheme="https")
     wants_public = forms.BooleanField(required=False)
+    override = forms.BooleanField(
+        label="Déroger : réserver même si la salle est occupée ou fermée",
+        required=False,
+        help_text="Réservé aux gestionnaires des salles ; la dérogation est journalisée.",
+    )
     revision = forms.IntegerField(widget=forms.HiddenInput, required=False)
 
     ESSENTIAL = ["title", "day", "start_time", "end_time"]
-    DETAILS = ["room", "place_text", "description", "visio_link", "wants_public"]
+    DETAILS = ["space", "room", "place_text", "description", "visio_link", "wants_public"]
 
-    def __init__(self, *args, can_publish=False, **kwargs):
+    def __init__(self, *args, can_publish=False, can_override=False, current_space=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if current_space is not None:
+            # Un événement déjà rattaché à un espace archivé reste modifiable.
+            self.fields["space"].queryset = Space.objects.filter(
+                Q(is_archived=False) | Q(pk=current_space.pk)
+            )
+        if not can_override:
+            del self.fields["override"]
         self.fields["wants_public"].label = (
             "Visible sur l'agenda public"
             if can_publish
@@ -78,6 +103,8 @@ class EventForm(ActorNameFormMixin, forms.Form):
             "start": data["start"],
             "end": data["end"],
             "room": data["room"],
+            "space": data["space"],
+            "override": data.get("override", False),
             "place_text": data["place_text"],
             "description": data["description"],
             "visio_link": data["visio_link"],
@@ -93,6 +120,7 @@ class EventForm(ActorNameFormMixin, forms.Form):
             "start_time": start.time().replace(second=0, microsecond=0),
             "end_time": end.time().replace(second=0, microsecond=0),
             "room": event.room,
+            "space": event.space,
             "place_text": event.place_text,
             "description": event.description,
             "visio_link": event.visio_link,

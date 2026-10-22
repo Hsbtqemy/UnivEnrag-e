@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import member_views, views
+from . import feeds, member_views, views
 
 app_name = "agenda"
 
@@ -20,6 +20,12 @@ urlpatterns = [
     path("agenda/<int:pk>/restaurer/<int:change_id>/", member_views.restore, name="restore"),
     path("agenda/api/evenements/<int:pk>/deplacer/", member_views.move, name="move"),
     path("gestion/publication/", member_views.public_requests, name="public_requests"),
+    path("gestion/salles/", member_views.room_requests, name="room_requests"),
+    path("salles/", member_views.rooms, name="rooms"),
+    path("agenda/abonnements/", feeds.subscriptions, name="subscriptions"),
+    path("flux/<str:token>/agenda.ics", feeds.feed_all, name="feed_all"),
+    path("flux/<str:token>/espace/<slug:slug>.ics", feeds.feed_space, name="feed_space"),
+    path("flux/<str:token>/salle/<int:pk>.ics", feeds.feed_room, name="feed_room"),
     # Agenda public
     path("p/agenda/", views.public_list, name="public_list"),
     path("p/agenda/semaine/", views.public_week, name="public_week"),

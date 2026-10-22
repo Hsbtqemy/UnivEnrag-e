@@ -88,12 +88,14 @@ def member_event(event: Event, *, editable: bool) -> dict:
     classes = [f"ev-{event.status}"]
     if event.is_locked:
         classes.append("ev-locked")
+    if event.room_pending:
+        classes.append("ev-room-pending")
     return {
         "id": str(event.pk),
         "title": event.title,
         "start": to_wall_clock(event.start),
         "end": to_wall_clock(event.end),
-        "color": event.room.color if event.room_id else "#6b7280",
+        "color": event.display_color,
         "classNames": classes,
         "editable": editable and event.status != Event.Status.CANCELLED,
         "extendedProps": {
@@ -104,6 +106,8 @@ def member_event(event: Event, *, editable: bool) -> dict:
             "place": event.place_label,
             "owner": event.owner.display_name,
             "roomId": event.room_id,
+            "spaceId": event.space_id,
+            "roomPending": event.room_pending,
             "locked": event.is_locked,
         },
     }

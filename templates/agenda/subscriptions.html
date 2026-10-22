@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}S'abonner à l'agenda — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'agenda:calendar' %}">← Agenda</a></p>
+<h1>S'abonner à l'agenda</h1>
+<p class="lead">Ajoutez l'agenda du collectif à votre agenda personnel (Thunderbird, Outlook, Google Agenda, téléphone). Il se mettra à jour tout seul.</p>
+<p>Sur un téléphone ou un ordinateur, le lien « S'abonner » ouvre directement votre application d'agenda. Sinon, copiez l'adresse et ajoutez-la comme « agenda par URL » ou « abonnement ».</p>
+<p class="notice">Ces adresses donnent accès à l'agenda interne : ne les partagez pas hors du collectif. Si l'une circule, l'administrateur peut les changer toutes.</p>
+
+<ul class="feed-list">
+  {% for feed in feeds %}
+  <li>
+    <p><strong>{{ feed.label }}</strong> · <a href="{{ feed.webcal }}">S'abonner</a></p>
+    <label class="visually-hidden" for="flux-{{ forloop.counter }}">Adresse de l'abonnement « {{ feed.label }} »</label>
+    <input id="flux-{{ forloop.counter }}" type="text" readonly value="{{ feed.https }}">
+  </li>
+  {% endfor %}
+</ul>
+
+<h2>Agenda public</h2>
+<p>Les seuls événements publics, à partager librement : <code>{{ public_feed }}</code></p>
+{% endblock %}

@@ -23,6 +23,10 @@ class Event(models.Model):
         CONFIRMED = "confirmed", "Confirmé"
         CANCELLED = "cancelled", "Annulé"
 
+    class RoomStatus(models.TextChoices):
+        APPROVED = "approved", "Validée"
+        PENDING = "pending", "En attente de validation"
+
     idea = models.OneToOneField(
         "ideas.Idea",
         on_delete=models.PROTECT,
@@ -46,6 +50,22 @@ class Event(models.Model):
         blank=True,
         related_name="events",
         verbose_name="salle",
+    )
+    # Réservation d'une salle « soumise à validation » : le créneau est bloqué dès la
+    # demande, un habilité « salles » valide ou refuse (CLAUDE.md SAL-4).
+    room_status = models.CharField(
+        "réservation de salle",
+        max_length=10,
+        choices=RoomStatus.choices,
+        default=RoomStatus.APPROVED,
+    )
+    space = models.ForeignKey(
+        "spaces.Space",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="events",
+        verbose_name="espace",
     )
     place_text = models.CharField("lieu libre", max_length=200, blank=True)
     visio_link = models.URLField("lien visio", blank=True)
@@ -88,6 +108,19 @@ class Event(models.Model):
             return self.room.label
         return self.place_text or "Lieu à préciser"
 
+    @property
+    def room_pending(self) -> bool:
+        return bool(self.room_id) and self.room_status == self.RoomStatus.PENDING
+
+    @property
+    def display_color(self) -> str:
+        """Couleur dans l'agenda des membres : celle de l'espace, sinon de la salle (CDC §3)."""
+        if self.space_id:
+            return self.space.color
+        if self.room_id:
+            return self.room.color
+        return "#6b7280"
+
 
 class EventChange(models.Model):
     """Une entrée de l'historique d'un événement (CLAUDE.md AGE-4).
@@ -107,6 +140,7 @@ class EventChange(models.Model):
         PUBLIC = "public", "Publication"
         LOCKED = "locked", "Verrou"
         RESTORED = "restored", "Restauration"
+        ROOM = "room", "Réservation de salle"
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="changes")
     action = models.CharField(max_length=12, choices=Action.choices)

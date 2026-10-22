@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Salles — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<h1>Salles du collectif</h1>
+<p class="lead">Réserver une salle, c'est créer un événement dans l'agenda en la choisissant. Pour une salle de l'université réservée par ailleurs, indiquez-la comme « autre lieu ».</p>
+<ul class="room-list">
+  {% for room in rooms %}
+  <li class="room-card" style="--room-color: {{ room.color }}">
+    <h2>{{ room.name }}</h2>
+    <dl class="facts facts--compact">
+      {% if room.building %}<div><dt>Bâtiment</dt><dd>{{ room.building }}</dd></div>{% endif %}
+      {% if room.capacity %}<div><dt>Capacité</dt><dd>{{ room.capacity }} personnes</dd></div>{% endif %}
+      <div><dt>Réservation</dt><dd>{{ room.get_booking_mode_display }}</dd></div>
+      <div><dt>Ouverture</dt><dd>{{ room.opening_summary }}</dd></div>
+      {% if room.access_notes %}<div><dt>Accès</dt><dd>{{ room.access_notes|linebreaksbr }}</dd></div>{% endif %}
+    </dl>
+    <p class="actions"><a class="button button--secondary button--small" href="{% url 'agenda:calendar' %}?salle={{ room.pk }}">Planning de la salle</a> <a class="button button--small" href="{% url 'agenda:new' %}?salle={{ room.pk }}">Réserver</a></p>
+  </li>
+  {% empty %}
+  <li class="empty">Aucune salle n'est encore enregistrée.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

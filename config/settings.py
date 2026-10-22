@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.accounts",
     "apps.rooms",
+    "apps.spaces",
     "apps.ideas",
     "apps.agenda",
 ]

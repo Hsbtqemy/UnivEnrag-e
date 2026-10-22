@@ -62,6 +62,10 @@ def test_admin_changes_are_logged(admin_client, room):
             "color": "#123456",
             "order": 0,
             "is_active": "on",
+            "booking_mode": "free",
+            "access_notes": "",
+            "opening_hours-TOTAL_FORMS": "0",
+            "opening_hours-INITIAL_FORMS": "0",
         },
     )
     entry = AuditLog.objects.get(action="admin.room.changed")
