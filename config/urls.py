@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 
-admin.site.site_header = "Plateforme du collectif — administration"
+admin.site.site_header = "Université Enragée — administration"
 admin.site.site_title = "Administration"
 admin.site.site_url = "/accueil/"
 

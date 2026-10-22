@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ event.title }} — Agenda du collectif{% endblock %}
+{% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <article class="event-detail" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
   <p class="back"><a href="{% url 'agenda:public_list' %}">← Tous les événements</a></p>

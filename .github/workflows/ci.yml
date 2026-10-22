@@ -27,14 +27,14 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: Suite dans l'image
         run: |
-          docker build --target test -t collectif:test .
-          docker run --rm collectif:test
+          docker build --target test -t univ-enragee:test .
+          docker run --rm univ-enragee:test
       - name: Image livrée (crontab vérifiée à la construction)
-        run: docker build --target runtime -t collectif:latest .
+        run: docker build --target runtime -t univ-enragee:latest .
       - name: Le site démarre et répond
         run: |
           docker run -d --name essai -e DJANGO_SECRET_KEY=verification-du-deploiement-pas-un-vrai-secret-0123456789abcdefghij \
-            -e DJANGO_ALLOWED_HOSTS=localhost collectif:latest
+            -e DJANGO_ALLOWED_HOSTS=localhost univ-enragee:latest
           for i in $(seq 1 45); do  # première sonde après 30 s
             status=$(docker inspect -f '{{.State.Health.Status}}' essai)
             [ "$status" = healthy ] && exit 0

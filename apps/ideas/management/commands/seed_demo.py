@@ -66,7 +66,7 @@ class Command(BaseCommand):
             self._manager(password)
             code = os.environ.get("DEMO_ACCESS_CODE", "collectif2026")
             site = SiteSettings.get()
-            site.collective_name = "Collectif UnivEnrag-e"
+            site.collective_name = "Université Enragée"
             site.presentation = (
                 "Nous sommes un collectif de personnels et d'étudiant·es de l'université. "
                 "Nous organisons des **séminaires**, des projections, des repas partagés, et "

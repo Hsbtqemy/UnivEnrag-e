@@ -4,7 +4,7 @@
 # ce qu'on teste doit être ce qu'on exécute) :
 #   base     dépendances d'exécution, jamais lancée telle quelle ;
 #   test     base + outils de test, joue la suite DANS l'image :
-#              docker build --target test -t collectif:test . && docker run --rm collectif:test
+#              docker build --target test -t univ-enragee:test . && docker run --rm univ-enragee:test
 #   runtime  l'image livrée (par défaut), sans outils de test, sous un utilisateur non root.
 
 # --- base ------------------------------------------------------------------------------

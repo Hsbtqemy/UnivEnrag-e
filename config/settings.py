@@ -130,7 +130,7 @@ LOGIN_URL = "admin:login"
 # Double authentification des comptes de gestion (CLAUDE.md ACC-3). Obligatoire hors
 # développement ; en local, DJANGO_ADMIN_2FA=1 permet de l'essayer.
 ADMIN_2FA_REQUIRED = os.environ.get("DJANGO_ADMIN_2FA", "1" if ENV != "dev" else "0") == "1"
-OTP_TOTP_ISSUER = "Plateforme du collectif"
+OTP_TOTP_ISSUER = "Université Enragée"  # nom affiché dans l'application d'authentification
 
 ACTOR_RESOLVER = "apps.actors.resolvers.NameCookieResolver"
 

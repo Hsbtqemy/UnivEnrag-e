@@ -12,6 +12,7 @@ from apps.accounts.capabilities import is_manager, require_capability
 from apps.actors.services import get_or_create_for_name
 from apps.core.access import public_view
 from apps.core.dates import from_wall_clock, to_wall_clock
+from apps.core.models import SiteSettings
 from apps.ideas import services as ideas_services
 from apps.ideas.models import Idea, IdeaSlot
 from apps.polls.models import Poll
@@ -69,7 +70,7 @@ def public_ics(request):
     body = ical.public_calendar(
         ical.public_events(),
         base_url=request.build_absolute_uri("/"),
-        name="Agenda du collectif",
+        name=SiteSettings.get().collective_name,
     )
     response = HttpResponse(body, content_type="text/calendar; charset=utf-8")
     response["Content-Disposition"] = 'inline; filename="agenda.ics"'

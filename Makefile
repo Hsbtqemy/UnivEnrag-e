@@ -34,5 +34,5 @@ backup:
 	uv run python manage.py backup
 
 image-test:
-	docker build --target test -t collectif:test .
-	docker run --rm collectif:test
+	docker build --target test -t univ-enragee:test .
+	docker run --rm univ-enragee:test

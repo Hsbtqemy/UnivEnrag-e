@@ -1,4 +1,6 @@
-# Plateforme du collectif
+# Université Enragée
+
+Plateforme du collectif Université Enragée.
 
 Site du collectif décrit dans [le cahier des charges](docs/Cahier%20des%20charges%20—%20Plateforme%20du%20collectif.md). Règles de travail et état d'avancement : [CLAUDE.md](CLAUDE.md).
 

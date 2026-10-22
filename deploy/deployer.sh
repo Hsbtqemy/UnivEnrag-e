@@ -2,7 +2,7 @@
 #
 # Met en ligne la dernière version de `main`, sur le serveur, depuis le clone du dépôt :
 #
-#   cd ~/collectif && ./deploy/deployer.sh
+#   cd ~/univ-enragee && ./deploy/deployer.sh
 #
 # Une suite de gardes qui refusent d'avancer dès que quelque chose cloche (idée reprise de
 # BD_ditor, deploy/deployer.sh). Ce que le script ne fait PAS, exprès :
@@ -46,8 +46,8 @@ after=$(git rev-parse --short HEAD)
 echo "version : $before -> $after"
 
 step "Tests DANS l'image (ce qu'on teste est ce qu'on exécute)"
-docker build --target test -t collectif:test . || stop "l'image de test ne se construit pas."
-docker run --rm collectif:test || stop "tests en échec dans l'image : rien n'est déployé (version en place : $before)."
+docker build --target test -t univ-enragee:test . || stop "l'image de test ne se construit pas."
+docker run --rm univ-enragee:test || stop "tests en échec dans l'image : rien n'est déployé (version en place : $before)."
 
 step "Construction de l'image livrée"
 "${compose[@]}" build app || stop "l'image ne se construit pas : rien n'est déployé."

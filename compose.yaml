@@ -5,13 +5,13 @@
 #
 # Réglages dans `.env` (voir `.env.exemple`) ; mode d'emploi : docs/deploiement.md.
 
-name: collectif
+name: univ-enragee
 
 x-site: &site
   build:
     context: .
     target: runtime
-  image: collectif:latest
+  image: univ-enragee:latest
   restart: unless-stopped
   env_file: .env
   environment:

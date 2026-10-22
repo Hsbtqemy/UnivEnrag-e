@@ -30,7 +30,7 @@ def _token() -> str:
 class SiteSettings(models.Model):
     """Réglages du site, en un seul exemplaire (pk = 1)."""
 
-    collective_name = models.CharField("nom du collectif", max_length=120, default="Le collectif")
+    collective_name = models.CharField("nom du collectif", max_length=120, default="Université Enragée")
     presentation = models.TextField(
         "présentation du collectif",
         blank=True,

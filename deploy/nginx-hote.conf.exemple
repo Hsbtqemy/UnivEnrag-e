@@ -1,12 +1,12 @@
 # Bloc Nginx de l'hôte pour le site du collectif, sur le serveur partagé (Improliante,
-# BD_ditor). À copier dans /etc/nginx/sites-available/collectif, à activer, puis :
+# BD_ditor). À copier dans /etc/nginx/sites-available/univ-enragee, à activer, puis :
 #   sudo nginx -t && sudo systemctl reload nginx
 #   sudo certbot --nginx -d <SITE_DOMAINE>     # ajoute le HTTPS et la redirection
 #
 # Nginx termine le HTTPS et relaie vers le Caddy du collectif (127.0.0.1:PORT_LOCAL).
 server {
     listen 80;
-    server_name collectif.edito-revue.fr;   # = SITE_DOMAINE
+    server_name univ-enragee.edito-revue.fr;   # = SITE_DOMAINE
 
     # Ni journal d'accès ni adresse IP conservée (CLAUDE.md, RGPD) ; les erreurs restent.
     access_log off;
