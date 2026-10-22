@@ -7,21 +7,6 @@
 #              docker build --target test -t collectif:test . && docker run --rm collectif:test
 #   runtime  l'image livrée (par défaut), sans outils de test, sous un utilisateur non root.
 
-ARG TARGETARCH
-
-# --- supercronic : le cron du conteneur, binaire épinglé et vérifié --------------------
-FROM scratch AS supercronic-amd64
-ADD --checksum=sha256:a53ae236602c7338aba3fbaff40bda6300eae3b9fedb8261eb06cfe3724430c1 \
-    https://github.com/aptible/supercronic/releases/download/v0.2.49/supercronic-linux-amd64 \
-    /supercronic
-
-FROM scratch AS supercronic-arm64
-ADD --checksum=sha256:02aa0cb229ba09050cba6638059dadb9eedc2276632ea43d6a57a2f8c1629dd5 \
-    https://github.com/aptible/supercronic/releases/download/v0.2.49/supercronic-linux-arm64 \
-    /supercronic
-
-FROM supercronic-${TARGETARCH} AS supercronic
-
 # --- base ------------------------------------------------------------------------------
 FROM python:3.13-slim-trixie AS base
 
@@ -53,7 +38,22 @@ CMD ["sh", "-c", "python -m pytest -q -o addopts='' && DJANGO_ENV=prod DJANGO_SE
 
 # --- runtime ---------------------------------------------------------------------------
 FROM base AS runtime
-COPY --from=supercronic --chmod=0755 /supercronic /usr/local/bin/supercronic
+
+# supercronic : le cron du conteneur, binaire épinglé et vérifié par sha256. L'architecture
+# est lue ici plutôt que dans TARGETARCH, que tous les constructeurs ne renseignent pas.
+ARG SUPERCRONIC_VERSION=v0.2.49
+RUN set -eu; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in \
+      amd64) sum=a53ae236602c7338aba3fbaff40bda6300eae3b9fedb8261eb06cfe3724430c1 ;; \
+      arm64) sum=02aa0cb229ba09050cba6638059dadb9eedc2276632ea43d6a57a2f8c1629dd5 ;; \
+      *) echo "Architecture non prise en charge : $arch" >&2; exit 1 ;; \
+    esac; \
+    python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+      "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${arch}" \
+      /usr/local/bin/supercronic; \
+    echo "${sum}  /usr/local/bin/supercronic" | sha256sum -c -; \
+    chmod 0755 /usr/local/bin/supercronic
 
 RUN useradd --create-home --uid 1000 collectif \
     && mkdir -p /data /srv/static \
