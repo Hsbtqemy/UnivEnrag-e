@@ -11,7 +11,7 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 ## État du projet
 
 - **Le POC est codé** (22/10/2026) : agenda alimenté par des propositions extérieures, décrit dans `docs/poc-calendrier-propositions.md`. Voir le `README.md` pour le démarrer.
-- **Phase 1 en cours**, par lots testés et commités un à un : A socle · B agenda des membres · C salles et espaces · D récurrences et indisponibilités · E idées des membres · F mise en ligne.
+- **Phase 1 en cours**, par lots testés et commités un à un : A socle · B agenda des membres · C salles et espaces · D indisponibilités · E idées des membres · F mise en ligne. **Pas de séries d'événements** (voir la décision 12).
   - **Lot A fait** : modèle `accounts.User` (7 droits, `require_capability`, `CapabilityAdminMixin`), double authentification TOTP + codes de secours (`accounts/two_factor.py`, obligatoire hors `DJANGO_ENV=dev`, forcée avec `DJANGO_ADMIN_2FA=1`), code d'accès commun (`core/access.py`, `@public_view`), nom mémorisé et `request.actor` (`actors/resolvers.py`), journal `audit.log()` en ajout seul, page `/gestion/` selon les droits.
   - **Lot B fait** : agenda des membres `/agenda/` (semaine, mois, liste par défaut sur téléphone, filtre par salle), création en un formulaire court (`/agenda/nouveau/`, pré-rempli depuis le créneau cliqué ou par duplication `?depuis=<id>`), modification, annulation (reste visible, barrée), glisser-déposer sous le nom retenu, avertissement de salle en direct (`/agenda/verifier/`), historique `EventChange` avec restauration, verrou, demandes de publication (`/gestion/publication/`).
   - **Lot C fait** : salles avec plages d'ouverture (`OpeningHours`, une salle sans plage n'a pas de restriction) et mode « libre » ou « soumise à validation » (`Event.room_status`, file `/gestion/salles/`, un refus retire la salle mais garde l'événement) ; dérogation (salle occupée ou fermée) par le seul droit « salles », case `override`, journalisée `rooms.derogation` ; page `/salles/` ; app `spaces` minimale (nom, couleur, archivage), couleur et filtre par espace dans l'agenda ; flux iCal internes par jeton `/flux/<feeds_token>/{agenda.ics, espace/<slug>.ics, salle/<id>.ics}` et page `/agenda/abonnements/` (le flux public n'inclut jamais le lien visio).
@@ -31,7 +31,6 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 | Interactivité | Rendu serveur + **htmx 2.0** + `django-htmx`. Pas de SPA, pas de chaîne Node |
 | Agenda | **`@event-calendar` 5.3** (vkurko/calendar, **MIT**), bundle autonome `@event-calendar/build` (`event-calendar.min.js` + `.min.css`) copié dans `static/vendor/`, jamais chargé depuis un CDN. Il fournit les vues semaine, mois et liste, **les colonnes par salle** (`resourceTimeGridDay` / `resourceTimeGridWeek`) et le glisser-déposer (plugin interaction inclus). Son API est proche de FullCalendar, sans module payant |
 | CSS | Pico CSS 2 copiée dans le dépôt + `static/css/app.css` (variables, mode sombre) |
-| Récurrence | `python-dateutil` (rrule) + `zoneinfo`, calcul en heure locale `Europe/Paris` puis conversion en UTC |
 | Formats | `icalendar` 6 ; `django.contrib.syndication` (RSS) ; CSV natif (UTF-8 avec BOM, séparateur `;`) ; **WeasyPrint** (PDF, polices dans le dépôt) |
 | Markdown | `markdown` + `nh3`. Balises autorisées : p, br, strong, em, ul, ol, li, a. Les liens reçoivent `rel="nofollow noopener"` |
 | Historique | Modèle maison `agenda.EventChange` (avant/après par champ + instantané pour restaurer), dont l'auteur est un `Actor` |
@@ -68,7 +67,7 @@ apps/
   rooms/           Room, OpeningHours
   spaces/          Space, Document, MeetingReport
   discussions/     Thread, Message (fil unique pour sujets, idées, propositions)
-  agenda/          Event, EventSeries, EventType, Audience, Unavailability, ExternalCalendar,
+  agenda/          Event, EventChange, EventType, Audience, Unavailability, ExternalCalendar,
                    recurrence.py conflicts.py services.py queries.py api.py
   ideas/           Idea, IdeaSlot, Reaction
   proposals/       Proposal, ProposalVersion, Support
@@ -126,7 +125,7 @@ Disponibles (`Makefile`) :
 | `make lint` / `make fmt` | `ruff check` + `ruff format --check` + migrations à jour / correction automatique |
 | `make check-deploy` | `manage.py check --deploy` avec des réglages de production factices |
 
-Cibles à créer : `pre-commit`, `scripts/fetch_vendor.sh`, Docker / `bootstrap`, `backup` / `restore`, et la démo des phases suivantes (espaces, séries, votes).
+Cibles à créer : `pre-commit`, `scripts/fetch_vendor.sh`, Docker / `bootstrap`, `backup` / `restore`, et la démo des phases suivantes (votes, discussions).
 
 Tâches cron (`deploy/crontab`, supercronic) :
 
@@ -140,7 +139,7 @@ Tâches cron (`deploy/crontab`, supercronic) :
 ## Conventions de code
 
 - **Identifiants en anglais** (modèles, champs, fonctions, fichiers). **Tout ce que voit l'utilisateur est en français**, écrit directement : templates, `verbose_name`, messages, URL (`/agenda/`, `/idees/`, `/propositions/`, `/votes/`, `/espaces/<slug>/`, `/salles/`, `/gestion/`, `/p/…`), PDF, CSV. Pas de `gettext` ni de `.po`. Réglages : `LANGUAGE_CODE="fr-fr"`, `USE_I18N=True`, `TIME_ZONE="Europe/Paris"`, `USE_TZ=True`.
-- **Commentaires, docstrings, commits et documentation en français.** Chaque règle métier cite le CDC, par exemple `# CDC §4 Garanties : un vote par nom`. Format des commits : `agenda: déplacement d'une occurrence de série`.
+- **Commentaires, docstrings, commits et documentation en français.** Chaque règle métier cite le CDC, par exemple `# CDC §4 Garanties : un vote par nom`. Format des commits : `agenda: avertissement de salle avant l'enregistrement`.
 - Les templates htmx partiels sont préfixés par `_`. La vue choisit le fragment selon `request.htmx`. **Pas de `hx-on`** (il est incompatible avec la CSP) et **pas de script inline** : la configuration JS passe par `{{ config|json_script:"…" }}`.
 - `|safe` est **interdit**, sauf sur la sortie de `core.markdown.render()`.
 - Formulaires accessibles : `label` explicite, erreurs liées par `aria-describedby`. Le glisser-déposer a **toujours** une alternative au clavier (vue liste et formulaire d'édition).
@@ -165,14 +164,13 @@ Glossaire FR→EN : acteur=Actor · gestionnaire=manager (User avec droits) · e
 - AGE-2. Seuls le titre, le début et la fin sont obligatoires, avec fin > début. (§3)
 - AGE-3. Tout participant crée, modifie, déplace, duplique ou annule un événement non verrouillé, sous son nom. **Seul un habilité « agenda » peut passer un événement de `provisional` à `confirmed`**, à l'unité ou par lot. (§3)
 - AGE-4. Toute modification crée une entrée d'historique : nom saisi, date, avant et après, champ par champ. Un habilité « agenda » peut restaurer une version, et la restauration crée elle-même une nouvelle entrée. (§3, §11)
-- AGE-5. Un événement verrouillé refuse toute modification par un participant (formulaire, glisser-déposer, série). Les modifications concurrentes sont détectées par verrouillage optimiste (`revision`, réponse 409). (§3)
-- AGE-6. Récurrences : quotidienne, hebdomadaire, toutes les 2 semaines, mensuelle, avec **date de fin obligatoire** (2 ans et 200 occurrences au plus). Chaque occurrence est une ligne `Event` liée à `EventSeries`. La portée est « cet événement » (`detached=True`) ou « toute la série » (occurrences futures non détachées). Une heure murale reste la même au changement d'heure. (§3)
+- AGE-5. Un événement verrouillé refuse toute modification par un participant (formulaire, glisser-déposer, annulation). Les modifications concurrentes sont détectées par verrouillage optimiste (`revision`, réponse 409). (§3)
+- AGE-6. **Pas de séries d'événements.** Un événement qui revient se crée par « Dupliquer » (formulaire pré-rempli) ou se recrée. Ne pas ajouter de modèle de série ni de règle de récurrence. *Décision du porteur du projet (22/10/2026), qui retire ce point du CDC §3.*
 - SAL-1. Une réservation **est** un `Event` rattaché à une `Room` : il n'existe pas d'entité de réservation séparée. (§6)
 - SAL-2. **Conflit bloquant** : un chevauchement strict dans la même salle avec un événement `confirmed`, ou dont la salle est `pending` ou `approved`. Deux événements bout à bout ne sont pas en conflit. Salles différentes, « lieu libre » et événements annulés ne déclenchent jamais de conflit. Le contrôle se fait **côté serveur**. La dérogation est réservée à un habilité « salles » et journalisée. (§3, §6)
 - SAL-3. Une réservation hors des `OpeningHours` est refusée, sauf dérogation journalisée. (§6)
 - SAL-4. Une salle `approval` met la réservation en `pending` jusqu'à sa validation. Une réservation en attente bloque déjà le créneau. (§6)
 - AGE-7. Mêmes intervenants à la même heure, ou même public visé en parallèle : simple **avertissement**, désactivable, jamais bloquant. L'occupation de la salle est signalée dans le formulaire avant l'enregistrement (`hx-get /agenda/verifier/`). (§3)
-- AGE-8. Une opération sur une série précalcule tous les conflits et refuse en listant les dates concernées. Elle s'exécute en une seule transaction. (§3)
 - AGE-9. Les calendriers externes et les indisponibilités sont en lecture seule et affichés grisés, sans détail (« Nom – indisponible »). Ils ne sont **jamais** publics, confirmables ou exportés publiquement. (§3)
 
 **Idées**
@@ -235,7 +233,7 @@ Les tests des règles de vote sont exigés par le CDC (§10, §11), dans `apps/v
 - `test_lifecycle.py` : gel des paramètres, clôture automatique et clôture à la lecture, masquage des résultats avant la clôture, invalidation exclue du décompte, matrice de transitions des propositions.
 
 Autres tests exigés :
-- conflit de salle refusé côté serveur, y compris sur toute une série (SAL-2) ;
+- conflit de salle refusé côté serveur (SAL-2) ;
 - **rien de non public** sur `/p/*` ni dans les flux publics (PUB-1) ;
 - l'historique et la restauration d'un événement (AGE-4) ;
 - un participant ne peut pas confirmer (AGE-3) ;
@@ -250,14 +248,14 @@ Le tableau « Estimation de charge » du §11 fait foi, car le schéma du phasag
 
 1. **Phase 1 — Socle, agenda, idées.**
    - Squelette, réglages, Docker et Caddy, `User` personnalisé + TOTP, droits, `AuditLog`, `Actor`, code d'accès, noindex, limitation de débit.
-   - Agenda complet : vues, création rapide, glisser-déposer, séries, historique, restauration, verrou, conflits, indisponibilités, iCal par agenda, espace et salle.
+   - Agenda complet : vues, création rapide, glisser-déposer, duplication, historique, restauration, verrou, conflits, indisponibilités, iCal par agenda, espace et salle.
    - Idées avec créneaux et réactions, vue de programmation (colonnes par salle, « À placer », confirmation par lot).
    - Prévoir des modèles **minimaux** `Room` + `OpeningHours` et `Space` (nom, couleur), dont la phase 1 a besoin. Calendriers externes (ADE) livrés désactivés.
 2. **Phase 2 — Propositions et votes.** Propositions, amendements, soutiens, tous les types de vote, sondage de dates (avec transformation en événement), hybride et saisie en séance, anonymat par compteurs, exports CSV et PDF (procès-verbal), RSS.
 3. **Phase 3 — Espaces, salles, page publique.** Fils de discussion, documents, comptes rendus, recherche FTS5, fiches salles complètes (photo, mode validation, planning), page publique et actualités, contact et adhésion, sauvegarde et restauration en un clic.
 4. **Transversal.** Accessibilité, mode sombre, PWA, test mobile « événement en moins de 30 s » (Playwright en option), guides des membres et de l'administrateur, notes de version.
 
-Postes les plus lourds, reportables d'après le §11 : séries récurrentes, jugement majoritaire, anonymat réel.
+Postes les plus lourds d'après le §11 : séries récurrentes (abandonnées, AGE-6), jugement majoritaire, anonymat réel.
 
 ## Décisions par défaut (à confirmer par le collectif)
 
@@ -274,7 +272,7 @@ Chacune est appliquée tant que le collectif n'a pas tranché. Indique-la en com
 9. **Sondage de dates** : toujours nominatif, sans quorum ni seuil, sans proposition liée.
 10. **Statut à la création** : un événement créé directement dans l'agenda est `confirmed` s'il passe les contrôles de salle. Un événement issu d'une idée est `provisional`. Les provisoires peuvent se chevaucher (avertissement) ; le conflit ne bloque qu'à la confirmation.
 11. **Case « public » cochée par un participant** : elle vaut demande de publication (`public_requested`). `is_public` n'est posé que par un habilité « agenda » ou « page publique ».
-12. **Séries** : les occurrences passées ne sont jamais réécrites. Un changement de règle régénère les occurrences futures non détachées.
+12. **Séries** : abandonnées (décision du porteur du projet, 22/10/2026). La duplication suffit.
 13. **Idée et événements** : une idée peut avoir plusieurs événements (`Event.origin_idea` est une clé étrangère). Elle passe à `done` quand tous ses événements confirmés sont passés, et revient à `preparing` si tous sont annulés. Tout participant change les statuts manuels. `planned` et `done` sont uniquement automatiques.
 14. **Retrait d'une proposition** : par un habilité, sur demande de l'auteur, uniquement depuis `discussion`, avec journalisation.
 15. **Épingler** relève du droit `manage_spaces`. **Masquer** relève de `moderate`. L'auteur peut éditer son message depuis le même navigateur (mention « modifié »). Le « retirer » est un masquage avec le motif « retiré par l'auteur ».
@@ -320,7 +318,6 @@ Règles d'usage :
 | `src/lib/calendar/ical-parser.ts` | Lecture d'un flux iCal externe (superposition ADE) |
 | `src/lib/calendar/week-layout.ts` | Événements sur plusieurs jours dans la vue mois |
 | `src/lib/calendar/duplicate-detection.ts` | Détection d'événements en double |
-| `src/lib/calendar/BulkEditSeriesEventsModal.svelte`, `EditSeriesModal.svelte` | Interface de modification d'une série |
 | Circuit `proposed_by` / `confirmed_by`, table `event_suggestions` | Passage d'une proposition à un événement confirmé |
 
 Le calendrier de FoReLLISTS est fait à la main, sans grille horaire ni glisser-déposer. Il n'aide **pas** pour l'agenda interactif : pour cela, c'est la documentation d'`@event-calendar`.
@@ -337,7 +334,7 @@ Le calendrier de FoReLLISTS est fait à la main, sans grille horaire ni glisser-
 - Ajouter un champ texte comme auteur au lieu d'une clé étrangère vers `Actor`, ou lire le cookie `pseudo` hors du résolveur.
 - Utiliser `|safe`, `mark_safe`, `hx-on`, un script inline, `csrf_exempt` ou du SQL brut non paramétré.
 - Ajouter Celery, Redis, PostgreSQL, Node ou un framework JS sans décision explicite du collectif.
-- Calculer des récurrences côté client (les occurrences sont générées par le serveur) ou créer une récurrence sans date de fin.
+- Réintroduire des séries d'événements ou des récurrences (AGE-6). Seules les indisponibilités hebdomadaires de chacun suivent une règle qui se répète.
 - Remplacer `@event-calendar` par FullCalendar : la vue en colonnes par salle y est un module payant, ou impose une licence GPL.
 - Copier un fichier de FoReLLISTS ou d'Improliante sans l'avoir relu et adapté (voir « Projets de référence »).
 - Fusionner une règle de vote sans son test, ou une migration non générée (`makemigrations --check` en pre-commit).
