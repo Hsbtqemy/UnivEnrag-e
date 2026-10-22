@@ -11,7 +11,9 @@
 #     il dit où il s'est arrêté ; la décision revient à quelqu'un qui a lu les journaux.
 #   * il ne touche ni à `.env` ni aux volumes. Aucun secret n'est affiché.
 #
-# Variable : DERRIERE_PROXY=1 pour la variante derrière un relais HTTPS existant.
+# Sur un serveur partagé, la variante « derrière un relais » se règle UNE fois dans `.env`
+# (COMPOSE_FILE=compose.yaml:compose.derriere-proxy.yaml) : Compose la lit alors à chaque
+# commande, y compris celles tapées à la main (leçon de BD_ditor, docs/exploitation.md §2).
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,16 +21,21 @@ cd "$(dirname "$0")/.."
 stop() { echo "ARRÊT : $*" >&2; exit 1; }
 step() { echo; echo "==> $*"; }
 
-compose=(docker compose -f compose.yaml)
-if [ "${DERRIERE_PROXY:-0}" = 1 ]; then
-  compose+=(-f compose.derriere-proxy.yaml)
-fi
+compose=(docker compose)
 
 step "Vérifications"
 [ -f .env ] || stop "pas de fichier .env (copier .env.exemple et le remplir)."
 grep -q '^DJANGO_SECRET_KEY=.\+' .env || stop "DJANGO_SECRET_KEY est vide dans .env."
 domain=$(sed -n 's/^SITE_DOMAINE=//p' .env)
 [ -n "$domain" ] || stop "SITE_DOMAINE est vide dans .env."
+# Le port 443 tenu par un autre (Nginx de l'hôte) et la variante non réglée : Caddy
+# tenterait de prendre 80 et 443 à côté des autres sites.
+if ! "${compose[@]}" config 2>/dev/null | grep -q "Caddyfile.derriere-proxy"; then
+  if ss -ltnH '( sport = :443 )' 2>/dev/null | grep -q . \
+    && [ -z "$("${compose[@]}" ps -q caddy 2>/dev/null)" ]; then
+    stop "le port 443 est déjà pris sur ce serveur : ajoutez COMPOSE_FILE=compose.yaml:compose.derriere-proxy.yaml dans .env (voir docs/deploiement.md)."
+  fi
+fi
 [ "$(git rev-parse --abbrev-ref HEAD)" = main ] || stop "le clone n'est pas sur la branche main."
 git diff --quiet && git diff --cached --quiet || stop "modifications locales dans le clone : rien n'est déployé."
 

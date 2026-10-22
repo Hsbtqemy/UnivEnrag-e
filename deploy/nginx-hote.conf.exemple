@@ -1,0 +1,23 @@
+# Bloc Nginx de l'hôte pour le site du collectif, sur le serveur partagé (Improliante,
+# BD_ditor). À copier dans /etc/nginx/sites-available/collectif, à activer, puis :
+#   sudo nginx -t && sudo systemctl reload nginx
+#   sudo certbot --nginx -d <SITE_DOMAINE>     # ajoute le HTTPS et la redirection
+#
+# Nginx termine le HTTPS et relaie vers le Caddy du collectif (127.0.0.1:PORT_LOCAL).
+server {
+    listen 80;
+    server_name collectif.83-228-221-204.sslip.io;   # = SITE_DOMAINE
+
+    # Ni journal d'accès ni adresse IP conservée (CLAUDE.md, RGPD) ; les erreurs restent.
+    access_log off;
+    client_max_body_size 25m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8081;            # = PORT_LOCAL
+        proxy_set_header Host $host;
+        # $remote_addr et non $proxy_add_x_forwarded_for : un X-Forwarded-For envoyé par
+        # le client serait gardé en tête, et contournerait la limitation de débit.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

@@ -1,6 +1,8 @@
-# Surcouche pour un serveur qui a déjà un relais HTTPS (voir deploy/Caddyfile.derriere-proxy) :
-#   docker compose -f compose.yaml -f compose.derriere-proxy.yaml up -d
-# Le relais amont envoie alors le trafic du domaine vers http://127.0.0.1:${PORT_LOCAL:-8081}.
+# Surcouche pour un serveur qui a déjà un relais HTTPS, comme le serveur partagé avec
+# Improliante et BD_ditor (Nginx de l'hôte + certbot). À activer une fois pour toutes dans
+# `.env` :  COMPOSE_FILE=compose.yaml:compose.derriere-proxy.yaml
+# Le relais envoie alors le trafic du domaine vers http://127.0.0.1:${PORT_LOCAL:-8081}
+# (modèle de bloc Nginx : deploy/nginx-hote.conf.exemple).
 services:
   caddy:
     ports: !override
