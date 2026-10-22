@@ -111,3 +111,23 @@ def test_superuser_creates_manager_with_capabilities(admin_client, django_user_m
     lea = django_user_model.objects.get(username="lea")
     assert lea.is_staff
     assert capabilities_of(lea) == {"manage_rooms", "export_data"}
+
+
+def test_removed_right_stops_working_on_the_next_request(client, make_manager):
+    """CLAUDE.md ACC-4 : un retrait vaut tout de suite, sans attendre une reconnexion."""
+    manager = make_manager("moderate")
+    login_verified(client, manager)
+    assert client.get(reverse("ideas:moderation")).status_code == 200
+    manager.user_permissions.clear()
+    assert client.get(reverse("ideas:moderation")).status_code == 403
+    manager.is_active = False
+    manager.save()
+    assert client.get(reverse("ideas:moderation")).status_code == 302
+
+
+def test_help_pages(client, member_client, make_manager):
+    assert member_client.get(reverse("core:help")).status_code == 200
+    assert "Comment ça marche" in member_client.get(reverse("core:help")).content.decode()
+    assert member_client.get(reverse("accounts:help")).status_code == 302
+    login_verified(client, make_manager("moderate"))
+    assert "Aide de la gestion" in client.get(reverse("accounts:help")).content.decode()

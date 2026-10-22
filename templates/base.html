@@ -47,7 +47,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">
-    <p>{{ site.collective_name }} · <a href="{% url 'agenda:public_ics' %}">S'abonner à l'agenda public (iCal)</a> · <a href="{% url 'core:privacy' %}">Données personnelles</a></p>
+    <p>{{ site.collective_name }}{% if has_access %} · <a href="{% url 'core:help' %}">Aide</a>{% endif %} · <a href="{% url 'agenda:public_ics' %}">S'abonner à l'agenda public (iCal)</a> · <a href="{% url 'core:privacy' %}">Données personnelles</a></p>
   </footer>
   {% block scripts %}{% endblock %}
 </body>

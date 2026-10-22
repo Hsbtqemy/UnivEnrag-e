@@ -399,3 +399,7 @@ h2 { font-size: 1.25rem; }
 @media (max-width: 640px) {
   .public-week { display: none; }
 }
+
+/* Pages d'aide */
+.help-toc ul { columns: 2 16rem; padding-left: 1.1rem; margin: 0 0 1.5rem; }
+.help h2 { margin-top: 2rem; scroll-margin-top: 1rem; }

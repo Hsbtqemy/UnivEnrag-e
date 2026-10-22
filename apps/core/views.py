@@ -93,3 +93,9 @@ def health(request):
 def privacy(request):
     """Finalité, responsables, durées et droits (CLAUDE.md « Sécurité et RGPD »)."""
     return render(request, "public/privacy.html", {"site": SiteSettings.get()})
+
+
+@require_GET
+def help_page(request):
+    """Aide des membres : derrière le code d'accès, comme le reste de l'espace interne."""
+    return render(request, "core/help.html")

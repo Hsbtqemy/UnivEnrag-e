@@ -10,4 +10,5 @@ urlpatterns = [
     path("gestion/2fa/configurer/qr.svg", views.setup_qr, name="2fa_qr"),
     path("gestion/2fa/verifier/", views.verify, name="2fa_verify"),
     path("gestion/sauvegarde/", views.backup_download, name="backup"),
+    path("gestion/aide/", views.gestion_help, name="help"),
 ]

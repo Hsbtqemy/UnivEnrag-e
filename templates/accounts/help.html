@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Aide de la gestion — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'accounts:gestion_home' %}">← Gestion</a></p>
+<h1>Aide de la gestion</h1>
+<p class="lead">Pour l'administrateur principal et les gestionnaires. Les membres ont leur propre <a href="{% url 'core:help' %}">aide</a>.</p>
+
+<nav class="help-toc" aria-label="Sommaire de l'aide">
+  <ul>
+    <li><a href="#connexion">Connexion et double authentification</a></li>
+    <li><a href="#droits">Les droits</a></li>
+    <li><a href="#principal">Ce que seul l'administrateur principal fait</a></li>
+    <li><a href="#moderation">Propositions venues de l'extérieur</a></li>
+    <li><a href="#confirmer">Confirmer des événements</a></li>
+    <li><a href="#publier">Publier</a></li>
+    <li><a href="#salles">Salles</a></li>
+    <li><a href="#verrou">Verrou et historique</a></li>
+    <li><a href="#donnees">Données personnelles</a></li>
+    <li><a href="#sauvegardes">Sauvegardes</a></li>
+  </ul>
+</nav>
+
+<div class="prose help">
+  <h2 id="connexion">Connexion et double authentification</h2>
+  <p>Chaque compte de gestion se connecte avec son mot de passe <strong>et</strong> un code à six chiffres donné par une application d'authentification (FreeOTP, Aegis, Google Authenticator…). À la première connexion, scannez le QR code, puis notez les codes de secours : chacun sert une fois si le téléphone est perdu. Sans ce code, une session n'a aucun droit, même dans l'agenda.</p>
+  <p>Téléphone perdu et plus de codes de secours : l'administrateur principal choisit le compte dans Administration → Comptes de gestion, puis l'action « Réinitialiser la double authentification ».</p>
+
+  <h2 id="droits">Les droits</h2>
+  <p>Un gestionnaire n'a que les droits cochés sur son compte :</p>
+  <ul>
+    <li><strong>Agenda</strong> : confirmer, verrouiller, restaurer une version, publier.</li>
+    <li><strong>Salles</strong> : salles et horaires, réservations à valider, dérogation (salle occupée ou fermée).</li>
+    <li><strong>Espaces</strong> : créer, modifier, archiver les espaces.</li>
+    <li><strong>Modération</strong> : propositions venues de l'extérieur.</li>
+    <li><strong>Page publique</strong> : publier ou retirer un événement de l'agenda public.</li>
+    <li><strong>Votes</strong> et <strong>Exports</strong> : pour les phases suivantes.</li>
+  </ul>
+  <p>Toute action d'un compte de gestion est notée dans le journal d'activité.</p>
+
+  <h2 id="principal">Ce que seul l'administrateur principal fait</h2>
+  <ul>
+    <li>Changer le <strong>code d'accès</strong> des membres (Administration → Réglages du site) : tous les navigateurs devront saisir le nouveau. À faire chaque année, ou dès qu'il a fuité.</li>
+    <li>Créer ou retirer des gestionnaires et leurs droits (Comptes de gestion). Un droit retiré, ou un compte désactivé, ne sert plus dès la page suivante.</li>
+    <li>Consulter le journal d'activité, télécharger une sauvegarde complète, anonymiser une personne.</li>
+  </ul>
+
+  <h2 id="moderation">Propositions venues de l'extérieur</h2>
+  <p><strong>Gestion → Modération des propositions.</strong> « Accepter » range la proposition parmi les idées ; si elle a un créneau précis, elle est placée en provisoire. « Ne pas retenir… » demande un motif, que la personne lit sur son lien de suivi. Les envois indésirables se cochent et s'écartent ensemble.</p>
+  <p>Le site n'écrit jamais à personne. Pour joindre le porteur, cliquez sur son adresse : elle s'ouvre dans votre messagerie. Cette adresse n'apparaît jamais publiquement.</p>
+
+  <h2 id="confirmer">Confirmer des événements</h2>
+  <p><strong>Agenda → Programmation par salle.</strong> Ouvrez un provisoire et « Confirmer », ou cochez-en plusieurs puis « Confirmer la sélection ». Seule la salle peut l'empêcher : déjà prise par un événement confirmé sur le même créneau, ou fermée à cette heure. Chaque refus dit pourquoi. L'idée d'origine passe alors à « Planifiée ».</p>
+
+  <h2 id="publier">Publier</h2>
+  <p>Rien n'est public par défaut. <strong>Gestion → Demandes de publication</strong> liste ce que les membres souhaitent voir sur l'agenda public : « Publier » ou « Ne pas publier ». Un événement n'est visible de l'extérieur que s'il est à la fois <strong>confirmé et publié</strong> ; ses intervenants seulement si la case correspondante est cochée.</p>
+
+  <h2 id="salles">Salles</h2>
+  <ul>
+    <li>Administration → Salles : capacité, accès, couleur, plages d'ouverture (une salle sans plage n'a pas de restriction), et mode « libre » ou « soumise à validation ».</li>
+    <li><strong>Gestion → Réservations de salles à valider</strong> : « Valider la salle », ou « Refuser la salle » : l'événement garde sa date mais perd la salle.</li>
+    <li>Le droit « Salles » permet de déroger (salle occupée ou fermée) depuis le formulaire de l'événement ; la dérogation est journalisée.</li>
+  </ul>
+
+  <h2 id="verrou">Verrou et historique</h2>
+  <p>Sur la fiche d'un événement, « Verrouiller » empêche toute modification par les membres. L'historique montre chaque changement ; « Restaurer » revient à une version, et la restauration est elle-même notée.</p>
+
+  <h2 id="donnees">Données personnelles</h2>
+  <p>Une personne peut demander que son nom disparaisse : Administration → Personnes, cochez-la, action « Anonymiser ». Toutes ses contributions affichent alors « Anonyme ». Vérifiez à la main les champs libres où son nom pourrait figurer : intervenants d'un événement, organisateurs d'une idée, e-mail d'une proposition. Le contact affiché sur la page « Données personnelles » se règle dans les Réglages du site.</p>
+
+  <h2 id="sauvegardes">Sauvegardes</h2>
+  <p>Le serveur sauvegarde la base chaque nuit et garde 30 jours d'archives. L'administrateur principal peut en télécharger une à tout moment : <strong>Gestion → Sauvegarde complète</strong>. Gardez-la en lieu sûr, elle contient tout, y compris les comptes de gestion. La restauration se fait sur le serveur (voir <code>docs/deploiement.md</code>).</p>
+</div>
+{% endblock %}

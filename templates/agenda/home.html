@@ -3,7 +3,7 @@
 {% block content %}
 <h1>{% if request.actor_name %}Bonjour {{ request.actor_name }}{% else %}Bienvenue{% endif %}</h1>
 {% if not request.actor_name %}
-<p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient.</p>
+<p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient. Première visite ? <a href="{% url 'core:help' %}">Comment ça marche</a>.</p>
 {% endif %}
 
 <p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>

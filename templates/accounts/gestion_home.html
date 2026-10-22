@@ -12,5 +12,6 @@
   {% if user.is_superuser %}<li><a href="{% url 'accounts:backup' %}">Sauvegarde complète</a><span>Télécharger toute la base, comptes de gestion compris.</span></li>{% endif %}
   <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>
 </ul>
+<p><a href="{% url 'accounts:help' %}">Aide de la gestion</a> : droits, confirmation, publication, salles, données personnelles, sauvegardes.</p>
 <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit" class="link-button">Se déconnecter</button></form>
 {% endblock %}

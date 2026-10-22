@@ -120,3 +120,11 @@ def backup_download(request):
     archives = settings.BACKUP_DIR.glob(f"{backup.PREFIX}*{backup.SUFFIX}")
     recent = sorted(archives, reverse=True)[:10]
     return render(request, "accounts/backup.html", {"archives": recent})
+
+
+@never_cache
+def gestion_help(request):
+    """Aide des gestionnaires et de l'administrateur principal."""
+    if not is_manager(request.user):
+        return redirect_to_login(request.get_full_path())
+    return render(request, "accounts/help.html")
