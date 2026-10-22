@@ -91,7 +91,7 @@ Pour restaurer une archive venue d'ailleurs, la copier d'abord dans le volume : 
 
 Sur ce serveur, le Nginx de l'hôte tient déjà les ports 80 et 443 et gère les certificats (certbot) pour les autres sites. Le Caddy du collectif écoute donc seulement en local, et Nginx lui relaie le trafic : c'est la même organisation que BD_ditor.
 
-**Adresse : `univ-enragee.edito-revue.fr`.** Préalable : chez le gestionnaire DNS de `edito-revue.fr`, ajouter un enregistrement `A` (`univ-enragee` → `83.228.221.204`, et `AAAA` si le serveur a une IPv6), puis vérifier qu'il répond : `dig +short univ-enragee.edito-revue.fr`.
+**Adresse : `univ-enragee.edito-revue.fr`.** Préalable : chez le gestionnaire DNS de `edito-revue.fr`, ajouter un enregistrement `A` (`univ-enragee` → `83.228.221.204`) et un `AAAA` (`univ-enragee` → `2001:1600:18:203::242`), les mêmes que `edito-revue.fr` et `lspo`, puis vérifier qu'il répond : `dig +short univ-enragee.edito-revue.fr`.
 
 *Solution de repli, sans toucher au DNS* : `univ-enragee.83-228-221-204.sslip.io` résout vers le serveur sans rien configurer. Mais `sslip.io` n'est pas un suffixe public : le quota de Let's Encrypt est partagé avec tous ses utilisateurs, et certbot peut refuser (`rateLimited`). Il faut alors réessayer plus tard. Changer d'adresse ensuite revient à modifier `SITE_DOMAINE` et le `server_name`, puis à relancer certbot. Les abonnements iCal déjà pris seront à refaire.
 
