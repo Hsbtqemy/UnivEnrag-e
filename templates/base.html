@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ site.collective_name }}{% endblock %}</title>
   {% block robots %}{% endblock %}
+  {# Avant la feuille de style : le thème choisi s'applique sans clignotement. #}
+  <script src="{% static 'js/theme.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <link rel="manifest" href="{% url 'core:manifest' %}">
   <meta name="theme-color" content="#2f5d8c">
@@ -43,12 +45,15 @@
         </ul>
       </nav>
       {% endwith %}
-      {% if has_access %}
-      <p class="whoami">
-        {% if request.actor_name %}Vous : <strong>{{ request.actor_name }}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
-        {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% endif %}
-      </p>
-      {% endif %}
+      <div class="header-tools">
+        {% if has_access %}
+        <p class="whoami">
+          {% if request.actor_name %}Vous : <strong>{{ request.actor_name }}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
+          {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% endif %}
+        </p>
+        {% endif %}
+        <button type="button" id="bouton-theme" class="theme-toggle" aria-pressed="false" hidden><span aria-hidden="true">◐</span> Mode sombre</button>
+      </div>
     </div>
   </header>
   <main id="contenu" class="{% block main_class %}page{% endblock %}">

@@ -43,3 +43,10 @@ def test_pages_link_the_manifest(client, site):
     body = client.get(reverse("agenda:public_list")).content.decode()
     assert 'rel="manifest"' in body
     assert "icons/apple-touch-icon" in body
+
+
+def test_theme_toggle_is_in_every_page_and_applied_before_the_stylesheet(client, site):
+    body = client.get(reverse("public:home")).content.decode()
+    assert 'id="bouton-theme"' in body and 'aria-pressed="false" hidden' in body
+    # Le script du thème passe avant la feuille de style : pas de clignotement.
+    assert body.index("js/theme") < body.index("css/app")

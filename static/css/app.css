@@ -19,8 +19,10 @@
   color-scheme: light;
 }
 
+/* Mode sombre : celui du système, sauf choix contraire fait avec le bouton de l'en-tête
+   (attribut data-theme posé par static/js/theme.js). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #15171a;
     --surface: #1e2125;
     --text: #e8e9eb;
@@ -34,6 +36,20 @@
     --warning: #f5b26b;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a;
+  --surface: #1e2125;
+  --text: #e8e9eb;
+  --muted: #a3a8b0;
+  --border: #3a3f46;
+  --accent: #7fb0e3;
+  --accent-text: #0f1a26;
+  --accent-soft: #233243;
+  --danger: #f08a8d;
+  --success: #7fd19b;
+  --warning: #f5b26b;
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -410,3 +426,10 @@ h2 { font-size: 1.25rem; }
 .news-list { list-style: none; padding: 0; display: grid; gap: 1.25rem; }
 .news-list h2, .news-list h3 { margin: .1rem 0 .3rem; font-size: 1.15rem; }
 .news-list .meta { margin: 0; }
+
+/* Outils de l'en-tête : nom retenu, bouton clair / sombre */
+.header-tools { width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .4rem 1rem; }
+.header-tools .whoami { width: auto; }
+.theme-toggle { font: inherit; font-size: .9rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: .15rem .7rem; cursor: pointer; }
+.theme-toggle:hover { border-color: var(--accent); }
+.theme-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
