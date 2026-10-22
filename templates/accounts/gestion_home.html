@@ -9,6 +9,7 @@
   {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a><span>Confirmer les événements placés par les membres, salle par salle.</span></li>{% endif %}
   {% if "manage_rooms" in capabilities %}<li><a href="{% url 'agenda:room_requests' %}">Réservations de salles à valider</a><span>Les demandes dans les salles soumises à validation.</span></li>{% endif %}
   {% if "manage_agenda" in capabilities or "manage_public" in capabilities %}<li><a href="{% url 'agenda:public_requests' %}">Demandes de publication</a><span>Les événements que des membres souhaitent voir sur l'agenda public.</span></li>{% endif %}
+  {% if user.is_superuser %}<li><a href="{% url 'accounts:backup' %}">Sauvegarde complète</a><span>Télécharger toute la base, comptes de gestion compris.</span></li>{% endif %}
   <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>
 </ul>
 <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit" class="link-button">Se déconnecter</button></form>

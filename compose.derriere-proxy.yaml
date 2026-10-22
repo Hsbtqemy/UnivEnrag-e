@@ -1,0 +1,9 @@
+# Surcouche pour un serveur qui a déjà un relais HTTPS (voir deploy/Caddyfile.derriere-proxy) :
+#   docker compose -f compose.yaml -f compose.derriere-proxy.yaml up -d
+# Le relais amont envoie alors le trafic du domaine vers http://127.0.0.1:${PORT_LOCAL:-8081}.
+services:
+  caddy:
+    ports: !override
+      - "127.0.0.1:${PORT_LOCAL:-8081}:80"
+    volumes:
+      - ./deploy/Caddyfile.derriere-proxy:/etc/caddy/Caddyfile:ro

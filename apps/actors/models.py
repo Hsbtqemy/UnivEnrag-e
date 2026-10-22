@@ -24,6 +24,7 @@ class Actor(models.Model):
         related_name="actor",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    anonymized_at = models.DateTimeField("anonymisée le", null=True, blank=True)
 
     class Meta:
         verbose_name = "personne"

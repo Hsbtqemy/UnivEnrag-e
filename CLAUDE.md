@@ -21,8 +21,9 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
   - `request.actor` vaut `None` sans nom ni compte (résolu tout de suite, pas d'objet paresseux).
   - **Historique : modèle maison `agenda.EventChange`** (et non django-simple-history) : chaque entrée référence un `Actor`, garde `changes` ({champ: [avant, après]}) et un `snapshot` complet pour restaurer. Toute écriture sur un événement passe par `agenda/services.py`, qui l'enregistre.
   - URL : public sous `/p/` (`/p/agenda/`, `/p/proposer/`, `/p/suivi/<jeton>/`, `/p/agenda.ics`), interne `/accueil/`, `/nom/`, `/agenda/`, `/agenda/programmation/`, `/idees/`, `/salles/`, `/presences/`, `/sondages/`, gestion `/gestion/` (admin Django sous `/gestion/admin/`).
-  - **Choix restés simples, à revoir si besoin** : ni htmx, ni django-csp (la CSP est posée par `core/middleware.py`), ni WhiteNoise, ni django-environ (réglages lus dans `os.environ`), ni pre-commit. Une seule salle par événement.
-  - Le reste de ce fichier (arborescence, commandes cron, sauvegarde…) décrit encore des **cibles à créer**.
+  - **Lot F fait (mise en ligne)**, décision 19 tranchée : SQLite + Docker + Caddy, la pile déjà éprouvée par le porteur du projet sur BD_ditor. `Dockerfile` en trois étapes (`base`, `test` qui joue la suite DANS l'image, `runtime` non root), `compose.yaml` (`app` gunicorn sans journal d'accès, `cron` supercronic épinglé par sha256, `caddy` HTTPS automatique et fichiers statiques, sans journal d'accès), variante `compose.derriere-proxy.yaml` pour un serveur qui a déjà un relais HTTPS, `deploy/deployer.sh` (gardes, tests dans l'image, sauvegarde avant migration, jamais de retour arrière automatique), CI `.github/workflows/ci.yml`. Mode d'emploi : `docs/deploiement.md`. Statiques versionnés en production (`apps/core/storage.py`, qui ignore les `.map` des bibliothèques tierces). Sauvegarde et restauration : `apps/core/backup.py`, commandes `backup` et `restore`, bouton « Sauvegarde complète » (`/gestion/sauvegarde/`, superuser). `/sante/`, page `/p/donnees-personnelles/` (contact réglable dans les Réglages du site), anonymisation d'une personne par une action de l'admin (superuser). **L'image n'a pas encore été construite** : pas de Docker sur le poste de développement ; la chaîne a été essayée sans Docker (gunicorn + vrai `deploy/Caddyfile` en HTTPS local, navigateur). La première construction se fera en CI ou sur le serveur. **Reste à organiser : la copie des sauvegardes hors du serveur.**
+  - **Choix restés simples, à revoir si besoin** : ni htmx, ni django-csp (la CSP est posée par `core/middleware.py`), ni WhiteNoise (Caddy sert les statiques), ni django-environ (réglages lus dans `os.environ`, `.env` lu par Docker Compose), ni pre-commit. Une seule salle par événement.
+  - Le reste de ce fichier décrit encore quelques **cibles à créer** (phases 2 et 3 : votes, discussions, exports, recherche).
 - Commence par la **phase 1** (voir « Phasage »). Ne code pas une phase suivante avant que le collectif ait validé la phase en cours. Seule exception : les modèles minimaux dont la phase en cours a besoin.
 - Tiens ce fichier à jour : quand une cible devient réelle, quand une décision par défaut est confirmée ou changée, quand une commande change.
 
@@ -30,7 +31,7 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 
 | Brique | Choix |
 |---|---|
-| Langage, framework | Python 3.12, **Django 5.2 LTS** |
+| Langage, framework | Python 3.13 (3.12 au minimum), **Django 5.2 LTS** |
 | Base | **SQLite en WAL** : `transaction_mode="IMMEDIATE"`, `busy_timeout=5000`, `foreign_keys=ON`. Le seul code propre à SQLite (FTS5) est isolé dans `apps/core/search.py`, pour pouvoir passer à PostgreSQL au-delà de 300 personnes |
 | Interactivité | Rendu serveur + **htmx 2.0** + `django-htmx`. Pas de SPA, pas de chaîne Node |
 | Agenda | **`@event-calendar` 5.3** (vkurko/calendar, **MIT**), bundle autonome `@event-calendar/build` (`event-calendar.min.js` + `.min.css`) copié dans `static/vendor/`, jamais chargé depuis un CDN. Il fournit les vues semaine, mois et liste, **les colonnes par salle** (`resourceTimeGridDay` / `resourceTimeGridWeek`) et le glisser-déposer (plugin interaction inclus). Son API est proche de FullCalendar, sans module payant |
@@ -40,8 +41,8 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 | Historique | Modèle maison `agenda.EventChange` (avant/après par champ + instantané pour restaurer), dont l'auteur est un `Actor` |
 | Administrateurs | `argon2-cffi`, `django-otp` (TOTP + codes de secours), `segno` (QR code en SVG) |
 | Sécurité HTTP | `django-csp` 4 : `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'` |
-| Statique, configuration | WhiteNoise ; `django-environ` (`.env`), un seul `config/settings.py` piloté par `DJANGO_ENV=dev|prod|test` |
-| Production | Docker multi-étapes (utilisateur non root) + `compose.yaml` : `app` (gunicorn, journal d'accès désactivé), `caddy` (HTTPS automatique), `cron` (supercronic), volume `/data` (base, médias, sauvegardes). **Ni Celery ni Redis** |
+| Statique, configuration | Caddy sert `/static/` (noms versionnés, cache d'un an) ; un seul `config/settings.py` piloté par `DJANGO_ENV=dev|prod|test` et des variables d'environnement (`.env` lu par Docker Compose) |
+| Production | Docker multi-étapes (utilisateur non root) + `compose.yaml` : `app` (gunicorn, journal d'accès désactivé), `caddy` (HTTPS automatique), `cron` (supercronic), volume `/data` (base, sauvegardes). **Ni Celery ni Redis** |
 | Qualité | `uv` (`pyproject.toml` + `uv.lock`), `ruff` (E,F,I,B,UP,DJ,S,SIM, ligne de 100), `pytest`, `pytest-django`, `factory-boy`, `time-machine`, `pre-commit` |
 
 Les bibliothèques JS et CSS tierces vont dans `static/vendor/<lib>-<version>/`. Elles sont téléchargées par `scripts/fetch_vendor.sh` (versions épinglées, sha256 vérifiés) et recensées dans `static/vendor/VERSIONS.md`.
@@ -81,7 +82,8 @@ apps/
   exports/         ical.py rss.py csv_exports.py pdf.py backup.py, commandes backup / restore
 templates/         base.html base_internal.html base_public.html base_gestion.html includes/ errors/
 static/            css/ js/{agenda,programming,actor,newbadge,theme}.js fonts/ vendor/
-deploy/            Caddyfile crontab entrypoint.sh
+deploy/            Caddyfile Caddyfile.derriere-proxy crontab entrypoint.sh sante.py deployer.sh
+Dockerfile compose.yaml compose.derriere-proxy.yaml .env.exemple
 tests/             conftest.py factories.py acceptance/test_reception.py
 ```
 
@@ -127,18 +129,22 @@ Disponibles (`Makefile`) :
 | `make demo` | `migrate` puis `seed_demo --reset` : code d'accès `collectif2026`, administrateur `admin` et gestionnaire `camille` (agenda + modération), mot de passe `demo-collectif-2026`, salles, propositions dans tous les états, événements datés à partir de lundi prochain |
 | `make test` | `uv run pytest` |
 | `make lint` / `make fmt` | `ruff check` + `ruff format --check` + migrations à jour / correction automatique |
-| `make check-deploy` | `manage.py check --deploy` avec des réglages de production factices |
+| `make check-deploy` | `manage.py check --deploy --fail-level WARNING` avec des réglages de production factices |
+| `make backup` | sauvegarde de la base locale dans `sauvegardes/` |
+| `make image-test` | construit l'étape `test` de l'image et y joue la suite (Docker requis) |
 
-Cibles à créer : `pre-commit`, `scripts/fetch_vendor.sh`, Docker / `bootstrap`, `backup` / `restore`, et la démo des phases suivantes (votes, discussions).
+En production (voir `docs/deploiement.md`) : `./deploy/deployer.sh` met en ligne ; `manage.py restore <archive> [--confirmer]` restaure.
 
-Tâches cron (`deploy/crontab`, supercronic) :
+Cibles à créer : `pre-commit`, `scripts/fetch_vendor.sh`, la copie des sauvegardes hors du serveur, et la démo des phases suivantes (votes, discussions).
+
+Tâches planifiées (`deploy/crontab`, supercronic, fuseau Europe/Paris) :
 
 | Fréquence | Commande |
 |---|---|
-| Chaque minute | `close_due_votes` |
-| Toutes les 30 min | `refresh_external_calendars` |
-| Chaque nuit | `purge_presences` et `ideas_mark_done` (existent), `purge_ip_data`, `clearsessions`, `purge_contact_messages` |
-| 3 h | `backup` puis `restic` vers un stockage hors serveur |
+| 3 h | `backup` (rotation sur 30 jours) |
+| Chaque nuit | `purge_presences`, `purge_ip_data`, `clearsessions` |
+| Chaque heure | `ideas_mark_done` |
+| À ajouter avec leurs phases | `close_due_votes` (chaque minute), `refresh_external_calendars` (30 min), `purge_contact_messages` (nuit) |
 
 ## Conventions de code
 
@@ -225,7 +231,7 @@ Glossaire FR→EN : acteur=Actor · gestionnaire=manager (User avec droits) · e
 
   Un dépassement renvoie une page 429 en français.
 - Les IP ne figurent jamais dans les données métier. Elles n'apparaissent que dans les journaux Caddy (30 jours), dans `RateLimitHit` sous forme d'empreinte, et dans `IPBlock` (30 jours au plus). Toutes sont purgées par `purge_ip_data`. Django ne journalise aucune IP.
-- La page « Données personnelles » (`/p/donnees-personnelles/`) indique la finalité, les responsables, les durées et les droits. L'anonymisation se fait sur demande, depuis l'écran de modération.
+- La page « Données personnelles » (`/p/donnees-personnelles/`) indique la finalité, les responsables, les durées et les droits. L'anonymisation se fait sur demande : aujourd'hui par l'action « Anonymiser » de l'admin des personnes (superuser), demain depuis l'écran de modération.
 - Sauvegarde quotidienne via `sqlite3.Connection.backup()` (jamais un `cp` sur une base en WAL), avec une archive des médias et un `manifest.json`. Rotation sur 30 jours, copie `restic` hors du serveur. Le bouton « Sauvegarde complète » est réservé au superuser.
 
 ## Tests obligatoires
@@ -290,11 +296,12 @@ Chacune est appliquée tant que le collectif n'a pas tranché. Indique-la en com
     - ADE désactivé ;
     - page publique limitée à la présentation et au contact ;
     - identification individuelle réévaluée après les 3 premiers votes.
-19. **Infrastructure (ouvert, ne pas trancher seul).** On s'en tient à SQLite + Docker comme le recommande le CDC. L'alternative serait de reprendre l'infrastructure d'Improliante (PostgreSQL, VPS, Nginx, systemd, déploiement par webhook), déjà éprouvée. À arbitrer avec le porteur du projet avant d'écrire la configuration de production.
+19. **Infrastructure : SQLite + Docker + Caddy** (décision du porteur du projet, 22/10/2026), la pile déjà éprouvée sur BD_ditor, plutôt que celle d'Improliante (PostgreSQL, Nginx, systemd).
+20. **HSTS sans « preload »** (`security.W021` réduit au silence) : l'inscription dans les navigateurs engage le domaine pour des mois. À reconsidérer une fois le domaine stable.
 
 ## Projets de référence (à consulter, pas à imiter)
 
-Le porteur du projet a deux autres projets dans `~/Dev/`. Ils contiennent des solutions déjà éprouvées et des pièges déjà rencontrés. **Ce ne sont pas des modèles à recopier.**
+Le porteur du projet a d'autres projets dans `~/Dev/` et sur GitHub. Ils contiennent des solutions déjà éprouvées et des pièges déjà rencontrés. **Ce ne sont pas des modèles à recopier.**
 
 Règles d'usage :
 - **Consulte-les pour une question précise**, pas avant chaque lot. La source de vérité reste le CDC, puis ce fichier.
@@ -313,6 +320,15 @@ Règles d'usage :
 | `apps/coeur/roles.py` | Centraliser les droits plutôt que disperser des `is_staff` | Rôles par groupe, nous par permissions fines : à adapter. |
 | `deploiement/` | Sauvegarde avec copie hors serveur, Nginx, systemd | Ses scripts visent PostgreSQL, pas SQLite. |
 | `CLAUDE.md`, `pilotage/` | Format des règles non négociables, journal par lot | — |
+
+**BD_ditor** (GitHub `Hsbtqemy/BD_ditor`, pas de clone local), FastAPI + SQLite, déployé en Docker + Caddy sur un VPS :
+
+| Où regarder | Pour quelle question | Prudence |
+|---|---|---|
+| `deploy/Dockerfile` | Étape `test` qui joue la suite dans l'image livrée | Image lourde (modèles ML) : seul le principe compte. |
+| `deploy/deployer.sh`, `deploy/veille-deploiement.sh`, `deploy/systemd/` | Gardes de déploiement, déploiement tiré par un timer, sans clé chez GitHub | Authelia et LDAP n'ont pas d'équivalent ici. |
+| `deploy/Caddyfile.derriere-proxy` | Caddy derrière un relais HTTPS existant | — |
+| `docs/deploiement-docker.md`, `docs/exploitation.md` | Pannes déjà rencontrées en production | — |
 
 **FoReLLISTS** (`~/Dev/FoReLLISTS`), SvelteKit + Supabase, **stack différente** : rien ne se copie, seule la logique se transpose.
 

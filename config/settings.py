@@ -115,7 +115,12 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+# En production, Caddy sert ce dossier directement (volume partagé, deploy/Caddyfile).
+STATIC_ROOT = Path(os.environ.get("DJANGO_STATIC_ROOT", BASE_DIR / "staticfiles"))
+
+# Sauvegardes quotidiennes (commande `backup`), conservées 30 jours.
+BACKUP_DIR = Path(os.environ.get("DJANGO_BACKUP_DIR", BASE_DIR / "sauvegardes"))
+BACKUP_KEEP_DAYS = 30
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -135,11 +140,31 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 if ENV == "prod":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
+    # La sonde de santé du conteneur interroge gunicorn en HTTP, sans passer par Caddy.
+    SECURE_REDIRECT_EXEMPT = [r"^sante/$"]
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Noms de fichiers statiques versionnés (app.3f2a9c.css) : Caddy peut les garder en
+    # cache un an, et une mise à jour ne mélange jamais l'ancien JS et le nouveau HTML.
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "apps.core.storage.StaticStorage"},
+    }
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # Pas de « preload » : l'inscription dans les navigateurs engage le domaine pour des
+    # mois et se défait mal. À décider avec le collectif une fois le domaine stable.
+    SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
 # Formulaire public de proposition (fiche du POC, « Anti-spam »).
 PROPOSAL_MIN_FILL_SECONDS = 3
 PROPOSAL_RATE_LIMIT = (5, 3600)  # 5 propositions par heure et par adresse IP
+
+# Journaux : erreurs sur la sortie standard, jamais d'adresse IP (CLAUDE.md « Sécurité et
+# RGPD »). gunicorn tourne sans journal d'accès et Caddy sans directive `log`.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "WARNING"},
+}

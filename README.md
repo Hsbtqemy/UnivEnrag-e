@@ -10,7 +10,12 @@ Ce qui existe :
   - modération des propositions reçues, demandes de publication, réservations de salles à valider ;
   - sur chaque événement : confirmer, publier, verrouiller, restaurer une version ;
   - dans la programmation : confirmer (à l'unité ou par sélection, bloqué par les seuls conflits de salle) et publier ;
-  - administration (`/gestion/admin/`) : comptes et droits, code d'accès, journal d'activité (administrateur principal seulement), salles, événements.
+  - administration (`/gestion/admin/`) : comptes et droits, code d'accès, journal d'activité (administrateur principal seulement), salles, événements, anonymisation d'une personne ;
+  - sauvegarde complète à télécharger (`/gestion/sauvegarde/`, administrateur principal).
+
+## Mettre en ligne
+
+Docker + Caddy + SQLite, sauvegarde chaque nuit : voir [docs/deploiement.md](docs/deploiement.md). En bref, sur le serveur : `cp .env.exemple .env`, le remplir, puis `./deploy/deployer.sh`.
 
 ## Démarrer
 
@@ -39,13 +44,17 @@ Pour créer le vrai compte de l'administrateur principal : `uv run python manage
 ```bash
 make test    # tests (règles métier, étanchéité du public, anti-spam, API)
 make lint    # ruff + migrations à jour
+make check-deploy   # réglages de production
+make image-test     # la suite jouée dans l'image Docker (Docker requis)
 ```
 
 ## Organisation
 
 ```
 config/          réglages (DJANGO_ENV=dev|test|prod), URL
-apps/core/       réglages du site, code d'accès (@public_view), en-têtes de sécurité, limitation de débit (IP hachée), anti-spam, dates
+deploy/          Caddyfile, crontab, point d'entrée de l'image, script de déploiement
+Dockerfile, compose.yaml   image (base / test / runtime) et conteneurs app, cron, caddy
+apps/core/       réglages du site, code d'accès (@public_view), en-têtes de sécurité, limitation de débit (IP hachée), anti-spam, dates, sauvegarde/restauration, /sante/
 apps/actors/     Actor : une personne qui agit sous son nom, sans compte ; nom retenu par le navigateur
 apps/audit/      journal d'activité des comptes de gestion (ajout seul)
 apps/accounts/   comptes de gestion, 7 droits, double authentification

@@ -1,0 +1,13 @@
+# Tâches planifiées, lancées par supercronic dans le conteneur `cron` (fuseau : TZ).
+# Une ligne par tâche ; chaque commande écrit son bilan dans les journaux du conteneur.
+
+# Sauvegarde de la base, rotation sur 30 jours (/data/sauvegardes).
+0 3 * * * python /app/manage.py backup
+
+# Données personnelles à durée limitée.
+30 3 * * * python /app/manage.py purge_presences
+35 3 * * * python /app/manage.py purge_ip_data
+40 3 * * * python /app/manage.py clearsessions
+
+# Idées dont l'événement est passé → « Réalisée » (toutes les heures, c'est peu coûteux).
+5 * * * * python /app/manage.py ideas_mark_done

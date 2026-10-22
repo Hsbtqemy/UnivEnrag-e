@@ -1,0 +1,64 @@
+# Le site du collectif : trois conteneurs, une base SQLite dans un volume.
+#   app    le site (gunicorn), applique les migrations au démarrage
+#   cron   les tâches planifiées (supercronic), même image
+#   caddy  HTTPS automatique (Let's Encrypt), fichiers statiques, relais vers `app`
+#
+# Réglages dans `.env` (voir `.env.exemple`) ; mode d'emploi : docs/deploiement.md.
+
+name: collectif
+
+x-site: &site
+  build:
+    context: .
+    target: runtime
+  image: collectif:latest
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    DJANGO_ALLOWED_HOSTS: ${SITE_DOMAINE:?SITE_DOMAINE manque dans .env}
+    # Caddy remplace l'en-tête X-Forwarded-For : il est sûr de le lire (limitation de débit).
+    DJANGO_TRUST_X_FORWARDED_FOR: "1"
+
+services:
+  app:
+    <<: *site
+    command: ["web"]
+    volumes:
+      - donnees:/data
+      - statiques:/srv/static
+    expose:
+      - "8000"
+
+  cron:
+    <<: *site
+    command: ["cron"]
+    volumes:
+      - donnees:/data
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_DOMAINE: ${SITE_DOMAINE}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - statiques:/srv/static:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  donnees:      # base SQLite et sauvegardes : à copier hors du serveur
+  statiques:    # CSS, JS, bibliothèques ; régénérés à chaque démarrage
+  caddy_data:   # certificats HTTPS
+  caddy_config:

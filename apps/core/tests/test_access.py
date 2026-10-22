@@ -1,9 +1,14 @@
 """Code d'accès commun (CLAUDE.md ACC-1) et non-indexation de la partie interne."""
 
-import pytest
-from django.urls import reverse
+import io
+from datetime import timedelta
 
-from apps.core.models import SiteSettings
+import pytest
+from django.core.management import call_command
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.core.models import RateLimitHit, SiteSettings
 from conftest import ACCESS_CODE, login_verified
 
 pytestmark = pytest.mark.django_db
@@ -98,3 +103,25 @@ def test_robots_txt_only_allows_public_part(client, db):
     assert "Allow: /p/" in body
     assert "Disallow: /\n" in body
     assert "Disallow: /p/suivi/" in body
+
+
+def test_health_is_public_and_checks_the_database(client, db):
+    response = client.get("/sante/")
+    assert (response.status_code, response.content) == (200, b"ok\n")
+    assert "no-cache" in response["Cache-Control"]
+
+
+def test_privacy_page_is_public_and_shows_contact(client, site):
+    site.privacy_contact = "donnees@collectif.example"
+    site.save()
+    body = client.get("/p/donnees-personnelles/").content.decode()
+    assert "donnees@collectif.example" in body
+    assert "60 jours" in body
+
+
+def test_purge_ip_data_command(db):
+    old = RateLimitHit.objects.create(bucket="access_code", key_hash="x")
+    RateLimitHit.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=31))
+    RateLimitHit.objects.create(bucket="access_code", key_hash="y")
+    call_command("purge_ip_data", stdout=io.StringIO())
+    assert list(RateLimitHit.objects.values_list("key_hash", flat=True)) == ["y"]

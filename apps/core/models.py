@@ -31,6 +31,12 @@ class SiteSettings(models.Model):
     """Réglages du site, en un seul exemplaire (pk = 1)."""
 
     collective_name = models.CharField("nom du collectif", max_length=120, default="Le collectif")
+    privacy_contact = models.CharField(
+        "contact pour les données personnelles",
+        max_length=200,
+        blank=True,
+        help_text="Affiché sur la page « Données personnelles » : une adresse, un nom, un lieu.",
+    )
     access_code_hash = models.CharField(max_length=128, blank=True)
     # Empreinte posée dans le cookie des navigateurs : la changer invalide tous les cookies
     # d'un coup (CLAUDE.md ACC-1), sans jamais y mettre le code lui-même.

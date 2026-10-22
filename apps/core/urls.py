@@ -8,4 +8,6 @@ urlpatterns = [
     path("", views.root, name="root"),
     path("acces/", views.access_code, name="access"),
     path("robots.txt", views.robots_txt, name="robots"),
+    path("sante/", views.health, name="health"),
+    path("p/donnees-personnelles/", views.privacy, name="privacy"),
 ]

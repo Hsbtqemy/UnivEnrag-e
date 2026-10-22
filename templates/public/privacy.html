@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Données personnelles — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<h1>Données personnelles</h1>
+<div class="prose">
+  <p>Ce site sert au fonctionnement de {{ site.collective_name }} : un agenda commun, des idées, des sondages de dates et une page publique. Il est hébergé hors de l'université. Il n'utilise ni publicité, ni outil de mesure d'audience, ni ressource chargée depuis un autre site, et n'envoie aucun e-mail.</p>
+
+  <h2>Responsable et contact</h2>
+  <p>Le responsable est {{ site.collective_name }}.
+  {% if site.privacy_contact %}Pour toute question ou demande : {{ site.privacy_contact }}.{% else %}Pour toute question ou demande, adressez-vous aux organisateurs du collectif.{% endif %}</p>
+
+  <h2>Ce qui est enregistré, et pour combien de temps</h2>
+  <ul>
+    <li><strong>Votre nom ou pseudo</strong>, quand vous agissez dans l'espace des membres : il est affiché avec vos contributions (événements, idées, réactions, réponses aux sondages) et dans leur historique. Il est conservé tant que la contribution existe, sauf demande d'anonymisation.</li>
+    <li><strong>Vos présences annoncées</strong> (« je serai là », jour et lieu) : effacées automatiquement après 60 jours.</li>
+    <li><strong>Si vous proposez un événement depuis cette page publique</strong> : votre nom est affiché avec l'événement, y compris publiquement ; votre adresse e-mail n'est visible que des organisateurs, pour vous écrire depuis leur propre messagerie si besoin. Elle n'est jamais publiée ni utilisée par le site pour envoyer quoi que ce soit.</li>
+    <li><strong>Votre adresse IP</strong> n'est jamais enregistrée en clair. Une empreinte chiffrée sert à limiter les abus (essais répétés du code d'accès, envois en rafale) ; elle est effacée après 30 jours.</li>
+  </ul>
+
+  <h2>Cookies</h2>
+  <p>Le site ne pose que des cookies nécessaires à son fonctionnement : le code d'accès des membres (400 jours au plus), le nom ou pseudo que vous avez choisi, et, pour les comptes de gestion, la session de connexion et la protection des formulaires. Aucun cookie ne sert à vous suivre.</p>
+
+  <h2>Vos droits</h2>
+  <p>Vous pouvez demander à consulter, corriger ou faire anonymiser ce qui vous concerne : votre nom est alors remplacé par « Anonyme » dans toutes vos contributions. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+</div>
+{% endblock %}

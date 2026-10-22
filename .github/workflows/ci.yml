@@ -1,0 +1,44 @@
+# Vérifications à chaque envoi : lint, tests (dont la restauration d'une sauvegarde),
+# réglages de production, et la suite jouée DANS l'image Docker.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.21"
+      - run: uv sync --frozen
+      - run: make lint
+      - run: uv run pytest -q
+      - run: make check-deploy
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Suite dans l'image
+        run: |
+          docker build --target test -t collectif:test .
+          docker run --rm collectif:test
+      - name: Image livrée (crontab vérifiée à la construction)
+        run: docker build --target runtime -t collectif:latest .
+      - name: Le site démarre et répond
+        run: |
+          docker run -d --name essai -e DJANGO_SECRET_KEY=verification-du-deploiement-pas-un-vrai-secret-0123456789abcdefghij \
+            -e DJANGO_ALLOWED_HOSTS=localhost collectif:latest
+          for i in $(seq 1 45); do  # première sonde après 30 s
+            status=$(docker inspect -f '{{.State.Health.Status}}' essai)
+            [ "$status" = healthy ] && exit 0
+            sleep 2
+          done
+          docker logs essai
+          exit 1

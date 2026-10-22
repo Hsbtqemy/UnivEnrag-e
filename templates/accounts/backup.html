@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Sauvegarde complète — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'accounts:gestion_home' %}">← Gestion</a></p>
+<h1>Sauvegarde complète</h1>
+<p class="lead">Une copie de toute la base : événements, idées, noms, e-mails des porteurs, journal et comptes de gestion (mots de passe chiffrés). Gardez-la en lieu sûr.</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="button">Créer et télécharger une sauvegarde</button>
+</form>
+<section aria-labelledby="recentes">
+  <h2 id="recentes">Sauvegardes sur le serveur</h2>
+  <p class="hint">Faites chaque nuit à 3 h et gardées 30 jours. La restauration se fait sur le serveur (voir la documentation de déploiement).</p>
+  {% if archives %}
+  <ul>{% for archive in archives %}<li>{{ archive.name }}</li>{% endfor %}</ul>
+  {% else %}
+  <p class="empty">Aucune pour l'instant.</p>
+  {% endif %}
+</section>
+{% endblock %}

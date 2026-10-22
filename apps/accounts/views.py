@@ -3,18 +3,19 @@ from base64 import b32encode
 
 import segno
 from django import forms
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 from django_otp import login as otp_login
 
 from apps.audit import audit
-from apps.core import ratelimit
+from apps.core import backup, ratelimit
 
 from . import two_factor
-from .capabilities import CAPABILITY_LABELS, capabilities_of, is_manager
+from .capabilities import CAPABILITY_LABELS, capabilities_of, is_manager, require_superuser
 
 HOME = "/gestion/"
 
@@ -105,3 +106,17 @@ def gestion_home(request):
         label for code, label in CAPABILITY_LABELS.items() if code in capabilities_of(request.user)
     ]
     return render(request, "accounts/gestion_home.html", {"capability_labels": labels})
+
+
+@require_superuser
+@never_cache
+def backup_download(request):
+    """« Sauvegarde complète » : réservée au superuser, car elle contient les empreintes
+    des mots de passe (CLAUDE.md ACC-4, décision 16)."""
+    if request.method == "POST":
+        archive = backup.create()
+        audit.log(request.user, "core.backup_downloaded", name=archive.name)
+        return FileResponse(archive.open("rb"), as_attachment=True, filename=archive.name)
+    archives = settings.BACKUP_DIR.glob(f"{backup.PREFIX}*{backup.SUFFIX}")
+    recent = sorted(archives, reverse=True)[:10]
+    return render(request, "accounts/backup.html", {"archives": recent})

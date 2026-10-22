@@ -1,7 +1,9 @@
 from django import forms
+from django.db import DatabaseError, connection
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from . import access, ratelimit
@@ -71,3 +73,23 @@ def robots_txt(request):
         "Disallow: /",
     ]
     return HttpResponse("\n".join(lines) + "\n", content_type="text/plain")
+
+
+@require_GET
+@never_cache
+@access.public_view
+def health(request):
+    """Sonde du conteneur et du script de déploiement : la base répond-elle ?"""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except DatabaseError:
+        return HttpResponse("base indisponible\n", status=503, content_type="text/plain")
+    return HttpResponse("ok\n", content_type="text/plain")
+
+
+@require_GET
+@access.public_view
+def privacy(request):
+    """Finalité, responsables, durées et droits (CLAUDE.md « Sécurité et RGPD »)."""
+    return render(request, "public/privacy.html", {"site": SiteSettings.get()})
