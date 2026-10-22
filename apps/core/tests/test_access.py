@@ -80,7 +80,7 @@ def test_root_sends_visitors_to_public_agenda_and_members_home(client, member_cl
 
 
 def test_root_for_visitor(client, site):
-    assert client.get("/")["Location"] == "/p/agenda/"
+    assert client.get("/")["Location"] == "/p/"
 
 
 def test_logged_in_manager_needs_no_code(client, site, admin_user):

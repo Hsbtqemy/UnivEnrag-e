@@ -13,5 +13,6 @@ urlpatterns = [
     path("", include("apps.agenda.urls")),
     path("", include("apps.presences.urls")),
     path("", include("apps.polls.urls")),
+    path("", include("apps.public.urls")),
     path("gestion/admin/", admin.site.urls),
 ]

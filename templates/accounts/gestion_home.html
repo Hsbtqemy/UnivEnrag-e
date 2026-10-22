@@ -8,6 +8,9 @@
   {% if "moderate" in capabilities %}<li><a href="{% url 'ideas:moderation' %}">Modération des propositions</a><span>Accepter ou écarter les propositions reçues de l'extérieur.</span></li>{% endif %}
   {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a><span>Confirmer les événements placés par les membres, salle par salle.</span></li>{% endif %}
   {% if "manage_rooms" in capabilities %}<li><a href="{% url 'agenda:room_requests' %}">Réservations de salles à valider</a><span>Les demandes dans les salles soumises à validation.</span></li>{% endif %}
+  {% if "manage_public" in capabilities %}<li><a href="{% url 'public:presentation' %}">Présentation du collectif</a><span>Le texte qui ouvre la page publique.</span></li>
+  <li><a href="{% url 'admin:public_newspost_changelist' %}">Actualités</a><span>Écrire, publier ou dépublier les actualités de la page publique.</span></li>
+  <li><a href="{% url 'admin:public_contactmessage_changelist' %}?handled_at__isempty=1">Messages de contact à traiter</a><span>Les messages reçus par le formulaire public.</span></li>{% endif %}
   {% if "manage_agenda" in capabilities or "manage_public" in capabilities %}<li><a href="{% url 'agenda:public_requests' %}">Demandes de publication</a><span>Les événements que des membres souhaitent voir sur l'agenda public.</span></li>{% endif %}
   {% if user.is_superuser %}<li><a href="{% url 'accounts:backup' %}">Sauvegarde complète</a><span>Télécharger toute la base, comptes de gestion compris.</span></li>{% endif %}
   <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load markdown %}
+{% block title %}Présentation — Gestion — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'accounts:gestion_home' %}">← Gestion</a></p>
+<h1>Présentation du collectif</h1>
+<p class="lead">Ce texte ouvre la <a href="{% url 'public:home' %}">page publique</a>.</p>
+{% if preview is not None %}
+<section class="callout" aria-labelledby="apercu">
+  <h2 id="apercu">Aperçu (pas encore enregistré)</h2>
+  <div class="prose">{{ preview|markdown }}</div>
+</section>
+{% endif %}
+<form method="post" class="form">
+  {% csrf_token %}
+  {% include "includes/field.html" with field=form.presentation %}
+  <p class="actions">
+    <button type="submit" name="apercu" value="1" class="button button--secondary">Aperçu</button>
+    <button type="submit" class="button">Enregistrer</button>
+  </p>
+</form>
+{% endblock %}

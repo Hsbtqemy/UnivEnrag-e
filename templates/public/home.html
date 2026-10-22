@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load markdown %}
+{% block title %}{{ site.collective_name }}{% endblock %}
+{% block content %}
+<h1>{{ site.collective_name }}</h1>
+{% if site.presentation %}
+<div class="prose presentation">{{ site.presentation|markdown }}</div>
+{% endif %}
+
+<div class="public-home">
+  <section aria-labelledby="a-venir">
+    <h2 id="a-venir">Prochains rendez-vous</h2>
+    {% if events %}
+    <ul class="event-list">
+      {% for event in events %}
+      <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+        <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+        <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
+        <p class="event-card__meta">{{ event.place_label }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">Aucun rendez-vous public annoncé pour l'instant.</p>
+    {% endif %}
+    <p><a href="{% url 'agenda:public_list' %}">Tout l'agenda</a> · <a href="{% url 'agenda:public_ics' %}">s'y abonner (iCal)</a></p>
+  </section>
+
+  <section aria-labelledby="actualites">
+    <h2 id="actualites">Actualités</h2>
+    {% if news %}
+    <ul class="news-list">
+      {% for post in news %}
+      <li>
+        <p class="meta">{{ post.published_at|date:"j F Y" }}</p>
+        <h3><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h3>
+        {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <p><a href="{% url 'public:news_list' %}">Toutes les actualités</a> · <a href="{% url 'public:news_feed' %}">s'y abonner (RSS)</a></p>
+    {% else %}
+    <p class="empty">Pas encore d'actualité.</p>
+    {% endif %}
+  </section>
+</div>
+
+<aside class="callout">
+  <p>Vous voulez organiser quelque chose avec nous ? <a href="{% url 'ideas:propose' %}">Proposez un événement</a>. Une question ? <a href="{% url 'public:contact' %}">Écrivez-nous</a>.</p>
+</aside>
+{% endblock %}

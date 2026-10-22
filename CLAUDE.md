@@ -18,6 +18,7 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
   - **Lot D fait** (choix du porteur du projet, 22/10/2026) : **présences plutôt qu'indisponibilités**. Chacun annonce « je serai là » par demi-journée (matin, après-midi, soir) avec un lieu par jour (`/presences/ma-semaine/`, bouton « reprendre ma semaine précédente », pas de règle récurrente) ; tableau « Qui est là ? » (`/presences/`). Présences purgées après 60 jours (`purge_presences`, à planifier). **Sondage de dates** avancé de la phase 2 (app `polls`, nominatif, « oui » / « si besoin ») : « Fixer ce créneau » ouvre le formulaire d'événement pré-rempli et clôt le sondage.
   - **Lot E fait** : idées des membres (`/idees/`). Une proposition extérieure est une `Idea` d'origine `external` qui passe d'abord par `pending` (modération) ; acceptée, elle devient `new` et suit le cycle commun `new`/`preparing`/`abandoned` (à la main) → `planned` → `done` (automatiques). Champs du CDC §4 (type, espace, format, durée, public, intervenants pressentis, besoins, contraintes, créneaux), réactions `Reaction` à bascule, tableau triable (date, intéressés, titre) et filtrable (type, espace, public, statut ; « En cours » par défaut). Un créneau précis place l'idée en provisoire, **non publique** pour une idée de membre (publique par défaut pour une proposition extérieure, comme au POC). « Créer un événement depuis cette idée » (`/agenda/nouveau/?idee=<id>`) donne un provisoire lié. Abandonner annule les placements provisoires. `Event.idea` est une clé étrangère (décision 13). **La programmation est ouverte aux membres** (`/agenda/programmation/`) : placer et déplacer sous son nom, filtres type/espace/public/statut, avertissements désactivables ; confirmer et publier restent sous `/gestion/api/` (droits « agenda » / « page publique »). L'e-mail du porteur n'est envoyé qu'aux comptes de gestion. Intervenants : `Event.speakers` (noms libres, pré-remplis depuis l'idée) et `speakers_public` (PUB-1 : page et flux publics seulement si coché) ; avertissement AGE-7 « mêmes intervenants à la même heure », toutes salles confondues, noms comparés après normalisation, aussi en direct dans le formulaire. Une restauration ignore les champs absents d'une version ancienne. Reste à faire : l'avertissement « même public visé en parallèle » (l'événement n'a pas de champ public), pas de commentaires sur les idées (fil `discussions`, phase 3), pas de transformation en proposition (IDE-4, phase 2).
   - **Site installable** : `/manifest.webmanifest`, service worker `/sw.js` (enregistré en production seulement : en développement, les statiques gardent des noms fixes), page `/hors-ligne/`. Le service worker ne met **jamais** une page en cache (espace des membres, téléphones partagés) : seulement les statiques versionnés et la page hors ligne. Icônes générées par `scripts/icones.py`.
+  - **Page publique (avancée de la phase 3, décision du porteur du projet, 22/10/2026 : tout en Django, pas d'Astro)** : app `public`. `/` envoie les visiteurs vers `/p/` (présentation en Markdown assaini par `core/markdown.py`, prochains rendez-vous, dernières actualités) ; actualités `NewsPost` (`/p/actualites/`, flux RSS `/p/actualites.rss`, publiées seulement via `NewsPost.objects.public()`, jamais supprimées) ; contact `/p/contact/` (`ContactMessage`, e-mail facultatif, anti-spam et limitation de débit, purgé au bout d'un an par `purge_contact_messages`) ; présentation éditée dans `/gestion/presentation/` avec aperçu. Le tout réservé au droit « Page publique ». Les visiteurs et les membres ont chacun leur navigation. Reste à faire : décisions publiques (phase 2), demande d'adhésion.
   - **Guides** dans le site : `/aide/` pour les membres (lien dans le pied de page et l'accueil), `/gestion/aide/` pour les gestionnaires. Les tenir à jour quand un libellé ou un parcours change.
   - **Session de gestion sans TOTP** : hors de `/gestion/`, elle est traitée comme anonyme (`RequireTwoFactorMiddleware`), donc sans aucun droit ni dispense de code d'accès (ACC-3).
   - `request.actor` vaut `None` sans nom ni compte (résolu tout de suite, pas d'objet paresseux).
@@ -53,8 +54,8 @@ Les bibliothèques JS et CSS tierces vont dans `static/vendor/<lib>-<version>/`.
 
 - **Aucune ressource externe** : ni CDN, ni Google Fonts, ni script, police ou CSS tiers chargé à distance. La CSP le garantit, ne l'assouplis jamais pour un domaine extérieur. Le navigateur ne contacte jamais un service tiers : même les calendriers externes (ADE) sont récupérés par le serveur. (§9)
 - **Aucun envoi d'e-mail** : pas de serveur mail, pas de notification, pas de lien envoyé. L'information passe par le site, l'iCal et le RSS. (§7, §9)
-- **Un seul champ e-mail** : celui du porteur d'un événement proposé (PUB-2). Il sert à le contacter hors du site, et à rien d'autre. Ailleurs, pas de champ e-mail.
-- **Aucun traceur** ni outil d'analyse. Les seules données personnelles collectées sont le nom ou pseudo, et l'e-mail du porteur d'un événement. (§9, modifié par PUB-2)
+- **Deux champs e-mail seulement** : celui du porteur d'un événement proposé (PUB-2, obligatoire) et celui, **facultatif**, du formulaire de contact public (décision du porteur du projet, 22/10/2026 : « on connaît les gens », on retrouve ceux qui n'en laissent pas). Tous deux servent à répondre hors du site, et à rien d'autre. Ailleurs, pas de champ e-mail.
+- **Aucun traceur** ni outil d'analyse. Les seules données personnelles collectées sont le nom ou pseudo, l'e-mail du porteur d'un événement et celui, facultatif, d'un message de contact. (§9, modifié par PUB-2)
 - **Licence libre** (§9). Aucune dépendance n'impose de licence particulière : le choix revient au collectif (voir les décisions).
 - **SQLite** comme base unique, sans service supplémentaire à exploiter.
 - **Interface en français**, accessibilité RGAA / WCAG 2.1 AA, responsive, installable (manifest + service worker). Toute action courante doit se faire en **3 clics au plus** depuis l'accueil. (§9)
@@ -144,9 +145,9 @@ Tâches planifiées (`deploy/crontab`, supercronic, fuseau Europe/Paris) :
 | Fréquence | Commande |
 |---|---|
 | 3 h | `backup` (rotation sur 30 jours) |
-| Chaque nuit | `purge_presences`, `purge_ip_data`, `clearsessions` |
+| Chaque nuit | `purge_presences`, `purge_ip_data`, `clearsessions`, `purge_contact_messages` |
 | Chaque heure | `ideas_mark_done` |
-| À ajouter avec leurs phases | `close_due_votes` (chaque minute), `refresh_external_calendars` (30 min), `purge_contact_messages` (nuit) |
+| À ajouter avec leurs phases | `close_due_votes` (chaque minute), `refresh_external_calendars` (30 min) |
 
 ## Conventions de code
 
@@ -300,6 +301,7 @@ Chacune est appliquée tant que le collectif n'a pas tranché. Indique-la en com
     - identification individuelle réévaluée après les 3 premiers votes.
 19. **Infrastructure : SQLite + Docker + Caddy** (décision du porteur du projet, 22/10/2026), la pile déjà éprouvée sur BD_ditor, plutôt que celle d'Improliante (PostgreSQL, Nginx, systemd).
 20. **HSTS sans « preload »** (`security.W021` réduit au silence) : l'inscription dans les navigateurs engage le domaine pour des mois. À reconsidérer une fois le domaine stable.
+21. **Messages de contact gardés un an** (`CONTACT_KEEP_DAYS`), puis effacés : `# DÉCISION (à confirmer)`.
 
 ## Projets de référence (à consulter, pas à imiter)
 

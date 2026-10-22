@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load markdown %}
+{% block title %}{{ post.title }} — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<article class="news-detail">
+  <p class="back"><a href="{% url 'public:news_list' %}">← Toutes les actualités</a></p>
+  <h1>{{ post.title }}</h1>
+  <p class="meta">{{ post.published_at|date:"j F Y" }}</p>
+  {% if post.summary %}<p class="lead">{{ post.summary }}</p>{% endif %}
+  <div class="prose">{{ post.body|markdown }}</div>
+</article>
+{% endblock %}

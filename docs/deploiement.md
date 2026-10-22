@@ -133,4 +133,5 @@ Le bloc Nginx n'écrit pas de journal d'accès (`access_log off`) et transmet l'
 | 3 h 30 | `purge_presences` | efface les présences de plus de 60 jours |
 | 3 h 35 | `purge_ip_data` | efface les empreintes d'IP de plus de 30 jours |
 | 3 h 40 | `clearsessions` | efface les sessions expirées |
+| 3 h 45 | `purge_contact_messages` | efface les messages de contact de plus d'un an |
 | chaque heure | `ideas_mark_done` | passe à « Réalisée » les idées dont l'événement est passé |

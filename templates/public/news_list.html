@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Actualités — {{ site.collective_name }}{% endblock %}
+{% block head %}<link rel="alternate" type="application/rss+xml" title="Actualités" href="{% url 'public:news_feed' %}">{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Actualités</h1>
+  <p><a href="{% url 'public:news_feed' %}">S'abonner (RSS)</a></p>
+</div>
+{% if news %}
+<ul class="news-list">
+  {% for post in news %}
+  <li>
+    <p class="meta">{{ post.published_at|date:"j F Y" }}</p>
+    <h2><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h2>
+    {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Pas encore d'actualité.</p>
+{% endif %}
+{% endblock %}

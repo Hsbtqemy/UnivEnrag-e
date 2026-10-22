@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Contact — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<h1>Nous écrire</h1>
+<p class="lead">Votre message arrive aux organisateurs du collectif. Le site n'envoie aucun e-mail : on vous répond depuis notre propre messagerie si vous laissez une adresse.</p>
+<form method="post" class="form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  {% include "includes/field.html" with field=form.name %}
+  {% include "includes/field.html" with field=form.email %}
+  {% include "includes/field.html" with field=form.message %}
+  <div class="trap" aria-hidden="true">
+    <label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>
+    <input type="text" name="{{ form.website.html_name }}" id="{{ form.website.id_for_label }}" tabindex="-1" autocomplete="off">
+  </div>
+  {{ form.rendered_at }}
+  <button type="submit" class="button">Envoyer</button>
+</form>
+<p class="hint">Ce que nous faisons de votre message : <a href="{% url 'core:privacy' %}">données personnelles</a>.</p>
+{% endblock %}

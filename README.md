@@ -4,7 +4,7 @@ Site du collectif décrit dans [le cahier des charges](docs/Cahier%20des%20charg
 
 Ce qui existe :
 
-- **Public, sans code** : agenda public (`/p/agenda/`, vue liste ou semaine, flux `/p/agenda.ics`) et formulaire de proposition d'événement (`/p/proposer/`) avec lien de suivi personnel. Le site n'envoie aucun e-mail. Voir [la fiche du POC](docs/poc-calendrier-propositions.md).
+- **Public, sans code** : page du collectif (`/p/` : présentation, prochains rendez-vous, actualités), agenda public (`/p/agenda/`, semaine et liste, flux `/p/agenda.ics`), actualités (`/p/actualites/`, flux RSS), contact (`/p/contact/`), proposition d'événement (`/p/proposer/`) avec lien de suivi personnel. Le site n'envoie aucun e-mail. Voir [la fiche du POC](docs/poc-calendrier-propositions.md).
 - **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), agenda (`/agenda/`) où chacun crée, modifie, déplace ou annule un événement sous son nom, avec historique ; salles (`/salles/`, avec leur planning), abonnement iCal à l'agenda, à un espace ou à une salle (`/agenda/abonnements/`) ; « Qui est là ? » (`/presences/`), où chacun annonce ses demi-journées de présence ; sondages de dates (`/sondages/`), dont le meilleur créneau devient un événement ; idées et projets (`/idees/`) : dépôt en trois champs, réactions « Je participe », « Je peux aider », « Intéressé·e », tableau triable et filtrable, statuts ; programmation en colonnes par salle (`/agenda/programmation/`), où chacun place les idées et déplace les provisoires ; nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
 - **Gestion** (`/gestion/`), comptes de l'administrateur principal et des gestionnaires, avec double authentification :
   - modération des propositions reçues, demandes de publication, réservations de salles à valider ;
@@ -62,6 +62,7 @@ apps/rooms/      Room, OpeningHours : salles du collectif, horaires, réservatio
 apps/spaces/     Space : groupes de travail (nom, couleur, archivage)
 apps/presences/  Presence : « je serai là », par demi-journée et lieu
 apps/polls/      Poll, PollSlot, PollAnswer : sondages de dates
+apps/public/     NewsPost, ContactMessage : actualités et contact de la page publique
 apps/ideas/      Idea, IdeaSlot, Reaction : idées des membres et propositions extérieures (modération, suivi)
 apps/agenda/     Event : agenda collectif, conflits, programmation, pages publiques, iCal
 templates/       gabarits (public, membres, gestion)

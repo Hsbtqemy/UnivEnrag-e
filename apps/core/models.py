@@ -31,6 +31,14 @@ class SiteSettings(models.Model):
     """Réglages du site, en un seul exemplaire (pk = 1)."""
 
     collective_name = models.CharField("nom du collectif", max_length=120, default="Le collectif")
+    presentation = models.TextField(
+        "présentation du collectif",
+        blank=True,
+        help_text=(
+            "Affichée en tête de la page publique. Mise en forme simple : **gras**, "
+            "*italique*, listes (- …), liens [texte](https://…)."
+        ),
+    )
     privacy_contact = models.CharField(
         "contact pour les données personnelles",
         max_length=200,

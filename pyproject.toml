@@ -8,6 +8,8 @@ dependencies = [
     "django-otp>=1.5",
     "gunicorn>=23",
     "icalendar>=6.0",
+    "markdown>=3.10,<3.11.1",
+    "nh3>=0.3",
     "segno>=1.6",
 ]
 

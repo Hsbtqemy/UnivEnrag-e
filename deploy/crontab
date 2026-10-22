@@ -8,6 +8,7 @@
 30 3 * * * python /app/manage.py purge_presences
 35 3 * * * python /app/manage.py purge_ip_data
 40 3 * * * python /app/manage.py clearsessions
+45 3 * * * python /app/manage.py purge_contact_messages
 
 # Idées dont l'événement est passé → « Réalisée » (toutes les heures, c'est peu coûteux).
 5 * * * * python /app/manage.py ideas_mark_done

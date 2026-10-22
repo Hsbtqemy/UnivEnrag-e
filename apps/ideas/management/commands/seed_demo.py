@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils import timezone
 
 from apps.actors.models import Actor
 from apps.actors.services import get_or_create_for_name
@@ -24,6 +25,7 @@ from apps.polls import services as polls_services
 from apps.polls.models import Poll
 from apps.presences import services as presences_services
 from apps.presences.models import Presence
+from apps.public.models import ContactMessage, NewsPost
 from apps.rooms.models import OpeningHours, Room
 from apps.spaces.models import Space
 
@@ -45,6 +47,8 @@ class Command(BaseCommand):
         with transaction.atomic():
             if reset:
                 # Dans l'ordre des clés protégées : ce qui cite une personne avant elle.
+                ContactMessage.objects.all().delete()
+                NewsPost.objects.all().delete()
                 Poll.objects.all().delete()
                 Reaction.objects.all().delete()
                 Presence.objects.all().delete()
@@ -63,12 +67,20 @@ class Command(BaseCommand):
             code = os.environ.get("DEMO_ACCESS_CODE", "collectif2026")
             site = SiteSettings.get()
             site.collective_name = "Collectif UnivEnrag-e"
-            site.save(update_fields=["collective_name"])
+            site.presentation = (
+                "Nous sommes un collectif de personnels et d'étudiant·es de l'université. "
+                "Nous organisons des **séminaires**, des projections, des repas partagés, et "
+                "nous prenons position sur nos conditions de travail et d'études.\n\n"
+                "Nos rendez-vous sont ouverts : venez nous rencontrer, ou "
+                "[proposez un événement](/p/proposer/)."
+            )
+            site.save(update_fields=["collective_name", "presentation"])
             site.set_access_code(code)
             rooms = self._rooms()
             self._ideas(rooms, admin)
             spaces = self._members(rooms)
             self._member_ideas(rooms, spaces, admin)
+            self._public(admin)
         self.stdout.write(self.style.SUCCESS("Démo chargée."))
         self.stdout.write(f"Code d'accès des membres : {code}")
         if password:
@@ -201,6 +213,40 @@ class Command(BaseCommand):
             space=working,
         )
         return working, seminar
+
+    def _public(self, admin):
+        """Deux actualités publiées et un brouillon."""
+        now = timezone.now()
+        NewsPost.objects.create(
+            title="Le programme de l'automne est en ligne",
+            slug="programme-automne",
+            summary="Séminaires, projections et repas partagés : tout est dans l'agenda.",
+            body=(
+                "Le programme de l'automne est en ligne. Au menu :\n\n"
+                "- un séminaire sur l'écriture collective ;\n"
+                "- une projection-débat ;\n"
+                "- un repas partagé de rentrée.\n\n"
+                "Abonnez-vous à l'agenda pour ne rien manquer."
+            ),
+            is_published=True,
+            published_at=now - timedelta(days=2),
+            author=admin,
+        )
+        NewsPost.objects.create(
+            title="Notre texte sur les conditions de travail",
+            slug="texte-conditions-de-travail",
+            summary="Le collectif a adopté un texte sur la charge de travail.",
+            body="Après plusieurs réunions, le texte est prêt. Il sera présenté en assemblée.",
+            is_published=True,
+            published_at=now - timedelta(days=9),
+            author=admin,
+        )
+        NewsPost.objects.create(
+            title="Brouillon : bilan de l'année",
+            slug="bilan-annee",
+            body="À compléter.",
+            author=admin,
+        )
 
     def _member_ideas(self, rooms, spaces, admin):
         """Idées déposées par des membres, dans tous les états, avec des réactions."""

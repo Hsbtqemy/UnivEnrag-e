@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.agenda",
     "apps.presences",
     "apps.polls",
+    "apps.public",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -159,6 +160,9 @@ if ENV == "prod":
 # Formulaire public de proposition (fiche du POC, « Anti-spam »).
 PROPOSAL_MIN_FILL_SECONDS = 3
 PROPOSAL_RATE_LIMIT = (5, 3600)  # 5 propositions par heure et par adresse IP
+CONTACT_RATE_LIMIT = (5, 3600)  # 5 messages de contact par heure et par adresse IP
+# DÉCISION (à confirmer) : messages de contact effacés après un an (purge_contact_messages).
+CONTACT_KEEP_DAYS = 365
 
 # Journaux : erreurs sur la sortie standard, jamais d'adresse IP (CLAUDE.md « Sécurité et
 # RGPD »). gunicorn tourne sans journal d'accès et Caddy sans directive `log`.

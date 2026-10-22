@@ -15,7 +15,7 @@ from . import access, ratelimit
 from .models import SiteSettings
 
 INTERNAL_HOME = "/accueil/"
-PUBLIC_HOME = "/p/agenda/"
+PUBLIC_HOME = "/p/"
 
 # Échecs du code d'accès : 10 par tranche de 10 minutes et par IP. La limite est large
 # car tout un bâtiment universitaire peut partager la même adresse.
