@@ -91,7 +91,9 @@ Pour restaurer une archive venue d'ailleurs, la copier d'abord dans le volume : 
 
 Sur ce serveur, le Nginx de l'hôte tient déjà les ports 80 et 443 et gère les certificats (certbot) pour les autres sites. Le Caddy du collectif écoute donc seulement en local, et Nginx lui relaie le trafic : c'est la même organisation que BD_ditor.
 
-**Sans nom de domaine**, `sslip.io` en tient lieu : `collectif.83-228-221-204.sslip.io` résout vers `83.228.221.204` sans rien configurer. Réserve : `sslip.io` n'est pas un suffixe public, donc le quota hebdomadaire de Let's Encrypt est partagé avec tous ses utilisateurs. Si certbot répond `too many certificates` / `rateLimited`, réessayer quelques heures plus tard. Le jour d'un vrai domaine, il suffit de changer `SITE_DOMAINE` et le `server_name`, puis de relancer certbot.
+**Adresse : `collectif.edito-revue.fr`.** Préalable : chez le gestionnaire DNS de `edito-revue.fr`, ajouter un enregistrement `A` (`collectif` → `83.228.221.204`, et `AAAA` si le serveur a une IPv6), puis vérifier qu'il répond : `dig +short collectif.edito-revue.fr`.
+
+*Solution de repli, sans toucher au DNS* : `collectif.83-228-221-204.sslip.io` résout vers le serveur sans rien configurer. Mais `sslip.io` n'est pas un suffixe public : le quota de Let's Encrypt est partagé avec tous ses utilisateurs, et certbot peut refuser (`rateLimited`). Il faut alors réessayer plus tard. Changer d'adresse ensuite revient à modifier `SITE_DOMAINE` et le `server_name`, puis à relancer certbot. Les abonnements iCal déjà pris seront à refaire.
 
 1. Vérifier qu'un port local est libre (BD_ditor utilise 8080) :
    ```bash
@@ -99,20 +101,20 @@ Sur ce serveur, le Nginx de l'hôte tient déjà les ports 80 et 443 et gère le
    ```
 2. Dans le clone, régler `.env` **une fois pour toutes**. Sans `COMPOSE_FILE`, un `docker compose up -d` tapé à la main tenterait de prendre 80 et 443, à côté de Nginx (leçon de BD_ditor) :
    ```
-   SITE_DOMAINE=collectif.83-228-221-204.sslip.io
+   SITE_DOMAINE=collectif.edito-revue.fr
    COMPOSE_FILE=compose.yaml:compose.derriere-proxy.yaml
    PORT_LOCAL=8081
    DJANGO_SECRET_KEY=…
    ```
    Contrôle : `docker compose config | grep Caddyfile.derriere-proxy` doit afficher une ligne.
-3. Démarrer : `./deploy/deployer.sh`. Le contrôle final échoue tant que Nginx n'est pas réglé : c'est attendu la première fois. `curl -H "Host: collectif.83-228-221-204.sslip.io" http://127.0.0.1:8081/sante/` doit déjà répondre `ok`.
+3. Démarrer : `./deploy/deployer.sh`. Le contrôle final échoue tant que Nginx n'est pas réglé : c'est attendu la première fois. `curl -H "Host: collectif.edito-revue.fr" http://127.0.0.1:8081/sante/` doit déjà répondre `ok`.
 4. Nginx : copier `deploy/nginx-hote.conf.exemple` dans `/etc/nginx/sites-available/collectif`, y vérifier le nom et le port, puis :
    ```bash
    sudo ln -s /etc/nginx/sites-available/collectif /etc/nginx/sites-enabled/
    sudo nginx -t && sudo systemctl reload nginx     # nginx -t TOUJOURS avant : une erreur coupe aussi les autres sites
-   sudo certbot --nginx -d collectif.83-228-221-204.sslip.io
+   sudo certbot --nginx -d collectif.edito-revue.fr
    ```
-5. `https://collectif.83-228-221-204.sslip.io/sante/` répond `ok` : passer à « Créer l'administrateur principal » ci-dessus.
+5. `https://collectif.edito-revue.fr/sante/` répond `ok` : passer à « Créer l'administrateur principal » ci-dessus.
 
 Le bloc Nginx n'écrit pas de journal d'accès (`access_log off`) et transmet l'adresse du client par `X-Forwarded-For $remote_addr`, sans reprendre un en-tête fourni par le client.
 

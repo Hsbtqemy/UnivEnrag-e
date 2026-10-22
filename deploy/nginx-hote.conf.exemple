@@ -6,7 +6,7 @@
 # Nginx termine le HTTPS et relaie vers le Caddy du collectif (127.0.0.1:PORT_LOCAL).
 server {
     listen 80;
-    server_name collectif.83-228-221-204.sslip.io;   # = SITE_DOMAINE
+    server_name collectif.edito-revue.fr;   # = SITE_DOMAINE
 
     # Ni journal d'accès ni adresse IP conservée (CLAUDE.md, RGPD) ; les erreurs restent.
     access_log off;
