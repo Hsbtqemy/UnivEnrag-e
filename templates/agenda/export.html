@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Exporter ou imprimer l'agenda — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'agenda:calendar' %}">← Agenda</a></p>
+<h1>Exporter ou imprimer l'agenda</h1>
+<p class="lead">Choisissez une période, puis imprimez-la (ou enregistrez-la en PDF depuis la fenêtre d'impression), ou téléchargez-la pour un tableur ou un agenda personnel.</p>
+<form method="get" class="form" novalidate>
+  {% if form.non_field_errors %}<div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <fieldset>
+    <legend>Période et filtres</legend>
+    <div class="field-row field-row--2">
+      {% include "includes/field.html" with field=form.du %}
+      {% include "includes/field.html" with field=form.au %}
+    </div>
+    <div class="field-row field-row--2">
+      {% include "includes/field.html" with field=form.salle %}
+      {% include "includes/field.html" with field=form.espace %}
+    </div>
+    <div class="field field--checkbox">{{ form.provisoires }} <label for="{{ form.provisoires.id_for_label }}">{{ form.provisoires.label }}</label></div>
+    <div class="field field--checkbox">{{ form.annules }} <label for="{{ form.annules.id_for_label }}">{{ form.annules.label }}</label></div>
+  </fieldset>
+  <p class="actions">
+    <button type="submit" name="format" value="imprimer" class="button">Imprimer</button>
+    <button type="submit" name="format" value="csv" class="button button--secondary">Télécharger pour un tableur (CSV)</button>
+    <button type="submit" name="format" value="ics" class="button button--secondary">Télécharger pour un agenda (.ics)</button>
+  </p>
+</form>
+<p class="hint">Pour un agenda toujours à jour plutôt qu'une copie, <a href="{% url 'agenda:subscriptions' %}">abonnez-vous</a>.</p>
+{% endblock %}

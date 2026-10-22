@@ -4,7 +4,10 @@
 {% block head %}<link rel="stylesheet" href="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.css' %}">{% endblock %}
 {% block main_class %}page page--wide{% endblock %}
 {% block content %}
-<h1>Agenda</h1>
+<div class="page-head">
+  <h1>Agenda</h1>
+  <p class="actions"><a class="button button--secondary" href="{% url 'agenda:public_print' %}">Imprimer</a> <a class="button button--secondary" href="{% url 'agenda:public_download' %}">Télécharger (.ics)</a> <a class="button button--secondary" href="{% url 'agenda:public_ics' %}">S'abonner</a></p>
+</div>
 
 {# La grille de la semaine, sur grand écran ; sur téléphone, la liste suffit (CDC §3). #}
 <section class="public-week" aria-labelledby="semaine">

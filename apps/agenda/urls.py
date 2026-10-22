@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import feeds, member_views, views
+from . import exports, feeds, member_views, views
 
 app_name = "agenda"
 
@@ -23,6 +23,7 @@ urlpatterns = [
     path("gestion/salles/", member_views.room_requests, name="room_requests"),
     path("salles/", member_views.rooms, name="rooms"),
     path("agenda/abonnements/", feeds.subscriptions, name="subscriptions"),
+    path("agenda/exporter/", exports.export, name="export"),
     path("flux/<str:token>/agenda.ics", feeds.feed_all, name="feed_all"),
     path("flux/<str:token>/espace/<slug:slug>.ics", feeds.feed_space, name="feed_space"),
     path("flux/<str:token>/salle/<int:pk>.ics", feeds.feed_room, name="feed_room"),
@@ -32,6 +33,8 @@ urlpatterns = [
     path("p/agenda/evenements.json", views.public_events_json, name="public_events_json"),
     path("p/agenda/<int:pk>/", views.public_detail, name="public_detail"),
     path("p/agenda.ics", views.public_ics, name="public_ics"),
+    path("p/agenda/imprimer/", exports.public_print, name="public_print"),
+    path("p/agenda/telecharger.ics", exports.public_download, name="public_download"),
     # Programmation : placer et déplacer pour tous, confirmer et publier pour les habilités
     path("agenda/programmation/", views.programming, name="programming"),
     path(

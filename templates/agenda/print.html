@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Agenda à imprimer — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="no-print actions">
+  <a href="{% if internal %}{% url 'agenda:export' %}{% else %}{% url 'agenda:public_list' %}{% endif %}">← Retour</a>
+  <button type="button" class="button" id="imprimer" hidden>Imprimer</button>
+</p>
+<h1>{{ site.collective_name }} — agenda</h1>
+<p class="meta">{{ summary|capfirst }} · édité le {% now "j F Y" %}</p>
+
+{% for day, events in days %}
+<section class="print-day" aria-labelledby="jour-{{ forloop.counter }}">
+  <h2 id="jour-{{ forloop.counter }}">{{ day|date:"l j F Y"|capfirst }}</h2>
+  <table class="table print-table">
+    <thead>
+      <tr><th scope="col">Horaire</th><th scope="col">Événement</th><th scope="col">Lieu</th><th scope="col">Porté par</th></tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+      <tr class="print-row--{{ event.status }}">
+        <td class="print-time">{{ event.start|time:"H:i" }}–{{ event.end|time:"H:i" }}</td>
+        <td><strong>{{ event.title }}</strong>{% if internal and event.status != "confirmed" %} <em>({{ event.get_status_display|lower }})</em>{% endif %}
+          {% if event.speakers %}{% if internal or event.speakers_public %}<br><span class="meta">Intervenants : {{ event.speakers }}</span>{% endif %}{% endif %}</td>
+        <td>{{ event.place_label }}</td>
+        <td>{{ event.owner.display_name }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% empty %}
+<p class="empty">Aucun événement sur cette période.</p>
+{% endfor %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/print.js' %}"></script>{% endblock %}
