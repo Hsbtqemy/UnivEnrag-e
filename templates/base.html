@@ -24,7 +24,7 @@
           <li><a href="{% url 'presences:board' %}"{% if app == 'presences' %} aria-current="page"{% endif %}>Qui est là ?</a></li>
           <li><a href="{% url 'polls:list' %}"{% if app == 'polls' %} aria-current="page"{% endif %}>Sondages</a></li>
           {% endif %}
-          <li><a href="{% url 'agenda:public_list' %}"{% if current == 'agenda:public_list' or current == 'agenda:public_week' %} aria-current="page"{% endif %}>Agenda public</a></li>
+          <li><a href="{% url 'agenda:public_list' %}"{% if current == 'agenda:public_list' %} aria-current="page"{% endif %}>Agenda public</a></li>
           <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'ideas:propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>
           {% if is_manager %}
           <li><a href="{% url 'accounts:gestion_home' %}"{% if current == 'accounts:gestion_home' %} aria-current="page"{% endif %}>Gestion</a></li>

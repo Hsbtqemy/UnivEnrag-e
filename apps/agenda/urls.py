@@ -27,7 +27,7 @@ urlpatterns = [
     path("flux/<str:token>/espace/<slug:slug>.ics", feeds.feed_space, name="feed_space"),
     path("flux/<str:token>/salle/<int:pk>.ics", feeds.feed_room, name="feed_room"),
     # Agenda public
-    path("p/agenda/", views.public_list, name="public_list"),
+    path("p/agenda/", views.public_agenda, name="public_list"),
     path("p/agenda/semaine/", views.public_week, name="public_week"),
     path("p/agenda/evenements.json", views.public_events_json, name="public_events_json"),
     path("p/agenda/<int:pk>/", views.public_detail, name="public_detail"),

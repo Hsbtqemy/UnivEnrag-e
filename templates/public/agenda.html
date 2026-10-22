@@ -1,32 +1,45 @@
 {% extends "base.html" %}
-{% block title %}Agenda — Agenda du collectif{% endblock %}
+{% load static %}
+{% block title %}Agenda — {{ site.collective_name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.css' %}">{% endblock %}
+{% block main_class %}page page--wide{% endblock %}
 {% block content %}
-<div class="page-head">
-  <h1>Prochains événements</h1>
-  <p class="view-switch" aria-label="Affichage">
-    <span aria-current="true">Liste</span>
-    <a href="{% url 'agenda:public_week' %}">Semaine</a>
-  </p>
-</div>
+<h1>Agenda du collectif</h1>
 
-{% for day, events in days %}
-<section class="day" aria-labelledby="jour-{{ forloop.counter }}">
-  <h2 id="jour-{{ forloop.counter }}" class="day__title">{{ day|date:"l j F Y"|capfirst }}</h2>
-  <ul class="event-list">
-    {% for event in events %}
-    <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
-      <p class="event-card__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
-      <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
-      <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
-    </li>
-    {% endfor %}
-  </ul>
+{# La grille de la semaine, sur grand écran ; sur téléphone, la liste suffit (CDC §3). #}
+<section class="public-week" aria-labelledby="semaine">
+  <h2 id="semaine" class="visually-hidden">Semaine en calendrier</h2>
+  <div id="calendrier" class="calendar"></div>
+  <p class="hint">Cliquez sur un événement pour l'ouvrir. Tous les événements à venir sont aussi listés ci-dessous.</p>
 </section>
-{% empty %}
-<p class="empty">Aucun événement à venir pour l'instant.</p>
-{% endfor %}
+
+<section aria-labelledby="prochains">
+  <h2 id="prochains">Prochains événements</h2>
+  {% for day, events in days %}
+  <section class="day" aria-labelledby="jour-{{ forloop.counter }}">
+    <h3 id="jour-{{ forloop.counter }}" class="day__title">{{ day|date:"l j F Y"|capfirst }}</h3>
+    <ul class="event-list">
+      {% for event in events %}
+      <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+        <p class="event-card__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+        <h4 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h4>
+        <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% empty %}
+  <p class="empty">Aucun événement à venir pour l'instant.</p>
+  {% endfor %}
+</section>
 
 <aside class="callout">
   <p>Vous voulez organiser quelque chose ? <a href="{% url 'ideas:propose' %}">Proposez un événement</a> : le collectif lui trouvera une date et une salle.</p>
 </aside>
+{{ calendar_config|json_script:"calendar-config" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.js' %}"></script>
+<script src="{% static 'js/calendar-common.js' %}"></script>
+<script src="{% static 'js/agenda-public.js' %}"></script>
 {% endblock %}

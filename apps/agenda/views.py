@@ -3,7 +3,7 @@ from datetime import timedelta
 from itertools import groupby
 
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
@@ -27,24 +27,23 @@ from .models import Event
 
 @require_GET
 @public_view
-def public_list(request):
+def public_agenda(request):
+    """Agenda public : la semaine en calendrier, puis la liste des prochains événements."""
     today = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
     events = list(ical.public_events().filter(end__gte=today))
     days = [
         (day, list(items))
         for day, items in groupby(events, key=lambda e: timezone.localtime(e.start).date())
     ]
-    return render(request, "public/agenda_list.html", {"days": days})
+    config = {"eventsUrl": reverse("agenda:public_events_json")}
+    return render(request, "public/agenda.html", {"days": days, "calendar_config": config})
 
 
 @require_GET
 @public_view
 def public_week(request):
-    config = {
-        "eventsUrl": reverse("agenda:public_events_json"),
-        "listUrl": reverse("agenda:public_list"),
-    }
-    return render(request, "public/agenda_week.html", {"calendar_config": config})
+    """Ancienne adresse de la vue semaine, peut-être déjà partagée : tout est sur une page."""
+    return redirect("agenda:public_list", permanent=True)
 
 
 @require_GET

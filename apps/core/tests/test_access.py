@@ -70,9 +70,7 @@ def test_cookie_does_not_contain_the_code(member_client):
     assert ACCESS_CODE not in member_client.cookies["acces"].value
 
 
-@pytest.mark.parametrize(
-    "name", ["agenda:public_list", "agenda:public_week", "agenda:public_ics", "ideas:propose"]
-)
+@pytest.mark.parametrize("name", ["agenda:public_list", "agenda:public_ics", "ideas:propose"])
 def test_public_pages_need_no_code(client, site, name):
     assert client.get(reverse(name)).status_code == 200
 

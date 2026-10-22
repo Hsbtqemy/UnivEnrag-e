@@ -393,3 +393,9 @@ h2 { font-size: 1.25rem; }
   .idea-table--stack th, .idea-table--stack td { border: 0; padding: .15rem .25rem; }
   .idea-table--stack td[data-label]::before { content: attr(data-label) " : "; color: var(--muted); }
 }
+
+/* Agenda public : grille de la semaine sur grand écran seulement. */
+.public-week { margin-bottom: 2rem; }
+@media (max-width: 640px) {
+  .public-week { display: none; }
+}

@@ -69,8 +69,21 @@ def test_detail_page_of_unpublished_event_is_404(client, events, key):
     assert response.status_code == 404
 
 
+def test_public_agenda_shows_week_grid_and_list_on_one_page(client, events):
+    body = client.get(reverse("agenda:public_list")).content.decode()
+    assert 'id="calendrier"' in body
+    assert "Prochains événements" in body
+    assert events["visible"].title in body
+    assert events["provisional"].title not in body
+
+
+def test_old_week_address_redirects_permanently(client, db):
+    response = client.get("/p/agenda/semaine/")
+    assert (response.status_code, response["Location"]) == (301, reverse("agenda:public_list"))
+
+
 def test_public_pages_load_no_external_resource(client, events):
-    response = client.get(reverse("agenda:public_week"))
+    response = client.get(reverse("agenda:public_list"))
     assert "default-src 'self'" in response["Content-Security-Policy"]
     body = response.content.decode()
     assert "http://" not in body.replace("http://testserver", "")
