@@ -26,7 +26,7 @@
   </fieldset>
 
   <details class="more"{% if event or form.errors %} open{% endif %}>
-    <summary>Plus de détails <span class="optional">(espace, salle, lieu, description, visio, publication)</span></summary>
+    <summary>Plus de détails <span class="optional">(espace, salle, lieu, description, intervenants, visio, publication)</span></summary>
     <fieldset>
       {% include "includes/field.html" with field=form.space %}
       {% include "includes/field.html" with field=form.room %}
@@ -37,6 +37,9 @@
       {% endif %}
       {% include "includes/field.html" with field=form.place_text %}
       {% include "includes/field.html" with field=form.description %}
+      {% include "includes/field.html" with field=form.speakers %}
+      <div id="verification-intervenants" class="room-check" role="status" aria-live="polite"></div>
+      <div class="field field--checkbox">{{ form.speakers_public }} <label for="{{ form.speakers_public.id_for_label }}">{{ form.speakers_public.label }}</label></div>
       {% include "includes/field.html" with field=form.visio_link %}
       <div class="field field--checkbox">{{ form.wants_public }} <label for="{{ form.wants_public.id_for_label }}">{{ form.wants_public.label }}</label>
         {% if form.wants_public.help_text %}<p class="field__help">{{ form.wants_public.help_text }}</p>{% endif %}</div>

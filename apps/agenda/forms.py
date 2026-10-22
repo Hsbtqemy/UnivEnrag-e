@@ -51,6 +51,15 @@ class EventForm(ActorNameFormMixin, forms.Form):
     description = forms.CharField(
         label="Description", required=False, widget=forms.Textarea(attrs={"rows": 4})
     )
+    speakers = forms.CharField(
+        label="Intervenants",
+        max_length=300,
+        required=False,
+        help_text="Noms séparés par des virgules. Signalé si l'un d'eux est attendu ailleurs.",
+    )
+    speakers_public = forms.BooleanField(
+        label="Afficher les intervenants sur l'agenda public", required=False
+    )
     visio_link = forms.URLField(label="Lien visio", required=False, assume_scheme="https")
     wants_public = forms.BooleanField(required=False)
     override = forms.BooleanField(
@@ -61,7 +70,16 @@ class EventForm(ActorNameFormMixin, forms.Form):
     revision = forms.IntegerField(widget=forms.HiddenInput, required=False)
 
     ESSENTIAL = ["title", "day", "start_time", "end_time"]
-    DETAILS = ["space", "room", "place_text", "description", "visio_link", "wants_public"]
+    DETAILS = [
+        "space",
+        "room",
+        "place_text",
+        "description",
+        "speakers",
+        "speakers_public",
+        "visio_link",
+        "wants_public",
+    ]
 
     def __init__(self, *args, can_publish=False, can_override=False, current_space=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -108,6 +126,8 @@ class EventForm(ActorNameFormMixin, forms.Form):
             "place_text": data["place_text"],
             "description": data["description"],
             "visio_link": data["visio_link"],
+            "speakers": data["speakers"],
+            "speakers_public": data["speakers_public"],
             "wants_public": data["wants_public"],
         }
 
@@ -124,6 +144,8 @@ class EventForm(ActorNameFormMixin, forms.Form):
             "place_text": event.place_text,
             "description": event.description,
             "visio_link": event.visio_link,
+            "speakers": event.speakers,
+            "speakers_public": event.speakers_public,
             "wants_public": event.is_public or event.public_requested,
             "revision": event.revision,
         }

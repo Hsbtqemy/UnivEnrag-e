@@ -96,21 +96,21 @@ def check_slot(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
     room = Room.objects.filter(pk=request.GET.get("room") or None).first()
     exclude = request.GET.get("exclude") or None
-    if not (start and end and room) or end <= start:
-        return JsonResponse({"conflicts": [], "closed": "", "approval": False, "warnings": []})
-    conflicts = [
-        f"« {e.title} » ({services.describe_slot(e)})"
-        for e in services.room_conflicts(room, start, end, exclude_id=exclude)
-    ]
-    closed = "" if room.is_open(start, end) else str(services.RoomClosedError(room))
-    return JsonResponse(
-        {
-            "conflicts": conflicts,
-            "closed": closed,
-            "approval": room.needs_approval,
-            "warnings": services.slot_warnings(room, start, end, exclude_id=exclude),
-        }
+    result = {"conflicts": [], "closed": "", "approval": False, "warnings": [], "speakers": []}
+    if not (start and end) or end <= start:
+        return JsonResponse(result)
+    result["speakers"] = services.speaker_warnings(
+        request.GET.get("speakers", ""), start, end, exclude_id=exclude
     )
+    if room is not None:
+        result["conflicts"] = [
+            f"« {e.title} » ({services.describe_slot(e)})"
+            for e in services.room_conflicts(room, start, end, exclude_id=exclude)
+        ]
+        result["closed"] = "" if room.is_open(start, end) else str(services.RoomClosedError(room))
+        result["approval"] = room.needs_approval
+        result["warnings"] = services.room_warnings(room, start, end, exclude_id=exclude)
+    return JsonResponse(result)
 
 
 # --- Création, modification, annulation --------------------------------------------------
@@ -150,6 +150,7 @@ def _initial_from_idea(idea) -> dict:
     initial = {
         "title": idea.title,
         "description": idea.description,
+        "speakers": idea.speakers_text,
         "day": start.date(),
         "start_time": start.time(),
         "end_time": end.time(),
@@ -254,7 +255,7 @@ def new(request):
 
 
 def detail(request, pk):
-    event = get_object_or_404(Event.objects.select_related("owner", "room"), pk=pk)
+    event = get_object_or_404(Event.objects.select_related("owner", "room", "idea"), pk=pk)
     changes = list(event.changes.select_related("actor", "user"))
     for change in changes:
         change.lines = history.describe(change)

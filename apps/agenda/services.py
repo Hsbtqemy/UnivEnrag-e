@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.capabilities import has_capability
+from apps.actors.services import normalize_name
 from apps.audit import audit
 
 from . import history
@@ -82,19 +83,53 @@ def room_conflicts(room, start, end, *, exclude_id=None):
 
 
 def warnings_for(event) -> list[str]:
-    """Avertissements non bloquants : la salle est aussi visée par un autre événement."""
+    """Avertissements non bloquants (AGE-7) : même salle, ou mêmes intervenants."""
     if event.status == Event.Status.CANCELLED:
         return []
-    return slot_warnings(event.room, event.start, event.end, exclude_id=event.pk)
+    return slot_warnings(
+        event.room, event.start, event.end, exclude_id=event.pk, speakers=event.speakers
+    )
 
 
-def slot_warnings(room, start, end, *, exclude_id=None) -> list[str]:
+def _speaker_keys(text: str) -> dict[str, str]:
+    """Noms normalisés (casse, accents) → nom tel qu'écrit."""
+    names = (name.strip() for name in text.split(","))
+    return {normalize_name(name): name for name in names if normalize_name(name)}
+
+
+def slot_warnings(room, start, end, *, exclude_id=None, speakers="") -> list[str]:
+    return room_warnings(room, start, end, exclude_id=exclude_id) + speaker_warnings(
+        speakers, start, end, exclude_id=exclude_id
+    )
+
+
+def _others(start, end, exclude_id):
+    others = Event.objects.active().overlapping(start, end)
+    return others.exclude(pk=exclude_id) if exclude_id is not None else others
+
+
+def room_warnings(room, start, end, *, exclude_id=None) -> list[str]:
+    """La salle est aussi visée par un autre événement sur ce créneau."""
     if room is None:
         return []
-    others = Event.objects.active().filter(room=room).overlapping(start, end)
-    if exclude_id is not None:
-        others = others.exclude(pk=exclude_id)
+    others = _others(start, end, exclude_id).filter(room=room)
     return [f"Même salle que « {o.title} » ({describe_slot(o)})" for o in others]
+
+
+def speaker_warnings(speakers, start, end, *, exclude_id=None) -> list[str]:
+    """Un même intervenant est attendu ailleurs au même moment, quelle que soit la salle."""
+    wanted = _speaker_keys(speakers)
+    if not wanted:
+        return []
+    warnings = []
+    for other in _others(start, end, exclude_id).exclude(speakers=""):
+        shared = [wanted[key] for key in _speaker_keys(other.speakers) if key in wanted]
+        if shared:
+            warnings.append(
+                f"Mêmes intervenants que « {other.title} » ({describe_slot(other)}) : "
+                + ", ".join(shared)
+            )
+    return warnings
 
 
 def _check_slot(start, end):
@@ -213,6 +248,8 @@ def create(
     place_text="",
     description="",
     visio_link="",
+    speakers="",
+    speakers_public=False,
     wants_public=False,
     override=False,
     idea=None,
@@ -237,6 +274,8 @@ def create(
         place_text=place_text,
         description=description,
         visio_link=visio_link,
+        speakers=speakers,
+        speakers_public=speakers_public,
         status=status,
     )
     if status == Event.Status.CONFIRMED:
@@ -252,7 +291,8 @@ def create(
 
 
 def create_from_idea(idea, *, start, end, room, actor=None, user=None) -> Event:
-    """Place une idée dans le calendrier, en provisoire (hachuré), pré-remplie (IDE-3)."""
+    """Place une idée dans le calendrier, en provisoire (hachuré), pré-remplie : titre,
+    description, intervenants, salle (IDE-3)."""
     _check_slot(start, end)
     event = Event.objects.create(
         idea=idea,
@@ -260,6 +300,7 @@ def create_from_idea(idea, *, start, end, room, actor=None, user=None) -> Event:
         owner_email=idea.owner_email,
         title=idea.title,
         description=idea.description,
+        speakers=idea.speakers_text,
         start=start,
         end=end,
         room=room,
@@ -292,6 +333,8 @@ def update(
     place_text="",
     description="",
     visio_link="",
+    speakers="",
+    speakers_public=False,
     wants_public=None,
     override=False,
 ) -> Event:
@@ -310,6 +353,7 @@ def update(
     event.title, event.start, event.end, event.room = title, start, end, room
     event.space = space
     event.place_text, event.description, event.visio_link = place_text, description, visio_link
+    event.speakers, event.speakers_public = speakers, speakers_public
     if wants_public is not None:
         _apply_public_wish(event, wants_public, user)
     _save(

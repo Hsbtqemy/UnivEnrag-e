@@ -39,6 +39,9 @@ def build_calendar(events, *, base_url: str, name: str, detail_path, with_visio=
         item.add("summary", event.title)
         # Le nom du porteur est affiché, son e-mail jamais (CLAUDE.md PUB-2).
         description = f"Porté par {event.owner.display_name}"
+        # Flux public : intervenants seulement s'ils sont déclarés publics (PUB-1).
+        if event.speakers and (with_visio or event.speakers_public):
+            description += f"\nIntervenants : {event.speakers}"
         if with_visio and event.visio_link:
             description += f"\nVisio : {event.visio_link}"
         if event.description:
@@ -57,7 +60,7 @@ def public_calendar(events, *, base_url: str, name: str) -> bytes:
         base_url=base_url,
         name=name,
         detail_path=lambda e: f"/p/agenda/{e.pk}/",
-        with_visio=False,  # la fiche publique ne le montre pas non plus
+        with_visio=False,  # flux public : ni visio, ni intervenants non publics
     )
 
 

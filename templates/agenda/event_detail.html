@@ -14,9 +14,11 @@
     <div><dt>Où</dt><dd>{{ event.place_label }}{% if event.room_pending %} <span class="badge badge--locked">réservation en attente de validation</span>{% endif %}</dd></div>
     {% if event.space %}<div><dt>Espace</dt><dd><span class="space-dot" style="--space-color: {{ event.space.color }}"></span>{{ event.space.name }}</dd></div>{% endif %}
     <div><dt>Porté par</dt><dd>{{ event.owner.display_name }}</dd></div>
+    {% if event.speakers %}<div><dt>Intervenants</dt><dd>{{ event.speakers }}{% if not event.speakers_public %} <span class="meta">(non affichés sur l'agenda public)</span>{% endif %}</dd></div>{% endif %}
     {% if event.visio_link %}<div><dt>Visio</dt><dd><a href="{{ event.visio_link }}" rel="noopener nofollow">{{ event.visio_link }}</a></dd></div>{% endif %}
   </dl>
   {% if event.description %}<div class="prose">{{ event.description|linebreaks }}</div>{% endif %}
+  {% if event.idea and event.idea.status != "pending" and event.idea.status != "refused" %}<p class="meta">Issu de l'idée <a href="{% url 'ideas:detail' event.idea.pk %}">« {{ event.idea.title }} »</a>.</p>{% endif %}
 </article>
 
 <section class="actions-box" aria-labelledby="actions">

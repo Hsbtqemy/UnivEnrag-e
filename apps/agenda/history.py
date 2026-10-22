@@ -18,6 +18,8 @@ FIELD_LABELS = {
     "room_status": "réservation de salle",
     "space": "espace",
     "place_text": "lieu libre",
+    "speakers": "intervenants",
+    "speakers_public": "intervenants publics",
     "description": "description",
     "visio_link": "lien visio",
     "status": "statut",
@@ -37,6 +39,7 @@ RESTORABLE_FIELDS = [
     "room",
     "space",
     "place_text",
+    "speakers",
     "description",
     "visio_link",
 ]
@@ -77,6 +80,8 @@ def restore_values(change: EventChange) -> dict:
     """Valeurs à remettre en place pour revenir à l'état d'après `change`."""
     values = {}
     for name in RESTORABLE_FIELDS:
+        if name not in change.snapshot:
+            continue  # champ ajouté après cette version : on garde la valeur actuelle
         value = change.snapshot.get(name)
         if name in ("start", "end") and value:
             value = datetime.fromisoformat(value)

@@ -8,6 +8,7 @@
     <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
     <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
     <div><dt>Porté par</dt><dd>{{ event.owner.display_name }}</dd></div>
+    {% if event.speakers and event.speakers_public %}<div><dt>Intervenants</dt><dd>{{ event.speakers }}</dd></div>{% endif %}
   </dl>
   {% if event.description %}
   <div class="prose">{{ event.description|linebreaks }}</div>

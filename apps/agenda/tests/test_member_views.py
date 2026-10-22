@@ -205,7 +205,13 @@ def test_check_endpoint_reports_conflicts(member_client, event, at, room):
             "exclude": event.pk,
         },
     )
-    assert response.json() == {"conflicts": [], "closed": "", "approval": False, "warnings": []}
+    assert response.json() == {
+        "conflicts": [],
+        "closed": "",
+        "approval": False,
+        "warnings": [],
+        "speakers": [],
+    }
 
 
 def test_member_cannot_use_manager_actions(member_client, event):

@@ -69,6 +69,10 @@ class Event(models.Model):
         verbose_name="espace",
     )
     place_text = models.CharField("lieu libre", max_length=200, blank=True)
+    # Noms libres, séparés par des virgules. Sur l'agenda public seulement si
+    # `speakers_public` (CLAUDE.md PUB-1) ; à corriger à la main lors d'une anonymisation.
+    speakers = models.CharField("intervenants", max_length=300, blank=True)
+    speakers_public = models.BooleanField("intervenants affichés publiquement", default=False)
     visio_link = models.URLField("lien visio", blank=True)
     status = models.CharField(
         "statut", max_length=12, choices=Status.choices, default=Status.PROVISIONAL
@@ -108,6 +112,10 @@ class Event(models.Model):
         if self.room_id:
             return self.room.label
         return self.place_text or "Lieu à préciser"
+
+    @property
+    def speaker_names(self) -> list[str]:
+        return [name.strip() for name in self.speakers.split(",") if name.strip()]
 
     @property
     def room_pending(self) -> bool:
