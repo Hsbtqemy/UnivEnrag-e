@@ -16,6 +16,8 @@ from apps.accounts.capabilities import require_capability
 from apps.actors.resolvers import remember_name
 from apps.actors.services import get_or_create_for_name
 from apps.core.dates import from_wall_clock
+from apps.polls import services as polls_services
+from apps.polls.models import Poll, PollSlot
 from apps.rooms.models import Room
 from apps.spaces.models import Space
 
@@ -113,7 +115,28 @@ def check_slot(request):
 # --- Création, modification, annulation --------------------------------------------------
 
 
+def _poll_for(request):
+    """Création depuis un sondage de dates encore ouvert (`?sondage=<id>&creneau=<id>`)."""
+    poll_id = request.POST.get("sondage") or request.GET.get("sondage")
+    if not poll_id or not str(poll_id).isdigit():
+        return None
+    return Poll.objects.filter(pk=poll_id, is_closed=False).first()
+
+
 def _initial_for_new(request) -> dict:
+    poll = _poll_for(request)
+    slot = poll and PollSlot.objects.filter(poll=poll, pk=request.GET.get("creneau") or 0).first()
+    if slot:
+        start, end = timezone.localtime(slot.start), timezone.localtime(slot.end)
+        return {
+            "title": poll.title,
+            "description": poll.description,
+            "day": start.date(),
+            "start_time": start.time(),
+            "end_time": end.time(),
+            "room": poll.room,
+            "space": poll.space,
+        }
     source = request.GET.get("depuis")
     if source:
         # Duplication : le formulaire arrive pré-rempli, il ne reste qu'à ajuster la date.
@@ -158,6 +181,9 @@ def new(request):
         except services.EventError as error:
             form.add_error(None, str(error))
         else:
+            poll = _poll_for(request)
+            if poll is not None:
+                polls_services.close_with_event(poll, event)
             if event.public_requested:
                 messages.success(
                     request, f"« {event.title} » est créé. La publication est demandée."
@@ -168,7 +194,12 @@ def new(request):
     return render(
         request,
         "agenda/event_form.html",
-        {"form": form, "event": None, "check_url": reverse("agenda:check")},
+        {
+            "form": form,
+            "event": None,
+            "poll": _poll_for(request),
+            "check_url": reverse("agenda:check"),
+        },
     )
 
 

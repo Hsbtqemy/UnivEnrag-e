@@ -13,6 +13,8 @@ from apps.core.access import public_view
 from apps.core.dates import from_wall_clock, to_wall_clock
 from apps.ideas import services as ideas_services
 from apps.ideas.models import Idea
+from apps.polls.models import Poll
+from apps.presences import services as presences_services
 from apps.rooms.models import Room
 
 from . import ical, serializers, services
@@ -86,7 +88,16 @@ def home(request):
         .select_related("owner", "room")
         .order_by("start")[:20]
     )
-    return render(request, "agenda/home.html", {"events": events})
+    monday = presences_services.week_start(timezone.localdate())
+    return render(
+        request,
+        "agenda/home.html",
+        {
+            "events": events,
+            "open_polls": Poll.objects.filter(is_closed=False).select_related("owner")[:5],
+            "presence_count": presences_services.count_people(monday),
+        },
+    )
 
 
 # --- Gestion -----------------------------------------------------------------------------

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.title }} — Sondage — {{ site.collective_name }}{% endblock %}
+{% block main_class %}page page--wide{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'polls:list' %}">← Sondages</a></p>
+<h1>{{ poll.title }}</h1>
+<p class="meta">Proposé par {{ poll.owner.display_name }}{% if poll.space %} · espace {{ poll.space.name }}{% endif %}{% if poll.room %} · salle envisagée : {{ poll.room.name }}{% endif %} · {{ results.participants }} réponse{{ results.participants|pluralize }}</p>
+{% if poll.description %}<div class="prose">{{ poll.description|linebreaks }}</div>{% endif %}
+
+{% if poll.is_closed %}
+<p class="notice">Sondage clos.{% if poll.event %} L'événement est fixé : <a href="{% url 'agenda:detail' poll.event.pk %}">{{ poll.event.title }}, {{ poll.event.start|date:"l j F" }} à {{ poll.event.start|time:"H:i" }}</a>.{% endif %}</p>
+{% endif %}
+
+<div class="table-scroll">
+<table class="table poll-table">
+  <caption class="visually-hidden">Réponses par créneau</caption>
+  <thead>
+    <tr>
+      <th scope="col">Participant·e</th>
+      {% for r in results.slots %}
+      <th scope="col"{% if r.is_best %} class="best"{% endif %}>{{ r.slot.start|date:"D j F"|capfirst }}<br>{{ r.slot.start|time:"H:i" }}–{{ r.slot.end|time:"H:i" }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for name, answers in results.rows %}
+    <tr>
+      <th scope="row">{{ name }}</th>
+      {% for a in answers %}<td class="answer answer--{{ a|default:'no' }}">{% if a == "yes" %}Oui{% elif a == "maybe" %}Si besoin{% else %}<span class="visually-hidden">Non</span>{% endif %}</td>{% endfor %}
+    </tr>
+    {% empty %}
+    <tr><td colspan="{{ results.slots|length|add:1 }}" class="empty">Personne n'a encore répondu.</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <th scope="row">Total</th>
+      {% for r in results.slots %}
+      <td{% if r.is_best %} class="best"{% endif %}><strong>{{ r.yes }}</strong> oui{% if r.maybe %} · {{ r.maybe }} si besoin{% endif %}
+        {% if not poll.is_closed %}<br><a class="button button--small{% if not r.is_best %} button--secondary{% endif %}" href="{% url 'agenda:new' %}?sondage={{ poll.pk }}&amp;creneau={{ r.slot.pk }}">Fixer ce créneau</a>{% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+  </tfoot>
+</table>
+</div>
+
+{% if not poll.is_closed %}
+<section aria-labelledby="repondre">
+  <h2 id="repondre">Vos disponibilités</h2>
+  <form method="post" class="form">
+    {% csrf_token %}
+    <div class="answer-grid">
+      {% for slot, field in form.slot_fields %}
+      <fieldset class="answer-slot">
+        <legend>{{ slot.start|date:"l j F"|capfirst }}, {{ slot.start|time:"H:i" }}–{{ slot.end|time:"H:i" }}</legend>
+        {{ field }}
+      </fieldset>
+      {% endfor %}
+    </div>
+    {% include "includes/field.html" with field=form.author_name %}
+    <button type="submit" class="button">Enregistrer mes réponses</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

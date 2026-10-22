@@ -20,6 +20,10 @@ from apps.core.dates import combine
 from apps.core.models import SiteSettings
 from apps.ideas import services as ideas_services
 from apps.ideas.models import Idea, IdeaSlot
+from apps.polls import services as polls_services
+from apps.polls.models import Poll
+from apps.presences import services as presences_services
+from apps.presences.models import Presence
 from apps.rooms.models import OpeningHours, Room
 from apps.spaces.models import Space
 
@@ -40,6 +44,9 @@ class Command(BaseCommand):
             raise CommandError("La démo ne se charge pas en production.")
         with transaction.atomic():
             if reset:
+                # Dans l'ordre des clés protégées : ce qui cite une personne avant elle.
+                Poll.objects.all().delete()
+                Presence.objects.all().delete()
                 Event.objects.all().delete()
                 IdeaSlot.objects.all().delete()
                 Idea.objects.all().delete()
@@ -146,6 +153,42 @@ class Command(BaseCommand):
             room=big,
             space=seminar,
         )
+        # Présences annoncées cette semaine et la suivante.
+        this_monday = presences_services.week_start(today)
+        for name, plan in {
+            "Nora Diallo": [
+                (0, "morning", "Bât. A"),
+                (0, "afternoon", "Bât. A"),
+                (2, "morning", ""),
+            ],
+            "Hugo Petit": [(1, "afternoon", "Local du collectif"), (3, "morning", "Bât. C")],
+            "Inès Garnier": [(0, "afternoon", "Local du collectif"), (3, "evening", "")],
+        }.items():
+            actor = get_or_create_for_name(name)
+            for monday in (this_monday, this_monday + timedelta(days=7)):
+                presences_services.save_week(
+                    actor,
+                    monday,
+                    {(monday + timedelta(days=d), p): place for d, p, place in plan},
+                )
+
+        # Un sondage de dates en cours.
+        poll = polls_services.create(
+            actor=get_or_create_for_name("Léa Rousseau"),
+            title="Assemblée de rentrée",
+            description="Trouver une date pour l'assemblée générale.",
+            space=working,
+            room=big,
+            slots=[(at(1, 12), at(1, 14)), (at(2, 17), at(2, 19)), (at(4, 12), at(4, 14))],
+        )
+        first, second, third = poll.slots.all()
+        for name, answers in {
+            "Nora Diallo": {first.pk: "yes", third.pk: "maybe"},
+            "Hugo Petit": {first.pk: "yes", second.pk: "yes"},
+            "Inès Garnier": {second.pk: "maybe", third.pk: "yes"},
+        }.items():
+            polls_services.answer(poll, actor=get_or_create_for_name(name), answers=answers)
+
         # Salle de projection : soumise à validation, la réservation reste en attente.
         agenda_services.create(
             actor=get_or_create_for_name("Inès Garnier"),

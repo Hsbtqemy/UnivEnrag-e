@@ -9,6 +9,8 @@
       data-check-url="{{ check_url }}" data-exclude="{{ event.pk|default:'' }}">
   {% csrf_token %}
   {{ form.revision }}
+  {% if poll %}<input type="hidden" name="sondage" value="{{ poll.pk }}">
+  <p class="notice">Depuis le sondage « {{ poll.title }} » : il sera clos une fois l'événement créé.</p>{% endif %}
   {% if form.non_field_errors %}
   <div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>
   {% endif %}

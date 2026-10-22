@@ -13,20 +13,22 @@
   <header class="site-header">
     <div class="site-header__inner">
       <a class="site-name" href="/">{{ site.collective_name }}</a>
-      {% with current=request.resolver_match.url_name %}
+      {% with current=request.resolver_match.view_name app=request.resolver_match.app_name %}
       <nav aria-label="Navigation principale">
         <ul class="nav">
           {% if has_access %}
-          <li><a href="{% url 'agenda:home' %}"{% if current == 'home' %} aria-current="page"{% endif %}>Accueil</a></li>
-          <li><a href="{% url 'agenda:calendar' %}"{% if current == 'calendar' or current == 'detail' or current == 'new' or current == 'edit' %} aria-current="page"{% endif %}>Agenda</a></li>
-          <li><a href="{% url 'agenda:rooms' %}"{% if current == 'rooms' %} aria-current="page"{% endif %}>Salles</a></li>
+          <li><a href="{% url 'agenda:home' %}"{% if current == 'agenda:home' %} aria-current="page"{% endif %}>Accueil</a></li>
+          <li><a href="{% url 'agenda:calendar' %}"{% if current in 'agenda:calendar agenda:detail agenda:new agenda:edit agenda:subscriptions' %} aria-current="page"{% endif %}>Agenda</a></li>
+          <li><a href="{% url 'agenda:rooms' %}"{% if current == 'agenda:rooms' %} aria-current="page"{% endif %}>Salles</a></li>
+          <li><a href="{% url 'presences:board' %}"{% if app == 'presences' %} aria-current="page"{% endif %}>Qui est là ?</a></li>
+          <li><a href="{% url 'polls:list' %}"{% if app == 'polls' %} aria-current="page"{% endif %}>Sondages</a></li>
           {% endif %}
-          <li><a href="{% url 'agenda:public_list' %}"{% if current == 'public_list' or current == 'public_week' %} aria-current="page"{% endif %}>Agenda public</a></li>
-          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>
+          <li><a href="{% url 'agenda:public_list' %}"{% if current == 'agenda:public_list' or current == 'agenda:public_week' %} aria-current="page"{% endif %}>Agenda public</a></li>
+          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'ideas:propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>
           {% if is_manager %}
-          <li><a href="{% url 'accounts:gestion_home' %}"{% if current == 'gestion_home' %} aria-current="page"{% endif %}>Gestion</a></li>
+          <li><a href="{% url 'accounts:gestion_home' %}"{% if current == 'accounts:gestion_home' %} aria-current="page"{% endif %}>Gestion</a></li>
           {% elif not has_access %}
-          <li><a href="{% url 'core:access' %}"{% if current == 'access' %} aria-current="page"{% endif %}>Espace membres</a></li>
+          <li><a href="{% url 'core:access' %}"{% if current == 'core:access' %} aria-current="page"{% endif %}>Espace membres</a></li>
           {% endif %}
         </ul>
       </nav>

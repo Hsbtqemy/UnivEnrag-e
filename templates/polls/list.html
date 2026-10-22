@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Sondages de dates — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sondages de dates</h1>
+  <p><a class="button" href="{% url 'polls:new' %}">+ Nouveau sondage</a></p>
+</div>
+<p class="lead">Pour trouver le bon moment : proposez quelques créneaux, chacun coche ceux qui lui conviennent, et le meilleur devient un événement de l'agenda.</p>
+
+<h2>En cours</h2>
+<ul class="poll-list">
+  {% for poll in open_polls %}
+  <li><a href="{% url 'polls:detail' poll.pk %}">{{ poll.title }}</a> <span class="meta">· proposé par {{ poll.owner.display_name }} · {{ poll.slots.all|length }} créneaux</span></li>
+  {% empty %}
+  <li class="empty">Aucun sondage en cours.</li>
+  {% endfor %}
+</ul>
+
+{% if closed_polls %}
+<h2>Clos récemment</h2>
+<ul class="poll-list">
+  {% for poll in closed_polls %}
+  <li><a href="{% url 'polls:detail' poll.pk %}">{{ poll.title }}</a>{% if poll.event %} <span class="meta">→ <a href="{% url 'agenda:detail' poll.event.pk %}">{{ poll.event.start|date:"l j F, H:i" }}</a></span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

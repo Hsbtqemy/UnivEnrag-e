@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Ma semaine — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'presences:board' %}?semaine={{ monday|date:'Y-m-d' }}">← Qui est là ?</a></p>
+<h1>Ma semaine</h1>
+<nav class="week-nav" aria-label="Changer de semaine">
+  <a href="?semaine={{ previous }}">← Semaine précédente</a>
+  <strong>Du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}</strong>
+  <a href="?semaine={{ next }}">Semaine suivante →</a>
+</nav>
+<p class="lead">Cochez les demi-journées où vous serez présent·e, et indiquez où si vous le souhaitez. Les autres membres le verront dans « Qui est là ? ».</p>
+<p><a class="button button--secondary button--small" href="?semaine={{ monday|date:'Y-m-d' }}&amp;reprendre=1">Reprendre ma semaine précédente</a></p>
+
+<form method="post" class="form">
+  {% csrf_token %}
+  <input type="hidden" name="semaine" value="{{ monday|date:'Y-m-d' }}">
+  <datalist id="lieux">{% for place in places %}<option value="{{ place }}">{% endfor %}</datalist>
+  <div class="week-grid">
+    {% for day in days %}
+    <fieldset class="week-day{% if day.date.weekday >= 5 %} week-day--weekend{% endif %}">
+      <legend>{{ day.date|date:"l j"|capfirst }}</legend>
+      {% for period in day.periods %}
+      <label class="checkbox"><input type="checkbox" name="p-{{ day.key }}-{{ period.value }}"{% if period.checked %} checked{% endif %}> {{ period.label }}</label>
+      {% endfor %}
+      <label class="week-day__place" for="lieu-{{ day.key }}">Lieu</label>
+      <input id="lieu-{{ day.key }}" name="lieu-{{ day.key }}" value="{{ day.place }}" list="lieux" maxlength="80" placeholder="Bât. A, local…">
+    </fieldset>
+    {% endfor %}
+  </div>
+  {% include "includes/field.html" with field=name_form.author_name %}
+  <button type="submit" class="button">Enregistrer ma semaine</button>
+</form>
+{% endblock %}

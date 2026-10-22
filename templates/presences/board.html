@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Qui est là ? — {{ site.collective_name }}{% endblock %}
+{% block main_class %}page page--wide{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Qui est là ?</h1>
+  <p><a class="button" href="{% url 'presences:my_week' %}?semaine={{ monday|date:'Y-m-d' }}">Indiquer ma présence</a></p>
+</div>
+<nav class="week-nav" aria-label="Changer de semaine">
+  <a href="?semaine={{ previous }}">← Semaine précédente</a>
+  <strong>Du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}{% if is_current %} (cette semaine){% endif %}</strong>
+  <a href="?semaine={{ next }}">Semaine suivante →</a>
+</nav>
+<p class="hint">Présences annoncées par {{ people_count }} personne{{ people_count|pluralize }}.</p>
+
+<div class="table-scroll">
+<table class="table presence-table">
+  <caption class="visually-hidden">Présences annoncées, par demi-journée</caption>
+  <thead>
+    <tr><th scope="col"><span class="visually-hidden">Moment</span></th>
+      {% for day in days %}<th scope="col"{% if day.weekday >= 5 %} class="weekend"{% endif %}>{{ day|date:"D j"|capfirst }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <th scope="row">{{ row.0.label }}</th>
+      {% for cell in row %}
+      <td{% if cell.day.weekday >= 5 %} class="weekend"{% endif %}>
+        {% if cell.people %}
+        <p class="presence-count">{{ cell.people|length }}</p>
+        <ul class="presence-list">
+          {% for name, place in cell.people %}<li>{{ name }}{% if place %} <span class="presence-place">· {{ place }}</span>{% endif %}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

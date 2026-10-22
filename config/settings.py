@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "apps.spaces",
     "apps.ideas",
     "apps.agenda",
+    "apps.presences",
+    "apps.polls",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

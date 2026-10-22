@@ -8,6 +8,17 @@
 
 <p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
 
+<div class="home-cards">
+  <a class="home-card" href="{% url 'presences:board' %}"><strong>Qui est là ?</strong><span>{{ presence_count }} personne{{ presence_count|pluralize }} {{ presence_count|pluralize:"a,ont" }} annoncé {{ presence_count|pluralize:"sa,leur" }} présence cette semaine</span></a>
+  <a class="home-card" href="{% url 'polls:list' %}"><strong>Sondages de dates</strong><span>{% if open_polls %}{{ open_polls|length }} en cours{% else %}aucun en cours{% endif %}</span></a>
+</div>
+{% if open_polls %}
+<section aria-labelledby="sondages">
+  <h2 id="sondages">Sondages en cours</h2>
+  <ul class="poll-list">{% for poll in open_polls %}<li><a href="{% url 'polls:detail' poll.pk %}">{{ poll.title }}</a> <span class="meta">· {{ poll.owner.display_name }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 <section aria-labelledby="prochains">
   <h2 id="prochains">Prochains événements</h2>
   {% if events %}

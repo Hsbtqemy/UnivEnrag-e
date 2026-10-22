@@ -331,3 +331,37 @@ h2 { font-size: 1.25rem; }
 .feed-list { list-style: none; padding: 0; display: grid; gap: .75rem; }
 .feed-list li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; }
 .feed-list input { width: 100%; font: inherit; font-size: .9rem; padding: .4rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); }
+
+/* --- Lot D : présences et sondages ----------------------------------------------- */
+
+.week-nav { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; margin: .5rem 0 1rem; }
+.week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+.form .week-day { margin: 0; padding: .6rem .75rem; display: grid; gap: .3rem; align-content: start; }
+.week-day--weekend { opacity: .85; }
+.week-day__place { font-size: .85rem; color: var(--muted); margin-top: .3rem; }
+.week-day input[list] { width: 100%; font: inherit; padding: .35rem .45rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); }
+.table-scroll { overflow-x: auto; }
+.presence-table { min-width: 48rem; table-layout: fixed; }
+.presence-table th[scope="row"] { width: 6.5rem; }
+.presence-table td { vertical-align: top; }
+.presence-table .weekend { background: color-mix(in srgb, var(--bg) 70%, var(--surface)); }
+.presence-count { margin: 0 0 .2rem; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+.presence-list { list-style: none; padding: 0; margin: 0; font-size: .9rem; }
+.presence-place { color: var(--muted); }
+.poll-list { padding-left: 1.1rem; }
+.poll-list li { margin-bottom: .35rem; }
+.field-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.poll-table { min-width: 36rem; }
+.poll-table th, .poll-table td { text-align: center; }
+.poll-table th[scope="row"] { text-align: left; }
+.poll-table .best { background: color-mix(in srgb, var(--success) 14%, var(--surface)); }
+.answer--yes { background: color-mix(in srgb, var(--success) 25%, transparent); font-weight: 600; }
+.answer--maybe { background: color-mix(in srgb, var(--warning) 22%, transparent); }
+.answer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.form .answer-slot { margin: 0; padding: .6rem .75rem; }
+.answer-slot div { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.answer-slot label { display: flex; gap: .3rem; align-items: center; font-weight: 400; }
+.home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; margin: 1rem 0; }
+.home-card { display: grid; gap: .2rem; padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--text); }
+.home-card strong { color: var(--accent); }
+.home-card span { color: var(--muted); font-size: .92rem; }

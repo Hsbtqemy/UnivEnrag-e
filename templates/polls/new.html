@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Nouveau sondage — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'polls:list' %}">← Sondages</a></p>
+<h1>Nouveau sondage de dates</h1>
+<form method="post" class="form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <fieldset>
+    <legend>De quoi s'agit-il ?</legend>
+    {% include "includes/field.html" with field=form.title %}
+    {% include "includes/field.html" with field=form.description %}
+    <div class="field-row field-row--2">
+      {% include "includes/field.html" with field=form.space %}
+      {% include "includes/field.html" with field=form.room %}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Créneaux proposés <span class="optional">(au moins 2)</span></legend>
+    {% for row in form.slot_rows %}
+    <div class="slot">
+      <p class="slot__title">Créneau {{ row.number }}</p>
+      <div class="field-row">{% for field in row.fields %}{% include "includes/field.html" %}{% endfor %}</div>
+    </div>
+    {% endfor %}
+  </fieldset>
+  {% include "includes/field.html" with field=form.author_name %}
+  <button type="submit" class="button">Créer le sondage</button>
+</form>
+{% endblock %}

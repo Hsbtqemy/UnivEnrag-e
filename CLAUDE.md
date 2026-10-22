@@ -11,10 +11,12 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 ## État du projet
 
 - **Le POC est codé** (22/10/2026) : agenda alimenté par des propositions extérieures, décrit dans `docs/poc-calendrier-propositions.md`. Voir le `README.md` pour le démarrer.
-- **Phase 1 en cours**, par lots testés et commités un à un : A socle · B agenda des membres · C salles et espaces · D indisponibilités · E idées des membres · F mise en ligne. **Pas de séries d'événements** (voir la décision 12).
+- **Phase 1 en cours**, par lots testés et commités un à un : A socle · B agenda des membres · C salles et espaces · D présences et sondages de dates · E idées des membres · F mise en ligne. **Pas de séries d'événements** (voir la décision 12).
   - **Lot A fait** : modèle `accounts.User` (7 droits, `require_capability`, `CapabilityAdminMixin`), double authentification TOTP + codes de secours (`accounts/two_factor.py`, obligatoire hors `DJANGO_ENV=dev`, forcée avec `DJANGO_ADMIN_2FA=1`), code d'accès commun (`core/access.py`, `@public_view`), nom mémorisé et `request.actor` (`actors/resolvers.py`), journal `audit.log()` en ajout seul, page `/gestion/` selon les droits.
   - **Lot B fait** : agenda des membres `/agenda/` (semaine, mois, liste par défaut sur téléphone, filtre par salle), création en un formulaire court (`/agenda/nouveau/`, pré-rempli depuis le créneau cliqué ou par duplication `?depuis=<id>`), modification, annulation (reste visible, barrée), glisser-déposer sous le nom retenu, avertissement de salle en direct (`/agenda/verifier/`), historique `EventChange` avec restauration, verrou, demandes de publication (`/gestion/publication/`).
   - **Lot C fait** : salles avec plages d'ouverture (`OpeningHours`, une salle sans plage n'a pas de restriction) et mode « libre » ou « soumise à validation » (`Event.room_status`, file `/gestion/salles/`, un refus retire la salle mais garde l'événement) ; dérogation (salle occupée ou fermée) par le seul droit « salles », case `override`, journalisée `rooms.derogation` ; page `/salles/` ; app `spaces` minimale (nom, couleur, archivage), couleur et filtre par espace dans l'agenda ; flux iCal internes par jeton `/flux/<feeds_token>/{agenda.ics, espace/<slug>.ics, salle/<id>.ics}` et page `/agenda/abonnements/` (le flux public n'inclut jamais le lien visio).
+  - **Lot D fait** (choix du porteur du projet, 22/10/2026) : **présences plutôt qu'indisponibilités**. Chacun annonce « je serai là » par demi-journée (matin, après-midi, soir) avec un lieu par jour (`/presences/ma-semaine/`, bouton « reprendre ma semaine précédente », pas de règle récurrente) ; tableau « Qui est là ? » (`/presences/`). Présences purgées après 60 jours (`purge_presences`, à planifier). **Sondage de dates** avancé de la phase 2 (app `polls`, nominatif, « oui » / « si besoin ») : « Fixer ce créneau » ouvre le formulaire d'événement pré-rempli et clôt le sondage.
+  - `request.actor` vaut `None` sans nom ni compte (résolu tout de suite, pas d'objet paresseux).
   - **Historique : modèle maison `agenda.EventChange`** (et non django-simple-history) : chaque entrée référence un `Actor`, garde `changes` ({champ: [avant, après]}) et un `snapshot` complet pour restaurer. Toute écriture sur un événement passe par `agenda/services.py`, qui l'enregistre.
   - URL : public sous `/p/` (`/p/agenda/`, `/p/proposer/`, `/p/suivi/<jeton>/`, `/p/agenda.ics`), interne `/accueil/`, `/nom/`, gestion `/gestion/` (admin Django sous `/gestion/admin/`).
   - **Choix restés simples, à revoir si besoin** : ni htmx, ni django-csp (la CSP est posée par `core/middleware.py`), ni WhiteNoise, ni django-environ (réglages lus dans `os.environ`), ni pre-commit. Une seule salle par événement.
@@ -83,7 +85,7 @@ tests/             conftest.py factories.py acceptance/test_reception.py
 
 Chaque app suit la même structure : `apps.py models.py services.py views.py urls.py forms.py admin.py templates/<app>/ tests/`. Le nom est de la forme `name="apps.agenda"`, `label="agenda"`.
 
-Les dépendances vont dans un seul sens : `core ← actors ← audit ← accounts ← {rooms, spaces, discussions} ← agenda ← ideas ← proposals ← votes ← {exports, public}`. (`audit` ne connaît les comptes que par `settings.AUTH_USER_MODEL` ; `accounts` l'appelle.) Seule entorse admise : la vue de programmation (`agenda/views.py`) lit les idées à placer, et `agenda.services.confirm` importe `ideas.services` à l'intérieur de la fonction. Entre modèles, les clés étrangères s'écrivent sous forme de chaîne (`"agenda.Event"`).
+Les dépendances vont dans un seul sens : `core ← actors ← audit ← accounts ← {rooms, spaces, discussions} ← agenda ← ideas ← proposals ← votes ← {exports, public}`. (`audit` ne connaît les comptes que par `settings.AUTH_USER_MODEL` ; `accounts` l'appelle.) Entorses admises : la vue de programmation (`agenda/views.py`) lit les idées à placer ; `agenda.services.confirm` importe `ideas.services` à l'intérieur de la fonction ; l'accueil et la création d'événement (`agenda/views.py`, `agenda/member_views.py`) lisent `presences` et `polls`. Entre modèles, les clés étrangères s'écrivent sous forme de chaîne (`"agenda.Event"`).
 
 ### Couches
 
@@ -133,7 +135,7 @@ Tâches cron (`deploy/crontab`, supercronic) :
 |---|---|
 | Chaque minute | `close_due_votes` |
 | Toutes les 30 min | `refresh_external_calendars` |
-| Chaque nuit | `ideas_mark_done`, `purge_ip_data`, `clearsessions`, `purge_contact_messages` |
+| Chaque nuit | `purge_presences` (existe), `ideas_mark_done`, `purge_ip_data`, `clearsessions`, `purge_contact_messages` |
 | 3 h | `backup` puis `restic` vers un stockage hors serveur |
 
 ## Conventions de code

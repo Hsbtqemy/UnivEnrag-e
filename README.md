@@ -5,7 +5,7 @@ Site du collectif décrit dans [le cahier des charges](docs/Cahier%20des%20charg
 Ce qui existe :
 
 - **Public, sans code** : agenda public (`/p/agenda/`, vue liste ou semaine, flux `/p/agenda.ics`) et formulaire de proposition d'événement (`/p/proposer/`) avec lien de suivi personnel. Le site n'envoie aucun e-mail. Voir [la fiche du POC](docs/poc-calendrier-propositions.md).
-- **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), agenda (`/agenda/`) où chacun crée, modifie, déplace ou annule un événement sous son nom, avec historique ; salles (`/salles/`, avec leur planning), abonnement iCal à l'agenda, à un espace ou à une salle (`/agenda/abonnements/`) ; nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
+- **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), agenda (`/agenda/`) où chacun crée, modifie, déplace ou annule un événement sous son nom, avec historique ; salles (`/salles/`, avec leur planning), abonnement iCal à l'agenda, à un espace ou à une salle (`/agenda/abonnements/`) ; « Qui est là ? » (`/presences/`), où chacun annonce ses demi-journées de présence ; sondages de dates (`/sondages/`), dont le meilleur créneau devient un événement ; nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
 - **Gestion** (`/gestion/`), comptes de l'administrateur principal et des gestionnaires, avec double authentification :
   - modération des propositions reçues, demandes de publication, réservations de salles à valider ;
   - sur chaque événement : confirmer, publier, verrouiller, restaurer une version ;
@@ -51,6 +51,8 @@ apps/audit/      journal d'activité des comptes de gestion (ajout seul)
 apps/accounts/   comptes de gestion, 7 droits, double authentification
 apps/rooms/      Room, OpeningHours : salles du collectif, horaires, réservation libre ou sur validation
 apps/spaces/     Space : groupes de travail (nom, couleur, archivage)
+apps/presences/  Presence : « je serai là », par demi-journée et lieu
+apps/polls/      Poll, PollSlot, PollAnswer : sondages de dates
 apps/ideas/      Idea, IdeaSlot : propositions d'événements, modération, suivi
 apps/agenda/     Event : agenda collectif, conflits, programmation, pages publiques, iCal
 templates/       gabarits (public, membres, gestion)

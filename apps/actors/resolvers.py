@@ -9,7 +9,6 @@ sans toucher aux clés étrangères ni aux vues.
 from urllib.parse import quote, unquote
 
 from django.conf import settings
-from django.utils.functional import SimpleLazyObject
 from django.utils.module_loading import import_string
 
 from .models import Actor
@@ -67,5 +66,9 @@ class ActorMiddleware:
 
     def __call__(self, request):
         request.actor_name = read_name(request)
-        request.actor = SimpleLazyObject(lambda: self.resolver.resolve(request))
+        # Pas d'objet paresseux ici : il ne vaudrait jamais `None`, et `if request.actor`
+        # serait toujours vrai. Sans nom ni compte, aucune requête n'est faite.
+        user = getattr(request, "user", None)
+        has_identity = request.actor_name or (user is not None and user.is_authenticated)
+        request.actor = self.resolver.resolve(request) if has_identity else None
         return self.get_response(request)
