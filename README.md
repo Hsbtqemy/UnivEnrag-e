@@ -5,9 +5,10 @@ Site du collectif décrit dans [le cahier des charges](docs/Cahier%20des%20charg
 Ce qui existe :
 
 - **Public, sans code** : agenda public (`/p/agenda/`, vue liste ou semaine, flux `/p/agenda.ics`) et formulaire de proposition d'événement (`/p/proposer/`) avec lien de suivi personnel. Le site n'envoie aucun e-mail. Voir [la fiche du POC](docs/poc-calendrier-propositions.md).
-- **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
+- **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), agenda (`/agenda/`) où chacun crée, modifie, déplace ou annule un événement sous son nom, avec historique ; nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
 - **Gestion** (`/gestion/`), comptes de l'administrateur principal et des gestionnaires, avec double authentification :
-  - modération des propositions reçues ;
+  - modération des propositions reçues, demandes de publication ;
+  - sur chaque événement : confirmer, publier, verrouiller, restaurer une version ;
   - programmation en colonnes par salle : provisoires hachurés, autres créneaux en pointillé, panneau « À placer », confirmation bloquée par les seuls conflits de salle ;
   - administration (`/gestion/admin/`) : comptes et droits, code d'accès, journal d'activité (administrateur principal seulement), salles, événements.
 

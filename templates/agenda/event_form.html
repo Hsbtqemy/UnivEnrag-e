@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if event %}Modifier « {{ event.title }} »{% else %}Nouvel événement{% endif %} — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% if event %}{% url 'agenda:detail' event.pk %}{% else %}{% url 'agenda:calendar' %}{% endif %}">← Retour</a></p>
+<h1>{% if event %}Modifier l'événement{% else %}Nouvel événement{% endif %}</h1>
+
+<form method="post" class="form" id="formulaire-evenement" novalidate
+      data-check-url="{{ check_url }}" data-exclude="{{ event.pk|default:'' }}">
+  {% csrf_token %}
+  {{ form.revision }}
+  {% if form.non_field_errors %}
+  <div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+
+  <fieldset>
+    <legend>L'essentiel</legend>
+    {% include "includes/field.html" with field=form.title %}
+    <div class="field-row">
+      {% for field in form.essential_fields|slice:"1:" %}{% include "includes/field.html" %}{% endfor %}
+    </div>
+  </fieldset>
+
+  <details class="more"{% if event or form.errors %} open{% endif %}>
+    <summary>Plus de détails <span class="optional">(salle, lieu, description, visio, publication)</span></summary>
+    <fieldset>
+      {% include "includes/field.html" with field=form.room %}
+      <div id="verification-salle" class="room-check" role="status" aria-live="polite"></div>
+      {% include "includes/field.html" with field=form.place_text %}
+      {% include "includes/field.html" with field=form.description %}
+      {% include "includes/field.html" with field=form.visio_link %}
+      <div class="field field--checkbox">{{ form.wants_public }} <label for="{{ form.wants_public.id_for_label }}">{{ form.wants_public.label }}</label>
+        {% if form.wants_public.help_text %}<p class="field__help">{{ form.wants_public.help_text }}</p>{% endif %}</div>
+    </fieldset>
+  </details>
+
+  {% include "includes/field.html" with field=form.author_name %}
+  <button type="submit" class="button">{% if event %}Enregistrer{% else %}Créer l'événement{% endif %}</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/event-form.js' %}"></script>{% endblock %}

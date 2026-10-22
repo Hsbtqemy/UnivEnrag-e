@@ -48,10 +48,16 @@ class Event(models.Model):
         verbose_name="salle",
     )
     place_text = models.CharField("lieu libre", max_length=200, blank=True)
+    visio_link = models.URLField("lien visio", blank=True)
     status = models.CharField(
         "statut", max_length=12, choices=Status.choices, default=Status.PROVISIONAL
     )
     is_public = models.BooleanField("public", default=False)
+    # Un participant qui coche « public » ne fait qu'une demande ; seul un habilité
+    # « agenda » ou « page publique » pose `is_public` (CLAUDE.md, décision 11).
+    public_requested = models.BooleanField("publication demandée", default=False)
+    # Un événement verrouillé ne se modifie plus que par un habilité « agenda » (AGE-5).
+    is_locked = models.BooleanField("verrouillé", default=False)
     # Verrouillage optimiste : un déplacement fondé sur une version périmée est refusé.
     revision = models.PositiveIntegerField(default=1)
     confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -81,3 +87,51 @@ class Event(models.Model):
         if self.room_id:
             return self.room.label
         return self.place_text or "Lieu à préciser"
+
+
+class EventChange(models.Model):
+    """Une entrée de l'historique d'un événement (CLAUDE.md AGE-4).
+
+    `changes` décrit la modification champ par champ ({champ: [avant, après]}) ;
+    `snapshot` est l'état complet après la modification, ce qui permet de restaurer
+    n'importe quelle version.
+    """
+
+    class Action(models.TextChoices):
+        CREATED = "created", "Création"
+        PLACED = "placed", "Placement d'une proposition"
+        UPDATED = "updated", "Modification"
+        MOVED = "moved", "Déplacement"
+        CANCELLED = "cancelled", "Annulation"
+        CONFIRMED = "confirmed", "Confirmation"
+        PUBLIC = "public", "Publication"
+        LOCKED = "locked", "Verrou"
+        RESTORED = "restored", "Restauration"
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="changes")
+    action = models.CharField(max_length=12, choices=Action.choices)
+    actor = models.ForeignKey(
+        "actors.Actor", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    changes = models.JSONField(default=dict)
+    snapshot = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "modification d'événement"
+        verbose_name_plural = "historique des événements"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.get_action_display()} · {self.event}"
+
+    @property
+    def author_label(self) -> str:
+        if self.actor_id:
+            return self.actor.display_name
+        if self.user_id:
+            return f"{self.user} (gestion)"
+        return "Le site"

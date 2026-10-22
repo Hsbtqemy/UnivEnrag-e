@@ -6,6 +6,8 @@
 <p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient.</p>
 {% endif %}
 
+<p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
+
 <section aria-labelledby="prochains">
   <h2 id="prochains">Prochains événements</h2>
   {% if events %}
@@ -13,7 +15,7 @@
     {% for event in events %}
     <li class="event-card event-card--{{ event.status }}" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
       <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.status == "provisional" %} · <span class="badge">provisoire</span>{% endif %}</p>
-      <h3 class="event-card__title">{{ event.title }}</h3>
+      <h3 class="event-card__title"><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a></h3>
       <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
     </li>
     {% endfor %}

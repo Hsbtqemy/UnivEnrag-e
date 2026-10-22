@@ -4,11 +4,13 @@ from django.contrib import admin
 from apps.accounts.capabilities import CapabilityAdminMixin
 from apps.audit.admin_mixins import AuditedAdminMixin
 
-from . import services
-from .models import Event
+from . import history, services
+from .models import Event, EventChange
 
 
 class EventAdminForm(forms.ModelForm):
+    visio_link = forms.URLField(label="Lien visio", required=False, assume_scheme="https")
+
     class Meta:
         model = Event
         fields = [
@@ -20,8 +22,11 @@ class EventAdminForm(forms.ModelForm):
             "end",
             "room",
             "place_text",
+            "visio_link",
             "status",
             "is_public",
+            "public_requested",
+            "is_locked",
         ]
 
     def clean(self):
@@ -56,7 +61,11 @@ class EventAdmin(AuditedAdminMixin, CapabilityAdminMixin, admin.ModelAdmin):
         return False  # on annule, on ne supprime pas (CLAUDE.md AGE-1)
 
     def save_model(self, request, obj, form, change):
-        # Une modification dans l'admin périme la version affichée dans la programmation.
+        # Une modification dans l'admin périme la version affichée dans la programmation,
+        # et entre dans l'historique comme toute autre (CLAUDE.md AGE-4).
+        before = history.snapshot(Event.objects.get(pk=obj.pk)) if change else {}
         if change:
             obj.revision += 1
         super().save_model(request, obj, form, change)
+        action = EventChange.Action.UPDATED if change else EventChange.Action.CREATED
+        history.record(obj, action, user=request.user, before=before)

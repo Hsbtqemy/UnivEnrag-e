@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.actors.services import get_or_create_for_name
+from apps.agenda import history as agenda_history
 from apps.agenda import services as agenda_services
 from apps.audit import audit
 
@@ -88,7 +89,7 @@ def accept(idea: Idea, *, user) -> Idea:
     slot = idea.preferred_precise_slot
     if slot is not None:
         agenda_services.create_from_idea(
-            idea, start=slot.start, end=slot.end, room=idea.wanted_room
+            idea, start=slot.start, end=slot.end, room=idea.wanted_room, user=user
         )
     return idea
 
@@ -113,7 +114,7 @@ def place(idea: Idea, *, start, end, room, user=None):
         raise TransitionError("Seule une proposition acceptée peut être placée.")
     if hasattr(idea, "event"):
         raise TransitionError("Cette proposition est déjà dans le calendrier.")
-    event = agenda_services.create_from_idea(idea, start=start, end=end, room=room)
+    event = agenda_services.create_from_idea(idea, start=start, end=end, room=room, user=user)
     audit.log(user, "ideas.placed", idea, start=start, end=end, room=room)
     return event
 
@@ -138,8 +139,10 @@ def update_by_owner(idea: Idea, **changes) -> Idea:
     idea.save()
     event = getattr(idea, "event", None)
     if event is not None and event.status == event.Status.PROVISIONAL:
+        before = agenda_history.snapshot(event)
         event.title, event.description = idea.title, idea.description
         event.owner_email = idea.owner_email
         event.revision += 1
         event.save(update_fields=["title", "description", "owner_email", "revision", "updated_at"])
+        agenda_history.record(event, "updated", actor=idea.owner, before=before)
     return idea

@@ -86,12 +86,14 @@ class ProposeForm(IdeaFieldsMixin, AntiSpamFormMixin):
         super().__init__(*args, **kwargs)
         for i in range(1, SLOT_COUNT + 1):
             self.fields[f"slot{i}_date"] = forms.DateField(
-                label="Date", required=False, widget=forms.DateInput(attrs={"type": "date"})
+                label="Date",
+                required=False,
+                widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
             )
             self.fields[f"slot{i}_time"] = forms.TimeField(
                 label="Heure de début",
                 required=False,
-                widget=forms.TimeInput(attrs={"type": "time", "step": 900}),
+                widget=forms.TimeInput(format="%H:%M", attrs={"type": "time", "step": 900}),
             )
             self.fields[f"slot{i}_period"] = forms.CharField(
                 label="Ou une période plus large",

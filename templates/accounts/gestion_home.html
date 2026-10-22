@@ -7,6 +7,7 @@
 <ul class="tool-list">
   {% if "moderate" in capabilities %}<li><a href="{% url 'ideas:moderation' %}">Modération des propositions</a><span>Accepter ou écarter les propositions reçues de l'extérieur.</span></li>{% endif %}
   {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a><span>Placer, déplacer et confirmer les événements, salle par salle.</span></li>{% endif %}
+  {% if "manage_agenda" in capabilities or "manage_public" in capabilities %}<li><a href="{% url 'agenda:public_requests' %}">Demandes de publication</a><span>Les événements que des membres souhaitent voir sur l'agenda public.</span></li>{% endif %}
   <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>
 </ul>
 <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit" class="link-button">Se déconnecter</button></form>

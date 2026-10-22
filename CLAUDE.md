@@ -13,6 +13,8 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 - **Le POC est codé** (22/10/2026) : agenda alimenté par des propositions extérieures, décrit dans `docs/poc-calendrier-propositions.md`. Voir le `README.md` pour le démarrer.
 - **Phase 1 en cours**, par lots testés et commités un à un : A socle · B agenda des membres · C salles et espaces · D récurrences et indisponibilités · E idées des membres · F mise en ligne.
   - **Lot A fait** : modèle `accounts.User` (7 droits, `require_capability`, `CapabilityAdminMixin`), double authentification TOTP + codes de secours (`accounts/two_factor.py`, obligatoire hors `DJANGO_ENV=dev`, forcée avec `DJANGO_ADMIN_2FA=1`), code d'accès commun (`core/access.py`, `@public_view`), nom mémorisé et `request.actor` (`actors/resolvers.py`), journal `audit.log()` en ajout seul, page `/gestion/` selon les droits.
+  - **Lot B fait** : agenda des membres `/agenda/` (semaine, mois, liste par défaut sur téléphone, filtre par salle), création en un formulaire court (`/agenda/nouveau/`, pré-rempli depuis le créneau cliqué ou par duplication `?depuis=<id>`), modification, annulation (reste visible, barrée), glisser-déposer sous le nom retenu, avertissement de salle en direct (`/agenda/verifier/`), historique `EventChange` avec restauration, verrou, demandes de publication (`/gestion/publication/`).
+  - **Historique : modèle maison `agenda.EventChange`** (et non django-simple-history) : chaque entrée référence un `Actor`, garde `changes` ({champ: [avant, après]}) et un `snapshot` complet pour restaurer. Toute écriture sur un événement passe par `agenda/services.py`, qui l'enregistre.
   - URL : public sous `/p/` (`/p/agenda/`, `/p/proposer/`, `/p/suivi/<jeton>/`, `/p/agenda.ics`), interne `/accueil/`, `/nom/`, gestion `/gestion/` (admin Django sous `/gestion/admin/`).
   - **Choix restés simples, à revoir si besoin** : ni htmx, ni django-csp (la CSP est posée par `core/middleware.py`), ni WhiteNoise, ni django-environ (réglages lus dans `os.environ`), ni pre-commit. Une seule salle par événement.
   - Le reste de ce fichier (arborescence, commandes cron, sauvegarde…) décrit encore des **cibles à créer**.
@@ -31,7 +33,7 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 | Récurrence | `python-dateutil` (rrule) + `zoneinfo`, calcul en heure locale `Europe/Paris` puis conversion en UTC |
 | Formats | `icalendar` 6 ; `django.contrib.syndication` (RSS) ; CSV natif (UTF-8 avec BOM, séparateur `;`) ; **WeasyPrint** (PDF, polices dans le dépôt) |
 | Markdown | `markdown` + `nh3`. Balises autorisées : p, br, strong, em, ul, ol, li, a. Les liens reçoivent `rel="nofollow noopener"` |
-| Historique | `django-simple-history`, dont l'utilisateur est un `Actor` |
+| Historique | Modèle maison `agenda.EventChange` (avant/après par champ + instantané pour restaurer), dont l'auteur est un `Actor` |
 | Administrateurs | `argon2-cffi`, `django-otp` (TOTP + codes de secours), `segno` (QR code en SVG) |
 | Sécurité HTTP | `django-csp` 4 : `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'` |
 | Statique, configuration | WhiteNoise ; `django-environ` (`.env`), un seul `config/settings.py` piloté par `DJANGO_ENV=dev|prod|test` |

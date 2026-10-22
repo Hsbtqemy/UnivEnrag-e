@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'agenda:calendar' %}?date={{ event.start|date:'Y-m-d' }}">← Agenda</a></p>
+<article class="event-detail event-detail--{{ event.status }}" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+  <h1>{{ event.title }}</h1>
+  <p class="badges">
+    <span class="badge badge--{{ event.status }}">{{ event.get_status_display }}</span>
+    {% if event.is_public %}<span class="badge">public</span>{% elif event.public_requested %}<span class="badge">publication demandée</span>{% endif %}
+    {% if event.is_locked %}<span class="badge badge--locked">verrouillé</span>{% endif %}
+  </p>
+  <dl class="facts">
+    <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
+    <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
+    <div><dt>Porté par</dt><dd>{{ event.owner.display_name }}</dd></div>
+    {% if event.visio_link %}<div><dt>Visio</dt><dd><a href="{{ event.visio_link }}" rel="noopener nofollow">{{ event.visio_link }}</a></dd></div>{% endif %}
+  </dl>
+  {% if event.description %}<div class="prose">{{ event.description|linebreaks }}</div>{% endif %}
+</article>
+
+<section class="actions-box" aria-labelledby="actions">
+  <h2 id="actions" class="visually-hidden">Actions</h2>
+  <div class="actions">
+    {% if can_edit %}<a class="button" href="{% url 'agenda:edit' event.pk %}">Modifier</a>{% endif %}
+    <a class="button button--secondary" href="{% url 'agenda:new' %}?depuis={{ event.pk }}">Dupliquer</a>
+  </div>
+
+  {% if can_edit %}
+  <details class="danger-zone">
+    <summary>Annuler l'événement…</summary>
+    <form method="post" action="{% url 'agenda:cancel' event.pk %}" class="form form--narrow">
+      {% csrf_token %}
+      {{ cancel_form.revision }}
+      <p>Il restera visible dans l'agenda, barré.</p>
+      {% include "includes/field.html" with field=cancel_form.author_name %}
+      <button type="submit" class="button button--danger">Confirmer l'annulation</button>
+    </form>
+  </details>
+  {% elif event.is_locked %}
+  <p class="hint">Verrouillé par un gestionnaire : il ne peut plus être modifié.</p>
+  {% endif %}
+
+  {% if can_manage or can_publish %}
+  <div class="manager-actions">
+    <h3>Gestion</h3>
+    <div class="actions">
+      {% if can_manage and event.status == "provisional" %}
+      <form method="post" action="{% url 'agenda:confirm' event.pk %}">{% csrf_token %}<button class="button">Confirmer</button></form>
+      {% endif %}
+      {% if can_publish and event.status != "cancelled" %}
+      <form method="post" action="{% url 'agenda:publish' event.pk %}">{% csrf_token %}
+        <input type="hidden" name="public" value="{% if event.is_public %}0{% else %}1{% endif %}">
+        <button class="button button--secondary">{% if event.is_public %}Retirer de l'agenda public{% else %}Publier sur l'agenda public{% endif %}</button>
+      </form>
+      {% endif %}
+      {% if can_manage %}
+      <form method="post" action="{% url 'agenda:lock' event.pk %}">{% csrf_token %}<button class="button button--secondary">{% if event.is_locked %}Retirer le verrou{% else %}Verrouiller{% endif %}</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<section aria-labelledby="historique">
+  <h2 id="historique">Historique</h2>
+  <ol class="history">
+    {% for change in changes %}
+    <li>
+      <p class="history__head"><strong>{{ change.get_action_display }}</strong> par {{ change.author_label }}, le {{ change.created_at|date:"j F Y à H:i" }}</p>
+      {% if change.lines %}<ul class="history__lines">{% for line in change.lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+      {% if can_manage and not forloop.first %}
+      <form method="post" action="{% url 'agenda:restore' event.pk change.pk %}">{% csrf_token %}<button class="link-button">Revenir à cette version</button></form>
+      {% endif %}
+    </li>
+    {% empty %}
+    <li class="empty">Aucune modification enregistrée.</li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

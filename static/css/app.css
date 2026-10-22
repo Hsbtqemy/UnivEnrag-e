@@ -272,3 +272,49 @@ h2 { font-size: 1.25rem; }
 .tool-list li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; display: grid; gap: .2rem; }
 .tool-list a { font-weight: 700; font-size: 1.05rem; }
 .tool-list span { color: var(--muted); }
+
+/* --- Lot B : agenda des membres ---------------------------------------------------- */
+
+.calendar-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-bottom: .5rem; }
+.calendar-bar label { font-weight: 600; }
+.calendar-bar select { font: inherit; padding: .3rem .5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.swatch--cancelled { background: linear-gradient(to bottom right, transparent 45%, var(--muted) 45% 55%, transparent 55%); }
+
+.ec-event.ev-cancelled { opacity: .55; text-decoration: line-through; }
+.ec-event.ev-locked .ev-title::before { content: "🔒 "; }
+.ec-list .ev-meta { display: inline; margin-left: .5em; }
+
+.field-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 1rem; }
+@media (max-width: 520px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row .field:first-child { grid-column: 1 / -1; } }
+.field--checkbox { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.field--checkbox input { width: 1.2rem; height: 1.2rem; }
+.field--checkbox .field__help { flex-basis: 100%; }
+.more { margin: 0 0 1.25rem; }
+.more summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }
+.room-check:empty { display: none; }
+.room-check { margin: -.5rem 0 1rem; padding: .5rem .75rem; border-radius: var(--radius); border-left: 4px solid var(--muted); background: var(--bg); }
+.room-check p, .room-check ul { margin: 0; }
+.room-check--ok { border-color: var(--success); }
+.room-check--warning { border-color: var(--warning); }
+.room-check--error { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+
+.badges { display: flex; flex-wrap: wrap; gap: .4rem; margin: -.25rem 0 .75rem; }
+.badge--confirmed { background: color-mix(in srgb, var(--success) 18%, transparent); }
+.badge--cancelled { background: color-mix(in srgb, var(--danger) 18%, transparent); }
+.badge--locked { background: color-mix(in srgb, var(--warning) 22%, transparent); }
+.event-detail--cancelled h1 { text-decoration: line-through; }
+
+.actions-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin: 1.5rem 0; display: grid; gap: .75rem; }
+.danger-zone summary { cursor: pointer; color: var(--danger); font-weight: 600; }
+.manager-actions h3 { margin: .25rem 0 .5rem; font-size: 1rem; }
+.history { list-style: none; padding: 0; display: grid; gap: .75rem; }
+.history > li { border-left: 3px solid var(--border); padding-left: .75rem; }
+.history__head { margin: 0; }
+.history__lines { margin: .25rem 0; padding-left: 1.1rem; color: var(--muted); font-size: .92rem; }
+
+/* Petits écrans : le titre de la période passe sur sa propre ligne, au-dessus des boutons. */
+@media (max-width: 640px) {
+  .calendar .ec-toolbar { flex-wrap: wrap; row-gap: .5rem; }
+  .calendar .ec-toolbar > :nth-child(2) { order: -1; flex-basis: 100%; justify-content: center; }
+  .calendar .ec-toolbar .ec-title { font-size: 1.15rem; margin: 0; }
+}

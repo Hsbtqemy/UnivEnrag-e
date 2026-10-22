@@ -34,7 +34,8 @@ def test_programming_moves_are_logged_with_before_and_after(
         content_type="application/json",
     )
     entry = AuditLog.objects.get(action="agenda.event_moved")
-    assert entry.details["before"]["start"] != entry.details["after"]["start"]
+    before, after = entry.details["changes"]["start"]
+    assert before != after
 
 
 def test_actions_without_account_are_not_logged(db, make_idea):

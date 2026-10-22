@@ -81,3 +81,29 @@ def alternative_slot(event: Event, slot) -> dict:
             "end": to_wall_clock(slot.end),
         },
     }
+
+
+def member_event(event: Event, *, editable: bool) -> dict:
+    """Agenda des membres : tous les événements, annulés compris (barrés), sans e-mail."""
+    classes = [f"ev-{event.status}"]
+    if event.is_locked:
+        classes.append("ev-locked")
+    return {
+        "id": str(event.pk),
+        "title": event.title,
+        "start": to_wall_clock(event.start),
+        "end": to_wall_clock(event.end),
+        "color": event.room.color if event.room_id else "#6b7280",
+        "classNames": classes,
+        "editable": editable and event.status != Event.Status.CANCELLED,
+        "extendedProps": {
+            "url": reverse("agenda:detail", args=[event.pk]),
+            "revision": event.revision,
+            "status": event.status,
+            "statusLabel": event.get_status_display(),
+            "place": event.place_label,
+            "owner": event.owner.display_name,
+            "roomId": event.room_id,
+            "locked": event.is_locked,
+        },
+    }
