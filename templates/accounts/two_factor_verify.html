@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Vérification — Agenda du collectif{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Vérification</h1>
+<p>Saisissez le code affiché par votre application d'authentification. Si vous n'avez plus votre téléphone, utilisez un code de secours.</p>
+<form method="post" class="form form--narrow">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% include "includes/field.html" with field=form.token %}
+  <button type="submit" class="button">Valider</button>
+</form>
+<p class="hint">Plus de téléphone ni de code de secours ? L'administrateur principal peut réinitialiser votre double authentification.</p>
+{% endblock %}

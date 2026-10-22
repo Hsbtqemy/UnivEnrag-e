@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Gestion — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Gestion</h1>
+<p class="lead">{% if user.is_superuser %}Administrateur principal : vous avez tous les droits.{% else %}Vos droits : {{ capability_labels|join:", "|default:"aucun pour l'instant" }}.{% endif %}</p>
+<ul class="tool-list">
+  {% if "moderate" in capabilities %}<li><a href="{% url 'ideas:moderation' %}">Modération des propositions</a><span>Accepter ou écarter les propositions reçues de l'extérieur.</span></li>{% endif %}
+  {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a><span>Placer, déplacer et confirmer les événements, salle par salle.</span></li>{% endif %}
+  <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>
+</ul>
+<form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit" class="link-button">Se déconnecter</button></form>
+{% endblock %}

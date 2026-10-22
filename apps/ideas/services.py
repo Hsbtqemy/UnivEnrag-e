@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.actors.services import get_or_create_for_name
 from apps.agenda import services as agenda_services
+from apps.audit import audit
 
 from .models import Idea, IdeaSlot
 
@@ -83,6 +84,7 @@ def accept(idea: Idea, *, user) -> Idea:
     _transition(idea, Idea.Status.ACCEPTED)
     idea.moderated_at, idea.moderated_by = timezone.now(), user
     idea.save()
+    audit.log(user, "ideas.accepted", idea)
     slot = idea.preferred_precise_slot
     if slot is not None:
         agenda_services.create_from_idea(
@@ -99,18 +101,21 @@ def refuse(idea: Idea, *, user, reason: str) -> Idea:
     idea.refusal_reason = reason.strip()
     idea.moderated_at, idea.moderated_by = timezone.now(), user
     idea.save()
+    audit.log(user, "ideas.refused", idea, reason=idea.refusal_reason)
     return idea
 
 
 @transaction.atomic
-def place(idea: Idea, *, start, end, room):
+def place(idea: Idea, *, start, end, room, user=None):
     """Place à la main une proposition acceptée qui n'est pas encore dans le calendrier."""
     idea = Idea.objects.select_for_update().get(pk=idea.pk)
     if idea.status != Idea.Status.ACCEPTED:
         raise TransitionError("Seule une proposition acceptée peut être placée.")
     if hasattr(idea, "event"):
         raise TransitionError("Cette proposition est déjà dans le calendrier.")
-    return agenda_services.create_from_idea(idea, start=start, end=end, room=room)
+    event = agenda_services.create_from_idea(idea, start=start, end=end, room=room)
+    audit.log(user, "ideas.placed", idea, start=start, end=end, room=room)
+    return event
 
 
 def mark_planned(idea: Idea) -> Idea:

@@ -26,18 +26,29 @@ def ip_hash(request) -> str:
     ).hexdigest()
 
 
+def exceeded(request, bucket: str, limit: int, window_seconds: int) -> bool:
+    """Vrai si la limite est déjà atteinte sur la fenêtre, sans rien compter."""
+    since = timezone.now() - timedelta(seconds=window_seconds)
+    recent = RateLimitHit.objects.filter(
+        bucket=bucket, key_hash=ip_hash(request), created_at__gte=since
+    )
+    return recent.count() >= limit
+
+
+def record(request, bucket: str) -> None:
+    """Compte une tentative (par exemple un échec de saisie du code)."""
+    RateLimitHit.objects.create(bucket=bucket, key_hash=ip_hash(request))
+
+
 def hit(request, bucket: str, limit: int, window_seconds: int) -> bool:
     """Compte une tentative et indique si elle reste sous la limite.
 
     Les tentatives au-delà de la limite ne sont pas enregistrées : un robot qui insiste
     ne remplit pas la table.
     """
-    key = ip_hash(request)
-    since = timezone.now() - timedelta(seconds=window_seconds)
-    recent = RateLimitHit.objects.filter(bucket=bucket, key_hash=key, created_at__gte=since)
-    if recent.count() >= limit:
+    if exceeded(request, bucket, limit, window_seconds):
         return False
-    RateLimitHit.objects.create(bucket=bucket, key_hash=key)
+    record(request, bucket)
     return True
 
 

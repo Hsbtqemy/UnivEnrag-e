@@ -10,9 +10,11 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 
 ## État du projet
 
-- **Le POC est codé** (22/10/2026) : agenda alimenté par des propositions extérieures, décrit dans `docs/poc-calendrier-propositions.md`. Son périmètre prime sur la phase 1 tant qu'il est en test. Voir le `README.md` pour le démarrer.
-  - Existe : apps `core`, `actors`, `rooms`, `ideas` (propositions extérieures, modération, suivi), `agenda` (événements, conflits, programmation, pages publiques, iCal), commande `seed_demo`, tests pytest.
-  - **Choix propres au POC, à reprendre en phase 1** : ni htmx, ni django-csp (la CSP est posée par `core/middleware.py`), ni WhiteNoise, ni django-environ (réglages lus dans `os.environ`), ni pre-commit. Pas de code d'accès commun : tout est public sauf `/gestion/`, réservé aux comptes staff de l'admin Django. Une seule salle par événement.
+- **Le POC est codé** (22/10/2026) : agenda alimenté par des propositions extérieures, décrit dans `docs/poc-calendrier-propositions.md`. Voir le `README.md` pour le démarrer.
+- **Phase 1 en cours**, par lots testés et commités un à un : A socle · B agenda des membres · C salles et espaces · D récurrences et indisponibilités · E idées des membres · F mise en ligne.
+  - **Lot A fait** : modèle `accounts.User` (7 droits, `require_capability`, `CapabilityAdminMixin`), double authentification TOTP + codes de secours (`accounts/two_factor.py`, obligatoire hors `DJANGO_ENV=dev`, forcée avec `DJANGO_ADMIN_2FA=1`), code d'accès commun (`core/access.py`, `@public_view`), nom mémorisé et `request.actor` (`actors/resolvers.py`), journal `audit.log()` en ajout seul, page `/gestion/` selon les droits.
+  - URL : public sous `/p/` (`/p/agenda/`, `/p/proposer/`, `/p/suivi/<jeton>/`, `/p/agenda.ics`), interne `/accueil/`, `/nom/`, gestion `/gestion/` (admin Django sous `/gestion/admin/`).
+  - **Choix restés simples, à revoir si besoin** : ni htmx, ni django-csp (la CSP est posée par `core/middleware.py`), ni WhiteNoise, ni django-environ (réglages lus dans `os.environ`), ni pre-commit. Une seule salle par événement.
   - Le reste de ce fichier (arborescence, commandes cron, sauvegarde…) décrit encore des **cibles à créer**.
 - Commence par la **phase 1** (voir « Phasage »). Ne code pas une phase suivante avant que le collectif ait validé la phase en cours. Seule exception : les modèles minimaux dont la phase en cours a besoin.
 - Tiens ce fichier à jour : quand une cible devient réelle, quand une décision par défaut est confirmée ou changée, quand une commande change.
@@ -79,7 +81,7 @@ tests/             conftest.py factories.py acceptance/test_reception.py
 
 Chaque app suit la même structure : `apps.py models.py services.py views.py urls.py forms.py admin.py templates/<app>/ tests/`. Le nom est de la forme `name="apps.agenda"`, `label="agenda"`.
 
-Les dépendances vont dans un seul sens : `core ← actors ← accounts ← audit ← {rooms, spaces, discussions} ← agenda ← ideas ← proposals ← votes ← {exports, public}`. Entre modèles, les clés étrangères s'écrivent sous forme de chaîne (`"agenda.Event"`).
+Les dépendances vont dans un seul sens : `core ← actors ← audit ← accounts ← {rooms, spaces, discussions} ← agenda ← ideas ← proposals ← votes ← {exports, public}`. (`audit` ne connaît les comptes que par `settings.AUTH_USER_MODEL` ; `accounts` l'appelle.) Seule entorse admise : la vue de programmation (`agenda/views.py`) lit les idées à placer, et `agenda.services.confirm` importe `ideas.services` à l'intérieur de la fonction. Entre modèles, les clés étrangères s'écrivent sous forme de chaîne (`"agenda.Event"`).
 
 ### Couches
 
@@ -116,7 +118,7 @@ Disponibles (`Makefile`) :
 | `make install` | `uv sync` |
 | `make dev` | `runserver` sur la base `db.sqlite3` (ou `DJANGO_DB_PATH`) |
 | `make migrate` | `makemigrations` puis `migrate` |
-| `make demo` | `migrate` puis `seed_demo --reset` : salles, propositions dans tous les états, événements datés à partir de lundi prochain, compte `admin` / `demo-collectif-2026` |
+| `make demo` | `migrate` puis `seed_demo --reset` : code d'accès `collectif2026`, administrateur `admin` et gestionnaire `camille` (agenda + modération), mot de passe `demo-collectif-2026`, salles, propositions dans tous les états, événements datés à partir de lundi prochain |
 | `make test` | `uv run pytest` |
 | `make lint` / `make fmt` | `ruff check` + `ruff format --check` + migrations à jour / correction automatique |
 | `make check-deploy` | `manage.py check --deploy` avec des réglages de production factices |

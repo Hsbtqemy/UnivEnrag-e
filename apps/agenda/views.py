@@ -2,13 +2,14 @@ import json
 from datetime import timedelta
 from itertools import groupby
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.accounts.capabilities import require_capability
+from apps.core.access import public_view
 from apps.core.dates import from_wall_clock, to_wall_clock
 from apps.ideas import services as ideas_services
 from apps.ideas.models import Idea
@@ -21,6 +22,7 @@ from .models import Event
 
 
 @require_GET
+@public_view
 def public_list(request):
     today = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
     events = list(ical.public_events().filter(end__gte=today))
@@ -32,6 +34,7 @@ def public_list(request):
 
 
 @require_GET
+@public_view
 def public_week(request):
     config = {
         "eventsUrl": reverse("agenda:public_events_json"),
@@ -41,12 +44,14 @@ def public_week(request):
 
 
 @require_GET
+@public_view
 def public_detail(request, pk):
     event = get_object_or_404(ical.public_events(), pk=pk)
     return render(request, "public/event_detail.html", {"event": event})
 
 
 @require_GET
+@public_view
 def public_events_json(request):
     events = ical.public_events()
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
@@ -56,6 +61,7 @@ def public_events_json(request):
 
 
 @require_GET
+@public_view
 def public_ics(request):
     body = ical.public_calendar(
         ical.public_events(),
@@ -65,6 +71,22 @@ def public_ics(request):
     response = HttpResponse(body, content_type="text/calendar; charset=utf-8")
     response["Content-Disposition"] = 'inline; filename="agenda.ics"'
     return response
+
+
+# --- Interne ------------------------------------------------------------------------------
+
+
+@require_GET
+def home(request):
+    """Accueil des membres : prochains événements, provisoires compris (marqués comme tels)."""
+    now = timezone.now()
+    events = (
+        Event.objects.active()
+        .filter(end__gte=now, start__lte=now + timedelta(days=60))
+        .select_related("owner", "room")
+        .order_by("start")[:20]
+    )
+    return render(request, "agenda/home.html", {"events": events})
 
 
 # --- Gestion -----------------------------------------------------------------------------
@@ -79,7 +101,7 @@ def _unplaced_ideas():
     )
 
 
-@staff_member_required
+@require_capability("manage_agenda")
 @require_GET
 def programming(request):
     rooms = list(Room.objects.filter(is_active=True))
@@ -101,7 +123,7 @@ def programming(request):
     )
 
 
-@staff_member_required
+@require_capability("manage_agenda")
 @require_GET
 def gestion_events(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
@@ -142,7 +164,7 @@ def _error(message: str, status: int = 400, **extra) -> JsonResponse:
     return JsonResponse({"ok": False, "error": message, **extra}, status=status)
 
 
-@staff_member_required
+@require_capability("manage_agenda")
 @require_POST
 def gestion_move(request, pk):
     event = get_object_or_404(Event, pk=pk)
@@ -156,7 +178,9 @@ def gestion_move(request, pk):
     except (TypeError, ValueError):
         return _error("Version de l'événement manquante.")
     try:
-        event = services.move(event, start=start, end=end, room=room, revision=revision)
+        event = services.move(
+            event, start=start, end=end, room=room, revision=revision, user=request.user
+        )
     except services.StaleRevisionError as error:
         return _error(str(error), status=409)
     except services.RoomConflictError as error:
@@ -166,7 +190,7 @@ def gestion_move(request, pk):
     return JsonResponse({"ok": True, "warnings": services.warnings_for(event)})
 
 
-@staff_member_required
+@require_capability("manage_agenda")
 @require_POST
 def gestion_confirm(request):
     ids = _json_body(request).get("ids") or []
@@ -183,16 +207,16 @@ def gestion_confirm(request):
     )
 
 
-@staff_member_required
+@require_capability("manage_agenda")
 @require_POST
 def gestion_public(request, pk):
     event = get_object_or_404(Event, pk=pk)
     is_public = bool(_json_body(request).get("isPublic"))
-    services.set_public(event, is_public=is_public)
+    services.set_public(event, is_public=is_public, user=request.user)
     return JsonResponse({"ok": True, "isPublic": is_public})
 
 
-@staff_member_required
+@require_capability("manage_agenda")
 @require_POST
 def gestion_place(request, pk):
     idea = get_object_or_404(Idea, pk=pk)
@@ -203,7 +227,7 @@ def gestion_place(request, pk):
     end = from_wall_clock(data.get("end", "")) or start + timedelta(minutes=idea.duration_minutes)
     room = _room_from(data.get("room"))
     try:
-        event = ideas_services.place(idea, start=start, end=end, room=room)
+        event = ideas_services.place(idea, start=start, end=end, room=room, user=request.user)
     except (ideas_services.TransitionError, services.EventError) as error:
         return _error(str(error))
     return JsonResponse(

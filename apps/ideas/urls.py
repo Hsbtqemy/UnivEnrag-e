@@ -5,9 +5,9 @@ from . import views
 app_name = "ideas"
 
 urlpatterns = [
-    path("proposer/", views.propose, name="propose"),
-    path("proposer/envoyee/", views.sent, name="sent"),
-    path("suivi/<uuid:token>/", views.track, name="track"),
+    path("p/proposer/", views.propose, name="propose"),
+    path("p/proposer/envoyee/", views.sent, name="sent"),
+    path("p/suivi/<uuid:token>/", views.track, name="track"),
     path("gestion/moderation/", views.moderation, name="moderation"),
     path("gestion/moderation/<int:pk>/accepter/", views.moderation_accept, name="accept"),
     path("gestion/moderation/<int:pk>/refuser/", views.moderation_refuse, name="refuse"),

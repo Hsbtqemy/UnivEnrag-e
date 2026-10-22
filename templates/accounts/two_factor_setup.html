@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Double authentification — Agenda du collectif{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Activer la double authentification</h1>
+<p class="lead">Elle protège les comptes de gestion : en plus du mot de passe, un code change toutes les 30 secondes sur votre téléphone.</p>
+<ol class="steps">
+  <li>Installez une application d'authentification (par exemple Aegis, FreeOTP, ou celle de votre téléphone).</li>
+  <li>Scannez ce QR code avec l'application :
+    <p><img class="qr" src="{% url 'accounts:2fa_qr' %}" alt="QR code à scanner avec l'application d'authentification" width="245" height="245"></p>
+    <p class="field__help">Impossible de scanner ? Saisissez cette clé dans l'application : <code class="secret">{{ secret }}</code></p>
+  </li>
+  <li>Saisissez le code à 6 chiffres affiché par l'application.</li>
+</ol>
+<form method="post" class="form form--narrow">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% include "includes/field.html" with field=form.token %}
+  <button type="submit" class="button">Activer</button>
+</form>
+{% endblock %}

@@ -1,17 +1,16 @@
 from django.urls import path
-from django.views.generic import RedirectView
 
 from . import views
 
 app_name = "agenda"
 
 urlpatterns = [
-    path("agenda/", views.public_list, name="public_list"),
-    path("agenda/semaine/", views.public_week, name="public_week"),
-    path("agenda/evenements.json", views.public_events_json, name="public_events_json"),
-    path("agenda/<int:pk>/", views.public_detail, name="public_detail"),
-    path("agenda.ics", views.public_ics, name="public_ics"),
-    path("gestion/", RedirectView.as_view(pattern_name="agenda:programming"), name="gestion"),
+    path("accueil/", views.home, name="home"),
+    path("p/agenda/", views.public_list, name="public_list"),
+    path("p/agenda/semaine/", views.public_week, name="public_week"),
+    path("p/agenda/evenements.json", views.public_events_json, name="public_events_json"),
+    path("p/agenda/<int:pk>/", views.public_detail, name="public_detail"),
+    path("p/agenda.ics", views.public_ics, name="public_ics"),
     path("gestion/programmation/", views.programming, name="programming"),
     path("gestion/api/evenements/", views.gestion_events, name="gestion_events"),
     path("gestion/api/evenements/<int:pk>/deplacer/", views.gestion_move, name="gestion_move"),

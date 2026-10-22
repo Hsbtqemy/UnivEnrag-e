@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Agenda du collectif{% endblock %}</title>
+  <title>{% block title %}{{ site.collective_name }}{% endblock %}</title>
   {% block robots %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% block head %}{% endblock %}
@@ -12,18 +12,29 @@
   <a class="skip-link" href="#contenu">Aller au contenu</a>
   <header class="site-header">
     <div class="site-header__inner">
-      <a class="site-name" href="{% url 'agenda:public_list' %}">Agenda du collectif</a>
+      <a class="site-name" href="/">{{ site.collective_name }}</a>
+      {% with current=request.resolver_match.url_name %}
       <nav aria-label="Navigation principale">
         <ul class="nav">
-          <li><a href="{% url 'agenda:public_list' %}"{% if request.resolver_match.url_name == 'public_list' %} aria-current="page"{% endif %}>Agenda</a></li>
-          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if request.resolver_match.url_name == 'propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>
-          {% if user.is_staff %}
-          <li><a href="{% url 'ideas:moderation' %}"{% if request.resolver_match.url_name == 'moderation' %} aria-current="page"{% endif %}>Modération</a></li>
-          <li><a href="{% url 'agenda:programming' %}"{% if request.resolver_match.url_name == 'programming' %} aria-current="page"{% endif %}>Programmation</a></li>
-          <li><a href="{% url 'admin:index' %}">Administration</a></li>
+          {% if has_access %}
+          <li><a href="{% url 'agenda:home' %}"{% if current == 'home' %} aria-current="page"{% endif %}>Accueil</a></li>
+          {% endif %}
+          <li><a href="{% url 'agenda:public_list' %}"{% if current == 'public_list' or current == 'public_week' %} aria-current="page"{% endif %}>Agenda public</a></li>
+          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>
+          {% if is_manager %}
+          <li><a href="{% url 'accounts:gestion_home' %}"{% if current == 'gestion_home' %} aria-current="page"{% endif %}>Gestion</a></li>
+          {% elif not has_access %}
+          <li><a href="{% url 'core:access' %}"{% if current == 'access' %} aria-current="page"{% endif %}>Espace membres</a></li>
           {% endif %}
         </ul>
       </nav>
+      {% endwith %}
+      {% if has_access %}
+      <p class="whoami">
+        {% if request.actor_name %}Vous : <strong>{{ request.actor_name }}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
+        {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% endif %}
+      </p>
+      {% endif %}
     </div>
   </header>
   <main id="contenu" class="{% block main_class %}page{% endblock %}">
@@ -31,7 +42,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">
-    <p>Plateforme du collectif · <a href="{% url 'agenda:public_ics' %}">S'abonner à l'agenda (iCal)</a></p>
+    <p>{{ site.collective_name }} · <a href="{% url 'agenda:public_ics' %}">S'abonner à l'agenda public (iCal)</a></p>
   </footer>
   {% block scripts %}{% endblock %}
 </body>

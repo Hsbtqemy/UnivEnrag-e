@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Votre nom — Agenda du collectif{% endblock %}
+{% block content %}
+<h1>Votre nom</h1>
+<p class="lead">Ce nom accompagne vos contributions : événements, idées, réactions. Il est retenu par ce navigateur seulement, et vous pouvez le changer à tout moment.</p>
+<form method="post" class="form form--narrow">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% include "includes/field.html" with field=form.author_name %}
+  <div class="actions">
+    <button type="submit" class="button">Enregistrer</button>
+    {% if request.actor_name %}<button type="submit" name="forget" value="1" class="button button--secondary">Oublier mon nom sur ce navigateur</button>{% endif %}
+  </div>
+</form>
+{% endblock %}

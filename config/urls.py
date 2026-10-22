@@ -1,12 +1,14 @@
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import RedirectView
 
 admin.site.site_header = "Plateforme du collectif — administration"
 admin.site.site_title = "Administration"
+admin.site.site_url = "/accueil/"
 
 urlpatterns = [
-    path("", RedirectView.as_view(pattern_name="agenda:public_list", permanent=False)),
+    path("", include("apps.core.urls")),
+    path("", include("apps.accounts.urls")),
+    path("", include("apps.actors.urls")),
     path("", include("apps.ideas.urls")),
     path("", include("apps.agenda.urls")),
     path("gestion/admin/", admin.site.urls),

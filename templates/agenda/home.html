@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Accueil — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<h1>{% if request.actor_name %}Bonjour {{ request.actor_name }}{% else %}Bienvenue{% endif %}</h1>
+{% if not request.actor_name %}
+<p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient.</p>
+{% endif %}
+
+<section aria-labelledby="prochains">
+  <h2 id="prochains">Prochains événements</h2>
+  {% if events %}
+  <ul class="event-list">
+    {% for event in events %}
+    <li class="event-card event-card--{{ event.status }}" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+      <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.status == "provisional" %} · <span class="badge">provisoire</span>{% endif %}</p>
+      <h3 class="event-card__title">{{ event.title }}</h3>
+      <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Rien de prévu dans les deux mois qui viennent.</p>
+  {% endif %}
+</section>
+{% endblock %}

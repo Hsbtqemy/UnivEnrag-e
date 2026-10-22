@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Codes de secours — Agenda du collectif{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<div class="callout callout--strong">
+  <h1>Double authentification activée</h1>
+  <p><strong>Notez ces codes de secours maintenant</strong> : ils ne seront plus jamais affichés. Chacun sert une seule fois, si vous perdez votre téléphone.</p>
+  <ul class="backup-codes">
+    {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+  </ul>
+</div>
+<p><a class="button" href="{{ next }}">J'ai noté les codes, continuer</a></p>
+{% endblock %}

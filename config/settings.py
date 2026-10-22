@@ -33,12 +33,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
     "apps.core",
     "apps.actors",
+    "apps.audit",
+    "apps.accounts",
     "apps.rooms",
     "apps.ideas",
     "apps.agenda",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -46,9 +53,13 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "apps.accounts.two_factor.RequireTwoFactorMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.SecurityHeadersMiddleware",
+    "apps.core.access.AccessCodeMiddleware",
+    "apps.actors.resolvers.ActorMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -63,6 +74,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.site",
+                "apps.accounts.context_processors.management",
             ],
         },
     },
@@ -104,6 +117,13 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "admin:login"
+
+# Double authentification des comptes de gestion (CLAUDE.md ACC-3). Obligatoire hors
+# développement ; en local, DJANGO_ADMIN_2FA=1 permet de l'essayer.
+ADMIN_2FA_REQUIRED = os.environ.get("DJANGO_ADMIN_2FA", "1" if ENV != "dev" else "0") == "1"
+OTP_TOTP_ISSUER = "Plateforme du collectif"
+
+ACTOR_RESOLVER = "apps.actors.resolvers.NameCookieResolver"
 
 X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "same-origin"

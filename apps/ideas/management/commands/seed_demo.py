@@ -8,6 +8,7 @@ from datetime import date, time, timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -15,11 +16,13 @@ from apps.actors.models import Actor
 from apps.agenda import services as agenda_services
 from apps.agenda.models import Event
 from apps.core.dates import combine
+from apps.core.models import SiteSettings
 from apps.ideas import services as ideas_services
 from apps.ideas.models import Idea, IdeaSlot
 from apps.rooms.models import Room
 
 DEMO_ADMIN = "admin"
+DEMO_MANAGER = "camille"
 
 
 class Command(BaseCommand):
@@ -45,11 +48,19 @@ class Command(BaseCommand):
                     "La base contient déjà des propositions : relancez avec --reset."
                 )
             admin, password = self._admin()
+            self._manager(password)
+            code = os.environ.get("DEMO_ACCESS_CODE", "collectif2026")
+            site = SiteSettings.get()
+            site.collective_name = "Collectif UnivEnrag-e"
+            site.save(update_fields=["collective_name"])
+            site.set_access_code(code)
             rooms = self._rooms()
             self._ideas(rooms, admin)
         self.stdout.write(self.style.SUCCESS("Démo chargée."))
+        self.stdout.write(f"Code d'accès des membres : {code}")
         if password:
-            self.stdout.write(f"Compte admin : {DEMO_ADMIN} / {password}")
+            self.stdout.write(f"Administrateur principal : {DEMO_ADMIN} / {password}")
+            self.stdout.write(f"Gestionnaire (agenda + modération) : {DEMO_MANAGER} / {password}")
 
     def _admin(self):
         user_model = get_user_model()
@@ -59,6 +70,19 @@ class Command(BaseCommand):
         password = os.environ.get("DEMO_ADMIN_PASSWORD", "demo-collectif-2026")
         user = user_model.objects.create_superuser(DEMO_ADMIN, password=password)
         return user, password
+
+    def _manager(self, password):
+        user_model = get_user_model()
+        if password is None or user_model.objects.filter(username=DEMO_MANAGER).exists():
+            return
+        manager = user_model.objects.create_user(
+            DEMO_MANAGER, password=password, first_name="Camille", is_staff=True
+        )
+        manager.user_permissions.set(
+            Permission.objects.filter(
+                content_type__app_label="accounts", codename__in=["manage_agenda", "moderate"]
+            )
+        )
 
     def _rooms(self):
         specs = [

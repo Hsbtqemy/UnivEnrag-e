@@ -257,3 +257,18 @@ h2 { font-size: 1.25rem; }
 }
 .ec-event.ev-alternative .ev-title { font-weight: 400; font-style: italic; }
 .ec-event.is-selected { outline: 3px solid var(--focus); outline-offset: 1px; z-index: 5; }
+
+/* --- Lot A : identité, accès, gestion -------------------------------------------- */
+
+.whoami { margin: 0; font-size: .9rem; color: var(--muted); width: 100%; text-align: right; }
+.form--narrow { max-width: 26rem; }
+.steps li { margin-bottom: .75rem; }
+.qr { background: #fff; padding: .5rem; border-radius: var(--radius); border: 1px solid var(--border); }
+.secret { font-size: 1rem; letter-spacing: .1em; overflow-wrap: anywhere; }
+.backup-codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: .5rem; list-style: none; padding: 0; font-size: 1.1rem; }
+.badge { display: inline-block; padding: 0 .45em; border-radius: 1em; background: var(--accent-soft); color: var(--text); font-size: .8em; font-weight: 600; }
+.event-card--provisional { border-left-style: dashed; }
+.tool-list { list-style: none; padding: 0; display: grid; gap: .75rem; }
+.tool-list li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; display: grid; gap: .2rem; }
+.tool-list a { font-weight: 700; font-size: 1.05rem; }
+.tool-list span { color: var(--muted); }

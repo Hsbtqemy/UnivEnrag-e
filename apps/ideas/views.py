@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from apps.accounts.capabilities import require_capability
 from apps.core import ratelimit
+from apps.core.access import public_view
 
 from . import services
 from .forms import ProposeForm, RefuseForm, TrackingForm
@@ -15,6 +16,7 @@ from .models import Idea, IdeaSlot
 SPAM_REASON = "Proposition non retenue."
 
 
+@public_view
 def propose(request):
     form = ProposeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -40,10 +42,12 @@ def propose(request):
     return render(request, "ideas/propose.html", {"form": form})
 
 
+@public_view
 def sent(request):
     return render(request, "ideas/sent.html")
 
 
+@public_view
 def track(request, token):
     idea = get_object_or_404(
         Idea.objects.select_related("owner", "wanted_room").prefetch_related("slots"),
@@ -72,7 +76,7 @@ def track(request, token):
     )
 
 
-@staff_member_required
+@require_capability("moderate")
 def moderation(request):
     slots = Prefetch("slots", queryset=IdeaSlot.objects.order_by("rank"))
     base = Idea.objects.select_related("owner", "wanted_room").prefetch_related(slots)
@@ -87,7 +91,7 @@ def moderation(request):
     )
 
 
-@staff_member_required
+@require_capability("moderate")
 @require_POST
 def moderation_accept(request, pk):
     idea = get_object_or_404(Idea, pk=pk)
@@ -103,7 +107,7 @@ def moderation_accept(request, pk):
     return redirect("ideas:moderation")
 
 
-@staff_member_required
+@require_capability("moderate")
 @require_POST
 def moderation_refuse(request, pk):
     idea = get_object_or_404(Idea, pk=pk)
@@ -118,7 +122,7 @@ def moderation_refuse(request, pk):
     return redirect("ideas:moderation")
 
 
-@staff_member_required
+@require_capability("moderate")
 @require_POST
 def moderation_refuse_bulk(request):
     ids = request.POST.getlist("ids")

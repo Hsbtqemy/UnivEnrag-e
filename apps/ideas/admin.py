@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
+from apps.accounts.capabilities import CapabilityAdminMixin
+from apps.audit.admin_mixins import AuditedAdminMixin
+
 from .models import Idea, IdeaSlot
 
 
@@ -10,7 +13,8 @@ class IdeaSlotInline(admin.TabularInline):
 
 
 @admin.register(Idea)
-class IdeaAdmin(admin.ModelAdmin):
+class IdeaAdmin(AuditedAdminMixin, CapabilityAdminMixin, admin.ModelAdmin):
+    capability = "moderate"
     list_display = ["title", "owner", "email_link", "status", "created_at"]
     list_filter = ["status", "wanted_room"]
     search_fields = ["title", "owner__display_name", "owner_email"]

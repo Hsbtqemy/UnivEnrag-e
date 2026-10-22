@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Espace membres — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Espace membres</h1>
+{% if site.has_access_code %}
+<p class="lead">Saisissez le code d'accès commun du collectif. Votre navigateur le retiendra : vous n'aurez plus à le saisir.</p>
+<form method="post" class="form form--narrow">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% include "includes/field.html" with field=form.code %}
+  <button type="submit" class="button">Entrer</button>
+</form>
+<p class="hint">Vous n'avez pas le code ? Il est transmis en réunion et sur les listes du collectif.</p>
+{% else %}
+<p class="message message--error">Aucun code d'accès n'est encore défini. L'administrateur principal doit en choisir un dans l'administration (Réglages du site).</p>
+{% endif %}
+<p><a href="{% url 'agenda:public_list' %}">← Agenda public</a></p>
+{% endblock %}

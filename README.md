@@ -1,14 +1,15 @@
-# Plateforme du collectif — POC d'agenda
+# Plateforme du collectif
 
-Premier jalon de la plateforme décrite dans [le cahier des charges](docs/Cahier%20des%20charges%20—%20Plateforme%20du%20collectif.md) : un agenda collectif alimenté par des **propositions d'événements venues de l'extérieur**. Le périmètre est fixé par [la fiche du POC](docs/poc-calendrier-propositions.md), et les règles de travail par [CLAUDE.md](CLAUDE.md).
+Site du collectif décrit dans [le cahier des charges](docs/Cahier%20des%20charges%20—%20Plateforme%20du%20collectif.md). Règles de travail et état d'avancement : [CLAUDE.md](CLAUDE.md).
 
-Le parcours couvert :
+Ce qui existe :
 
-1. **Proposer** (`/proposer/`, public, sans compte) : nom, e-mail, titre, description, durée, jusqu'à trois créneaux possibles. La personne reçoit un lien de suivi personnel ; le site n'envoie aucun e-mail.
-2. **Modérer** (`/gestion/moderation/`) : accepter, ne pas retenir (avec un motif), écarter le spam en lot.
-3. **Placer** (`/gestion/programmation/`) : une colonne par salle, provisoires hachurés, autres créneaux envisagés en pointillé (un clic y déplace l'événement), panneau « À placer », glisser-déposer, et déplacement au clavier depuis le panneau de détails.
-4. **Confirmer** : à l'unité ou par sélection. Seul un conflit de salle avec un événement confirmé bloque.
-5. **Publier** (`/agenda/`, `/agenda/semaine/`, `/agenda.ics`) : uniquement les événements confirmés et publics, avec le nom du porteur, jamais son e-mail.
+- **Public, sans code** : agenda public (`/p/agenda/`, vue liste ou semaine, flux `/p/agenda.ics`) et formulaire de proposition d'événement (`/p/proposer/`) avec lien de suivi personnel. Le site n'envoie aucun e-mail. Voir [la fiche du POC](docs/poc-calendrier-propositions.md).
+- **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
+- **Gestion** (`/gestion/`), comptes de l'administrateur principal et des gestionnaires, avec double authentification :
+  - modération des propositions reçues ;
+  - programmation en colonnes par salle : provisoires hachurés, autres créneaux en pointillé, panneau « À placer », confirmation bloquée par les seuls conflits de salle ;
+  - administration (`/gestion/admin/`) : comptes et droits, code d'accès, journal d'activité (administrateur principal seulement), salles, événements.
 
 ## Démarrer
 
@@ -16,13 +17,21 @@ Prérequis : Python 3.12+ et [uv](https://docs.astral.sh/uv/).
 
 ```bash
 make install   # dépendances
-make demo      # base SQLite + données de démonstration (compte admin : admin / demo-collectif-2026)
+make demo      # base SQLite + données de démonstration
 make dev       # http://127.0.0.1:8000
 ```
 
-La démo commence **lundi prochain** : avancez d'une semaine dans les calendriers. L'administration est sur `/gestion/admin/`, la connexion admin donne accès à la modération et à la programmation.
+Démo :
 
-Pour créer un vrai compte admin : `uv run python manage.py createsuperuser`.
+| Quoi | Valeur |
+|---|---|
+| Code d'accès des membres | `collectif2026` |
+| Administrateur principal | `admin` / `demo-collectif-2026` |
+| Gestionnaire (agenda + modération) | `camille` / `demo-collectif-2026` |
+
+La démo commence **lundi prochain** : avancez dans les calendriers. En développement, la double authentification est désactivée ; `DJANGO_ADMIN_2FA=1 make dev` permet de l'essayer (QR code à scanner avec une application d'authentification). Elle est toujours obligatoire en production.
+
+Pour créer le vrai compte de l'administrateur principal : `uv run python manage.py createsuperuser`, puis choisir le code d'accès dans l'administration (Réglages du site).
 
 ## Vérifier
 
@@ -35,12 +44,14 @@ make lint    # ruff + migrations à jour
 
 ```
 config/          réglages (DJANGO_ENV=dev|test|prod), URL
-apps/core/       en-têtes de sécurité, limitation de débit (IP hachée), anti-spam, dates
-apps/actors/     Actor : une personne qui agit sous son nom, sans compte
+apps/core/       réglages du site, code d'accès (@public_view), en-têtes de sécurité, limitation de débit (IP hachée), anti-spam, dates
+apps/actors/     Actor : une personne qui agit sous son nom, sans compte ; nom retenu par le navigateur
+apps/audit/      journal d'activité des comptes de gestion (ajout seul)
+apps/accounts/   comptes de gestion, 7 droits, double authentification
 apps/rooms/      Room : les salles gérées par le collectif
 apps/ideas/      Idea, IdeaSlot : propositions d'événements, modération, suivi
 apps/agenda/     Event : agenda collectif, conflits, programmation, pages publiques, iCal
-templates/       gabarits (public, gestion)
+templates/       gabarits (public, membres, gestion)
 static/          CSS, JS, @event-calendar servi en local (static/vendor/VERSIONS.md)
 ```
 

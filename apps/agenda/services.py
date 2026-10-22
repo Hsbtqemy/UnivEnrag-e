@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit import audit
+
 from .models import Event
 
 
@@ -88,7 +90,7 @@ def create_from_idea(idea, *, start, end, room) -> Event:
 
 
 @transaction.atomic
-def move(event: Event, *, start, end, room, revision: int) -> Event:
+def move(event: Event, *, start, end, room, revision: int, user=None) -> Event:
     """Déplace ou redimensionne un événement (glisser-déposer ou formulaire)."""
     event = Event.objects.select_for_update().get(pk=event.pk)
     if revision != event.revision:
@@ -101,9 +103,17 @@ def move(event: Event, *, start, end, room, revision: int) -> Event:
         conflicts = room_conflicts(room, start, end, exclude_id=event.pk)
         if conflicts.exists():
             raise RoomConflictError(conflicts)
+    before = {"start": event.start, "end": event.end, "room": event.room}
     event.start, event.end, event.room = start, end, room
     event.revision += 1
     event.save(update_fields=["start", "end", "room", "revision", "updated_at"])
+    audit.log(
+        user,
+        "agenda.event_moved",
+        event,
+        before=before,
+        after={"start": start, "end": end, "room": room},
+    )
     return event
 
 
@@ -125,6 +135,7 @@ def confirm(event: Event, *, user) -> Event:
     event.confirmed_by = user
     event.revision += 1
     event.save()
+    audit.log(user, "agenda.event_confirmed", event)
     if event.idea_id:
         ideas_services.mark_planned(event.idea)
     return event
@@ -146,9 +157,10 @@ def confirm_many(events, *, user) -> ConfirmReport:
 
 
 @transaction.atomic
-def set_public(event: Event, *, is_public: bool) -> Event:
+def set_public(event: Event, *, is_public: bool, user=None) -> Event:
     event = Event.objects.select_for_update().get(pk=event.pk)
     event.is_public = is_public
     event.revision += 1
     event.save(update_fields=["is_public", "revision", "updated_at"])
+    audit.log(user, "agenda.event_public_changed", event, is_public=is_public)
     return event

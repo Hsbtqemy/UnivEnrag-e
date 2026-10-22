@@ -28,7 +28,7 @@ def public_calendar(events, *, base_url: str, name: str) -> bytes:
             description += f"\n\n{event.description}"
         item.add("description", description)
         item.add("location", event.place_label)
-        item.add("url", f"{base_url.rstrip('/')}/agenda/{event.pk}/")
+        item.add("url", f"{base_url.rstrip('/')}/p/agenda/{event.pk}/")
         item.add("status", "CONFIRMED")
         cal.add_component(item)
     return cal.to_ical()

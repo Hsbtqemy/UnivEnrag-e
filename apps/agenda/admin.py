@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib import admin
 
+from apps.accounts.capabilities import CapabilityAdminMixin
+from apps.audit.admin_mixins import AuditedAdminMixin
+
 from . import services
 from .models import Event
 
@@ -40,7 +43,8 @@ class EventAdminForm(forms.ModelForm):
 
 
 @admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(AuditedAdminMixin, CapabilityAdminMixin, admin.ModelAdmin):
+    capability = "manage_agenda"
     form = EventAdminForm
     list_display = ["title", "start", "end", "room", "status", "is_public", "owner"]
     list_filter = ["status", "is_public", "room"]
