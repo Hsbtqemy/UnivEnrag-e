@@ -1,0 +1,18 @@
+{% load static %}<!doctype html>
+{# Mise en cache par le service worker : aucune donnée personnelle, aucun nom. #}
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Hors ligne — {{ site.collective_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <main id="contenu" class="page">
+    <h1>Pas de connexion</h1>
+    <p class="lead">Le site du collectif a besoin du réseau. Vérifiez votre connexion, puis réessayez.</p>
+    <p><a class="button" href="/">Réessayer</a></p>
+  </main>
+</body>
+</html>

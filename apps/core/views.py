@@ -1,7 +1,12 @@
+import hashlib
+
 from django import forms
+from django.conf import settings
 from django.db import DatabaseError, connection
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.templatetags.static import static
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
@@ -99,3 +104,74 @@ def privacy(request):
 def help_page(request):
     """Aide des membres : derrière le code d'accès, comme le reste de l'espace interne."""
     return render(request, "core/help.html")
+
+
+# --- Application installable (CLAUDE.md : « installable (manifest + service worker) ») ----
+
+THEME_COLOR = "#2f5d8c"
+BACKGROUND_COLOR = "#f7f7f5"
+SW_LOGIC_VERSION = "1"  # à changer quand templates/core/sw.js change de comportement
+
+
+@require_GET
+@access.public_view
+def manifest(request):
+    name = SiteSettings.get().collective_name
+    icon = static("icons/icone-512.png")
+    response = JsonResponse(
+        {
+            "name": name,
+            "short_name": name[:24],
+            "lang": "fr",
+            "start_url": "/",
+            "scope": "/",
+            "display": "standalone",
+            "background_color": BACKGROUND_COLOR,
+            "theme_color": THEME_COLOR,
+            "icons": [
+                {"src": static("icons/icone-192.png"), "sizes": "192x192", "type": "image/png"},
+                {"src": icon, "sizes": "512x512", "type": "image/png"},
+                {
+                    "src": static("icons/icone-maskable-512.png"),
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "maskable",
+                },
+            ],
+        }
+    )
+    response["Content-Type"] = "application/manifest+json"
+    return response
+
+
+@require_GET
+@never_cache
+@access.public_view
+def service_worker(request):
+    precache = [
+        reverse("core:offline"),
+        static("css/app.css"),
+        static("icons/icone-192.png"),
+        static("icons/favicon-32.png"),
+    ]
+    # Les noms versionnés changent à chaque mise à jour des fichiers : le cache aussi.
+    version = hashlib.sha256("|".join([SW_LOGIC_VERSION, *precache]).encode()).hexdigest()[:12]
+    return render(
+        request,
+        "core/sw.js",
+        {
+            "version": version,
+            "offline_url": reverse("core:offline"),
+            "static_prefix": settings.STATIC_URL
+            if settings.STATIC_URL.startswith("/")
+            else f"/{settings.STATIC_URL}",
+            "precache": precache,
+        },
+        content_type="application/javascript; charset=utf-8",
+    )
+
+
+@require_GET
+@access.public_view
+def offline(request):
+    return render(request, "core/offline.html", {"site": SiteSettings.get()})
