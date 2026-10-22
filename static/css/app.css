@@ -146,11 +146,17 @@ h2 { font-size: 1.25rem; }
 .optional { font-weight: 400; color: var(--muted); }
 .field { margin-bottom: 1rem; }
 .field label { display: block; font-weight: 600; margin-bottom: .25rem; }
-.field input:not([type="checkbox"]), .field select, .field textarea {
+.field input:not([type="checkbox"]):not([type="radio"]), .field select, .field textarea {
   width: 100%; font: inherit; color: var(--text); background: var(--bg);
   border: 1px solid var(--border); border-radius: var(--radius); padding: .5rem .6rem;
 }
 .field textarea { resize: vertical; }
+/* Groupe de choix (boutons radio, cases multiples) : Django l'enveloppe d'un fieldset. */
+.form .field fieldset { border: 0; padding: 0; margin: 0; background: none; min-width: 0; }
+.form .field fieldset legend { padding: 0; margin-bottom: .35rem; font-weight: 600; }
+.field fieldset > div { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; }
+.field fieldset label { display: flex; align-items: center; gap: .45rem; font-weight: 400; margin: 0; cursor: pointer; }
+.field input[type="radio"], .field fieldset input[type="checkbox"] { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--accent); }
 .field .helptext, .field__help { display: block; color: var(--muted); font-size: .9rem; margin: .25rem 0 0; }
 .field .errorlist { list-style: none; padding: 0; margin: 0 0 .25rem; color: var(--danger); font-weight: 600; }
 .field--error input, .field--error select, .field--error textarea { border-color: var(--danger); }
@@ -356,7 +362,9 @@ h2 { font-size: 1.25rem; }
 .week-day--weekend { opacity: .85; }
 .week-day__place { font-size: .85rem; color: var(--muted); margin-top: .3rem; }
 .week-day input[list] { width: 100%; font: inherit; padding: .35rem .45rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); }
-.table-scroll { overflow-x: auto; }
+/* position: relative : les légendes cachées (.visually-hidden, en absolu) restent dans le
+   cadre défilant au lieu d'élargir toute la page sur téléphone. */
+.table-scroll { overflow-x: auto; position: relative; }
 .presence-table { min-width: 48rem; table-layout: fixed; }
 .presence-table th[scope="row"] { width: 6.5rem; }
 .presence-table td { vertical-align: top; }
