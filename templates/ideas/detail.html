@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ idea.title }} — Idées — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'ideas:list' %}">← Idées</a></p>
+<h1>{{ idea.title }}</h1>
+<p class="badges">
+  <span class="badge">{{ idea.get_kind_display }}</span>
+  <span class="idea-status idea-status--{{ idea.status }}">{{ idea.get_status_display }}</span>
+  {% if idea.is_external %}<span class="badge">Proposition extérieure</span>{% endif %}
+</p>
+<p class="meta">Portée par {{ idea.owner.display_name }}{% if show_email %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a>{% endif %} · déposée le {{ idea.created_at|date:"j F Y" }}{% if idea.updated_by %} · complétée par {{ idea.updated_by.display_name }}{% endif %}</p>
+
+{% if idea.description %}<div class="prose">{{ idea.description|linebreaks }}</div>{% endif %}
+
+<dl class="facts">
+  {% if idea.space %}<div><dt>Espace</dt><dd>{{ idea.space.name }}</dd></div>{% endif %}
+  {% if idea.format %}<div><dt>Format</dt><dd>{{ idea.get_format_display }}</dd></div>{% endif %}
+  {% if idea.kind == "event" %}<div><dt>Durée souhaitée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>{% endif %}
+  {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
+  {% if idea.audience %}<div><dt>Public visé</dt><dd>{{ idea.audience }}</dd></div>{% endif %}
+  {% if idea.expected_count %}<div><dt>Participants attendus</dt><dd>{{ idea.expected_count }}</dd></div>{% endif %}
+  {% if idea.speakers_text %}<div><dt>Organisateurs, intervenants</dt><dd>{{ idea.speakers_text }}</dd></div>{% endif %}
+  {% if idea.needs %}<div><dt>Besoins</dt><dd>{{ idea.needs }}</dd></div>{% endif %}
+  {% if idea.constraints %}<div><dt>Contraintes</dt><dd>{{ idea.constraints }}</dd></div>{% endif %}
+  <div><dt>Créneaux envisagés</dt><dd>
+    {% for slot in slots %}{% if slot.is_precise %}{{ slot.start|date:"l j F"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun pour l'instant{% endfor %}
+  </dd></div>
+</dl>
+
+<section aria-labelledby="dans-agenda">
+  <h2 id="dans-agenda">Dans l'agenda</h2>
+  {% if events %}
+  <ul class="event-list">
+    {% for event in events %}
+    <li class="event-card event-card--{{ event.status }}">
+      <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }} · <span class="badge badge--{{ event.status }}">{{ event.get_status_display|lower }}</span></p>
+      <h3 class="event-card__title"><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a></h3>
+      <p class="event-card__meta">{{ event.place_label }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">{% if idea.kind == "event" and idea.status == "new" or idea.kind == "event" and idea.status == "preparing" %}Pas encore placée : elle attend dans « À placer ».{% else %}Aucun événement.{% endif %}</p>
+  {% endif %}
+  <p class="actions">
+    {% if can_create_event %}<a class="button button--secondary" href="{% url 'agenda:new' %}?idee={{ idea.pk }}">Créer un événement depuis cette idée</a>{% endif %}
+    <a class="button button--secondary" href="{% url 'agenda:programming' %}">Ouvrir la programmation</a>
+  </p>
+</section>
+
+<section aria-labelledby="reactions-titre" id="reactions">
+  <h2 id="reactions-titre">Réactions</h2>
+  <form method="post" action="{% url 'ideas:react' idea.pk %}" class="reactions">
+    {% csrf_token %}
+    {% if request.actor_name %}<input type="hidden" name="author_name" value="{{ request.actor_name }}">
+    {% else %}{% include "includes/field.html" with field=reaction_form.author_name %}{% endif %}
+    <ul class="reaction-list">
+      {% for reaction in reactions %}
+      <li>
+        <button type="submit" name="kind" value="{{ reaction.kind }}" class="button button--small{% if not reaction.mine %} button--secondary{% endif %}" aria-pressed="{{ reaction.mine|yesno:'true,false' }}">{{ reaction.label }} · {{ reaction.actors|length }}</button>
+        {% if reaction.actors %}<span class="reaction-names">{% for actor in reaction.actors %}{{ actor.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </form>
+</section>
+
+<section aria-labelledby="suivi">
+  <h2 id="suivi">Suivi</h2>
+  {% if idea.is_editable %}<p><a class="button button--secondary" href="{% url 'ideas:edit' idea.pk %}">Compléter ou corriger</a></p>{% endif %}
+  {% if status_form %}
+  <form method="post" action="{% url 'ideas:status' idea.pk %}" class="form form--compact">
+    {% csrf_token %}
+    <fieldset>
+      <legend>Changer le statut</legend>
+      {% include "includes/field.html" with field=status_form.status %}
+      {% if request.actor_name %}<input type="hidden" name="author_name" value="{{ request.actor_name }}">
+      {% else %}{% include "includes/field.html" with field=status_form.author_name %}{% endif %}
+      <p class="field__help">« Abandonnée » annule ses placements provisoires. « Planifiée » et « Réalisée » viennent toutes seules, avec la confirmation puis la date de l'événement.</p>
+      <button type="submit" class="button button--secondary">Changer</button>
+    </fieldset>
+  </form>
+  {% elif idea.status == "planned" %}
+  <p class="hint">Planifiée : un événement est confirmé. Elle passera à « Réalisée » une fois la date passée.</p>
+  {% endif %}
+</section>
+{% endblock %}

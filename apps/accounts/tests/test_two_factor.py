@@ -7,10 +7,13 @@ from django_otp.plugins.otp_static.models import StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.accounts import two_factor
+from apps.agenda.models import Event
+from apps.ideas import services as ideas_services
+from conftest import ACCESS_CODE
 
 pytestmark = pytest.mark.django_db
 
-PROGRAMMING = "/gestion/programmation/"
+GESTION_PAGE = "/gestion/moderation/"  # une page de gestion réservée
 
 
 def current_code(device) -> str:
@@ -24,7 +27,7 @@ def logged_in(client, admin_user):
 
 
 def test_manager_without_device_is_sent_to_setup(logged_in):
-    response = logged_in.get(PROGRAMMING)
+    response = logged_in.get(GESTION_PAGE)
     assert response.status_code == 302
     assert response["Location"].startswith(reverse("accounts:2fa_setup"))
 
@@ -41,12 +44,12 @@ def test_setup_with_right_code_enables_2fa_and_gives_backup_codes(logged_in, adm
     logged_in.get(reverse("accounts:2fa_setup"))
     device = TOTPDevice.objects.get(user=admin_user, confirmed=False)
     response = logged_in.post(
-        reverse("accounts:2fa_setup"), {"token": current_code(device), "next": PROGRAMMING}
+        reverse("accounts:2fa_setup"), {"token": current_code(device), "next": GESTION_PAGE}
     )
     assert response.status_code == 200
     assert "Notez ces codes de secours" in response.content.decode()
     assert StaticToken.objects.filter(device__user=admin_user).count() == 10
-    assert logged_in.get(PROGRAMMING).status_code == 200
+    assert logged_in.get(GESTION_PAGE).status_code == 200
 
 
 def test_setup_with_wrong_code_is_refused(logged_in, admin_user):
@@ -62,17 +65,17 @@ def device(admin_user):
 
 
 def test_new_session_must_verify(logged_in, device):
-    response = logged_in.get(PROGRAMMING)
+    response = logged_in.get(GESTION_PAGE)
     assert response["Location"].startswith(reverse("accounts:2fa_verify"))
 
 
 def test_verification_with_totp_opens_gestion(logged_in, device):
     response = logged_in.post(
-        reverse("accounts:2fa_verify") + f"?next={PROGRAMMING}",
-        {"token": current_code(device), "next": PROGRAMMING},
+        reverse("accounts:2fa_verify") + f"?next={GESTION_PAGE}",
+        {"token": current_code(device), "next": GESTION_PAGE},
     )
-    assert response["Location"] == PROGRAMMING
-    assert logged_in.get(PROGRAMMING).status_code == 200
+    assert response["Location"] == GESTION_PAGE
+    assert logged_in.get(GESTION_PAGE).status_code == 200
 
 
 def test_backup_code_works_once(logged_in, client, admin_user, device):
@@ -94,3 +97,19 @@ def test_five_wrong_codes_block_verification(logged_in, device):
 
 def test_login_page_stays_reachable_before_verification(client, db):
     assert client.get("/gestion/admin/login/").status_code == 200
+
+
+def test_unverified_session_has_no_rights_outside_gestion(logged_in, device, site, make_idea, at):
+    """Mot de passe seul, sans TOTP : hors de /gestion/, la session n'a aucun droit (ACC-3)."""
+    idea = make_idea(slots=[{"start": at(1, 10)}])
+    ideas_services.accept(idea, user=device.user)
+    event = idea.events.get()
+    # Sans code d'accès, la session est renvoyée vers la saisie du code, comme un inconnu.
+    response = logged_in.get(reverse("agenda:calendar"))
+    assert response["Location"].startswith(reverse("core:access"))
+    # Avec le code, elle agit comme un participant : confirmer lui est refusé.
+    logged_in.post(reverse("core:access"), {"code": ACCESS_CODE})
+    response = logged_in.post(reverse("agenda:confirm", args=[event.pk]))
+    assert response.status_code == 302
+    event.refresh_from_db()
+    assert event.status == Event.Status.PROVISIONAL

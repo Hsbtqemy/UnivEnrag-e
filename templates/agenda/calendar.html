@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-head">
   <h1>Agenda</h1>
-  <p class="actions"><a class="button button--secondary" href="{% url 'agenda:subscriptions' %}">S'abonner</a> <a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a></p>
+  <p class="actions"><a class="button button--secondary" href="{% url 'agenda:subscriptions' %}">S'abonner</a> <a class="button button--secondary" href="{% url 'agenda:programming' %}">Programmation par salle</a> <a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a></p>
 </div>
 
 {% if not request.actor_name %}

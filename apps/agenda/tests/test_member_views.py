@@ -223,10 +223,8 @@ def test_detail_and_feed_never_show_owner_email(member_client, make_idea, at, ad
 
     idea = make_idea(slots=[{"start": at(1, 10)}], email="secret@univ.example")
     ideas_services.accept(idea, user=admin_user)
-    assert (
-        "secret@univ.example"
-        not in member_client.get(reverse("agenda:detail", args=[idea.event.pk])).content.decode()
-    )
+    detail = reverse("agenda:detail", args=[idea.events.get().pk])
+    assert "secret@univ.example" not in member_client.get(detail).content.decode()
     assert (
         "secret@univ.example"
         not in member_client.get(reverse("agenda:events_json")).content.decode()

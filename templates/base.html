@@ -18,7 +18,8 @@
         <ul class="nav">
           {% if has_access %}
           <li><a href="{% url 'agenda:home' %}"{% if current == 'agenda:home' %} aria-current="page"{% endif %}>Accueil</a></li>
-          <li><a href="{% url 'agenda:calendar' %}"{% if current in 'agenda:calendar agenda:detail agenda:new agenda:edit agenda:subscriptions' %} aria-current="page"{% endif %}>Agenda</a></li>
+          <li><a href="{% url 'agenda:calendar' %}"{% if current in 'agenda:calendar agenda:detail agenda:new agenda:edit agenda:subscriptions agenda:programming' %} aria-current="page"{% endif %}>Agenda</a></li>
+          <li><a href="{% url 'ideas:list' %}"{% if current in 'ideas:list ideas:new ideas:detail ideas:edit' %} aria-current="page"{% endif %}>Idées</a></li>
           <li><a href="{% url 'agenda:rooms' %}"{% if current == 'agenda:rooms' %} aria-current="page"{% endif %}>Salles</a></li>
           <li><a href="{% url 'presences:board' %}"{% if app == 'presences' %} aria-current="page"{% endif %}>Qui est là ?</a></li>
           <li><a href="{% url 'polls:list' %}"{% if app == 'polls' %} aria-current="page"{% endif %}>Sondages</a></li>

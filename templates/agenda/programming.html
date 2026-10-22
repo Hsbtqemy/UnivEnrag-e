@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Programmation — Agenda du collectif{% endblock %}
-{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block title %}Programmation — {{ site.collective_name }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.css' %}">{% endblock %}
 {% block main_class %}page page--wide{% endblock %}
 {% block content %}
@@ -14,13 +13,46 @@
     <li><span class="swatch swatch--warning"></span> Même salle qu'un autre événement</li>
   </ul>
 </div>
+<p class="hint">Chacun place et déplace les idées, sous son nom.{% if can_confirm %} Vous pouvez confirmer : seul un conflit de salle l'empêche.{% else %} La confirmation revient aux gestionnaires de l'agenda.{% endif %}</p>
+{% if not calendar_config.canEdit %}
+<p class="notice">Pour placer ou déplacer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez d'abord votre nom</a>.</p>
+{% endif %}
+
+<div class="calendar-bar" role="group" aria-label="Filtres">
+  <label for="filtre-type">Type</label>
+  <select id="filtre-type">
+    <option value="">Tous</option>
+    {% for value, label in kinds %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+    <option value="aucun">Événement sans idée</option>
+  </select>
+  <label for="filtre-espace">Espace</label>
+  <select id="filtre-espace">
+    <option value="">Tous</option>
+    {% for space in spaces %}<option value="{{ space.pk }}">{{ space.name }}</option>{% endfor %}
+    <option value="aucun">Sans espace</option>
+  </select>
+  {% if audiences %}
+  <label for="filtre-public">Public visé</label>
+  <select id="filtre-public">
+    <option value="">Tous</option>
+    {% for value in audiences %}<option value="{{ value }}">{{ value }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <label for="filtre-statut">Statut</label>
+  <select id="filtre-statut">
+    <option value="">Provisoires et confirmés</option>
+    <option value="provisional">Provisoires</option>
+    <option value="confirmed">Confirmés</option>
+  </select>
+  <label class="checkbox"><input type="checkbox" id="voir-avertissements" checked> Signaler les chevauchements de salle</label>
+</div>
 
 <p id="annonce" class="live" role="status" aria-live="polite"></p>
 
 <div class="programming">
   <aside class="to-place" aria-labelledby="a-placer">
     <h2 id="a-placer">À placer <span class="count" id="a-placer-compte">{{ unplaced|length }}</span></h2>
-    <p class="hint">Choisissez une proposition, puis cliquez sur un créneau du calendrier (ou sélectionnez une plage).</p>
+    <p class="hint">Choisissez une idée, puis cliquez sur un créneau du calendrier (ou sélectionnez une plage).</p>
     <ul class="to-place__list" id="a-placer-liste">
       {% for idea in unplaced %}
       <li>
@@ -31,6 +63,7 @@
           <span class="to-place__meta">{{ idea.owner.display_name }} · {{ idea.get_duration_minutes_display }}{% if idea.wanted_room %} · {{ idea.wanted_room.name }}{% endif %}</span>
           {% for slot in idea.slots.all %}<span class="to-place__period">{% if slot.is_precise %}{{ slot.start|date:"D j F, H:i" }}{% else %}{{ slot.period_text }}{% endif %}</span>{% endfor %}
         </button>
+        <a class="to-place__link" href="{% url 'ideas:detail' idea.pk %}">Voir l'idée<span class="visually-hidden"> « {{ idea.title }} »</span></a>
       </li>
       {% empty %}
       <li class="empty">Rien à placer.</li>
@@ -39,10 +72,12 @@
   </aside>
 
   <div class="programming__calendar">
+    {% if can_confirm %}
     <div class="selection-bar">
       <span id="selection-compte">Aucun événement sélectionné</span>
       <button type="button" class="button" id="confirmer-selection" disabled>Confirmer la sélection</button>
     </div>
+    {% endif %}
     <div id="calendrier" class="calendar"></div>
   </div>
 
@@ -55,11 +90,17 @@
       <div><dt>Porté par</dt><dd id="details-porteur"></dd></div>
     </dl>
     <ul class="details__warnings" id="details-avertissements"></ul>
+    {% if can_confirm or can_publish %}
     <div class="details__actions">
+      {% if can_confirm %}
       <label class="checkbox"><input type="checkbox" id="details-selection"> Sélectionner pour confirmation</label>
       <button type="button" class="button" id="details-confirmer">Confirmer</button>
+      {% endif %}
+      {% if can_publish %}
       <label class="checkbox"><input type="checkbox" id="details-public"> Visible sur l'agenda public</label>
+      {% endif %}
     </div>
+    {% endif %}
     <form class="form form--compact" id="details-deplacer">
       <fieldset>
         <legend>Déplacer (sans glisser-déposer)</legend>
@@ -75,7 +116,7 @@
         <button type="submit" class="button button--secondary">Déplacer</button>
       </fieldset>
     </form>
-    <p><a id="details-admin" href="#">Modifier les autres informations</a></p>
+    <p><a id="details-fiche" href="#">Ouvrir la fiche de l'événement</a><span id="details-idee-lien"> · <a id="details-idee" href="#">l'idée d'origine</a></span></p>
     <button type="button" class="link-button" id="details-fermer">Fermer</button>
   </aside>
 </div>

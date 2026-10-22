@@ -2,20 +2,22 @@ import json
 from datetime import timedelta
 from itertools import groupby
 
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from apps.accounts.capabilities import require_capability
+from apps.accounts.capabilities import is_manager, require_capability
+from apps.actors.services import get_or_create_for_name
 from apps.core.access import public_view
 from apps.core.dates import from_wall_clock, to_wall_clock
 from apps.ideas import services as ideas_services
-from apps.ideas.models import Idea
+from apps.ideas.models import Idea, IdeaSlot
 from apps.polls.models import Poll
 from apps.presences import services as presences_services
 from apps.rooms.models import Room
+from apps.spaces.models import Space
 
 from . import ical, serializers, services
 from .models import Event
@@ -96,56 +98,85 @@ def home(request):
             "events": events,
             "open_polls": Poll.objects.filter(is_closed=False).select_related("owner")[:5],
             "presence_count": presences_services.count_people(monday),
+            "idea_count": Idea.objects.filter(
+                status__in=[Idea.Status.NEW, Idea.Status.PREPARING, Idea.Status.PLANNED]
+            ).count(),
+            "to_place": Idea.objects.to_place().count(),
         },
     )
 
 
-# --- Gestion -----------------------------------------------------------------------------
+# --- Programmation (CDC §3) --------------------------------------------------------------
+# Ouverte à tous les participants : chacun place et déplace, sous son nom. Confirmer et
+# publier restent réservés (CLAUDE.md AGE-3, décision 11).
 
 
-def _unplaced_ideas():
-    return (
-        Idea.objects.filter(status=Idea.Status.ACCEPTED, event__isnull=True)
-        .select_related("owner", "wanted_room")
-        .prefetch_related("slots")
-        .order_by("created_at")
-    )
-
-
-@require_capability("manage_agenda")
 @require_GET
 def programming(request):
     rooms = list(Room.objects.filter(is_active=True))
     resources = [{"id": str(r.pk), "title": r.name} for r in rooms]
     resources.append({"id": serializers.FREE_PLACE_RESOURCE, "title": "Lieu libre"})
+    can_confirm = services.can_manage(request.user)
+    can_publish = services.can_publish(request.user)
     config = {
-        "eventsUrl": reverse("agenda:gestion_events"),
-        "moveUrl": reverse("agenda:gestion_move", args=[0]),
-        "confirmUrl": reverse("agenda:gestion_confirm"),
-        "publicUrl": reverse("agenda:gestion_public", args=[0]),
-        "placeUrl": reverse("agenda:gestion_place", args=[0]),
+        "eventsUrl": reverse("agenda:programming_events"),
+        "moveUrl": reverse("agenda:move", args=[0]),
+        "placeUrl": reverse("agenda:place_idea", args=[0]),
+        "confirmUrl": reverse("agenda:gestion_confirm") if can_confirm else "",
+        "publicUrl": reverse("agenda:gestion_public", args=[0]) if can_publish else "",
+        "canEdit": bool(request.actor_name) or can_confirm,
         "resources": resources,
         "freePlaceResource": serializers.FREE_PLACE_RESOURCE,
     }
+    ideas = Idea.objects.visible()
     return render(
         request,
-        "gestion/programming.html",
-        {"calendar_config": config, "unplaced": _unplaced_ideas(), "rooms": rooms},
+        "agenda/programming.html",
+        {
+            "calendar_config": config,
+            "unplaced": Idea.objects.to_place()
+            .select_related("owner", "wanted_room")
+            .prefetch_related("slots")
+            .order_by("created_at"),
+            "rooms": rooms,
+            "spaces": Space.objects.open(),
+            "kinds": Idea.Kind.choices,
+            "audiences": sorted(set(ideas.exclude(audience="").values_list("audience", flat=True))),
+            "can_confirm": can_confirm,
+            "can_publish": can_publish,
+        },
     )
 
 
-@require_capability("manage_agenda")
 @require_GET
-def gestion_events(request):
+def programming_events(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
-    events = Event.objects.active().select_related("owner", "room", "idea")
-    if start and end:
-        events = events.overlapping(start, end)
+    base = Event.objects.active().select_related("owner", "room", "space", "idea")
+    events = base.overlapping(start, end) if start and end else base
     events = list(events.prefetch_related("idea__slots"))
+    # Un provisoire placé hors de la période peut y avoir un autre créneau envisagé :
+    # on n'envoie alors que ce créneau en pointillé (IDE-2).
+    elsewhere = []
+    if start and end:
+        slots_here = IdeaSlot.objects.filter(start__lt=end, end__gt=start).values("idea")
+        elsewhere = list(
+            base.filter(status=Event.Status.PROVISIONAL, idea__in=slots_here)
+            .exclude(pk__in=[e.pk for e in events])
+            .prefetch_related("idea__slots")
+        )
+    manager = services.can_manage(request.user)
+    can_edit = bool(request.actor_name) or manager
 
-    payload = []
-    for event in events:
-        payload.append(serializers.gestion_event(event, services.warnings_for(event)))
+    payload = [
+        serializers.programming_event(
+            event,
+            services.warnings_for(event),
+            editable=can_edit and (manager or not event.is_locked),
+            show_email=is_manager(request.user),
+        )
+        for event in events
+    ]
+    for event in events + elsewhere:
         if event.status == Event.Status.PROVISIONAL and event.idea_id:
             for slot in event.idea.slots.all():
                 is_current = slot.start == event.start and slot.end == event.end
@@ -161,44 +192,37 @@ def _json_body(request) -> dict:
         return {}
 
 
-def _room_from(value):
-    """`lieu-libre` ou vide → pas de salle ; sinon l'identifiant d'une salle existante."""
-    if value in (None, "", serializers.FREE_PLACE_RESOURCE):
-        return None
-    try:
-        return Room.objects.get(pk=int(value))
-    except (Room.DoesNotExist, TypeError, ValueError):
-        raise Http404("Salle inconnue.") from None
-
-
 def _error(message: str, status: int = 400, **extra) -> JsonResponse:
     return JsonResponse({"ok": False, "error": message, **extra}, status=status)
 
 
-@require_capability("manage_agenda")
 @require_POST
-def gestion_move(request, pk):
-    event = get_object_or_404(Event, pk=pk)
+def place_idea(request, pk):
+    """Une idée de « À placer » posée sur un créneau, en provisoire, sous le nom retenu."""
+    idea = get_object_or_404(Idea.objects.visible(), pk=pk)
+    if not request.actor_name and not services.can_manage(request.user):
+        return _error("Indiquez d'abord votre nom pour placer une idée.")
     data = _json_body(request)
-    start, end = from_wall_clock(data.get("start", "")), from_wall_clock(data.get("end", ""))
-    if not start or not end:
-        return _error("Début et fin sont obligatoires.")
-    room = _room_from(data["room"]) if "room" in data else event.room
+    start = from_wall_clock(data.get("start", ""))
+    if not start:
+        return _error("Choisissez un créneau.")
+    end = from_wall_clock(data.get("end", "")) or start + timedelta(minutes=idea.duration_minutes)
+    room = serializers.room_from_resource(data.get("room"))
+    actor = get_or_create_for_name(request.actor_name) if request.actor_name else None
     try:
-        revision = int(data.get("revision"))
-    except (TypeError, ValueError):
-        return _error("Version de l'événement manquante.")
-    try:
-        event = services.move(
-            event, start=start, end=end, room=room, revision=revision, user=request.user
+        event = ideas_services.place(
+            idea, start=start, end=end, room=room, actor=actor, user=request.user
         )
-    except services.StaleRevisionError as error:
-        return _error(str(error), status=409)
-    except services.RoomConflictError as error:
-        return _error(str(error), status=409)
-    except services.EventError as error:
+    except (ideas_services.TransitionError, services.EventError) as error:
         return _error(str(error))
-    return JsonResponse({"ok": True, "warnings": services.warnings_for(event)})
+    return JsonResponse(
+        {
+            "ok": True,
+            "eventId": event.pk,
+            "start": to_wall_clock(event.start),
+            "warnings": services.warnings_for(event),
+        }
+    )
 
 
 @require_capability("manage_agenda")
@@ -218,34 +242,11 @@ def gestion_confirm(request):
     )
 
 
-@require_capability("manage_agenda")
 @require_POST
 def gestion_public(request, pk):
+    if not services.can_publish(request.user):
+        return _error("Droit « Agenda » ou « Page publique » nécessaire.", status=403)
     event = get_object_or_404(Event, pk=pk)
     is_public = bool(_json_body(request).get("isPublic"))
     services.set_public(event, is_public=is_public, user=request.user)
     return JsonResponse({"ok": True, "isPublic": is_public})
-
-
-@require_capability("manage_agenda")
-@require_POST
-def gestion_place(request, pk):
-    idea = get_object_or_404(Idea, pk=pk)
-    data = _json_body(request)
-    start = from_wall_clock(data.get("start", ""))
-    if not start:
-        return _error("Choisissez un créneau.")
-    end = from_wall_clock(data.get("end", "")) or start + timedelta(minutes=idea.duration_minutes)
-    room = _room_from(data.get("room"))
-    try:
-        event = ideas_services.place(idea, start=start, end=end, room=room, user=request.user)
-    except (ideas_services.TransitionError, services.EventError) as error:
-        return _error(str(error))
-    return JsonResponse(
-        {
-            "ok": True,
-            "eventId": event.pk,
-            "start": to_wall_clock(event.start),
-            "warnings": services.warnings_for(event),
-        }
-    )

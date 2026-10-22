@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{% if idea %}Modifier « {{ idea.title }} »{% else %}Nouvelle idée{% endif %} — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% if idea %}{% url 'ideas:detail' idea.pk %}{% else %}{% url 'ideas:list' %}{% endif %}">← Retour</a></p>
+<h1>{% if idea %}Compléter l'idée{% else %}Déposer une idée{% endif %}</h1>
+{% if not idea %}<p class="lead">Seuls le titre, le type et votre nom sont obligatoires. Le reste peut être complété plus tard, par vous ou par d'autres.</p>{% endif %}
+
+<form method="post" class="form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <fieldset>
+    <legend>L'essentiel</legend>
+    {% include "includes/field.html" with field=form.title %}
+    {% include "includes/field.html" with field=form.kind %}
+  </fieldset>
+
+  <details class="more"{% if idea or form.errors %} open{% endif %}>
+    <summary>Plus de détails <span class="optional">(description, format, public, besoins, créneaux)</span></summary>
+    <fieldset>
+      {% for field in form.detail_fields %}{% include "includes/field.html" %}{% endfor %}
+      <datalist id="publics-suggeres">{% for value in form.audience_suggestions %}<option value="{{ value }}">{% endfor %}</datalist>
+    </fieldset>
+    <fieldset>
+      <legend>Créneaux envisagés</legend>
+      <p class="field__help">Par ordre de préférence. Un créneau précis place l'idée en provisoire dans l'agenda ; sinon elle attend dans « À placer ». Personne n'a à y répondre.</p>
+      {% for slot in form.slot_groups %}
+      <div class="slot">
+        <p class="slot__title">Créneau {{ slot.number }}</p>
+        <div class="slot__fields">
+          {% include "includes/field.html" with field=slot.date %}
+          {% include "includes/field.html" with field=slot.time %}
+          {% include "includes/field.html" with field=slot.period %}
+        </div>
+      </div>
+      {% endfor %}
+      {% if idea %}<p class="field__help">Changer les créneaux ne déplace pas un événement déjà placé : déplacez-le dans l'agenda.</p>{% endif %}
+    </fieldset>
+  </details>
+
+  {% include "includes/field.html" with field=form.author_name %}
+  <button type="submit" class="button">{% if idea %}Enregistrer{% else %}Déposer l'idée{% endif %}</button>
+</form>
+{% endblock %}

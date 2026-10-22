@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Idées — {{ site.collective_name }}{% endblock %}
+{% block main_class %}page page--wide{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Idées et projets</h1>
+  <p class="actions"><a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a>
+    <a class="button button--secondary" href="{% url 'agenda:programming' %}">Programmation{% if to_place %} ({{ to_place }} à placer){% endif %}</a></p>
+</div>
+<p class="hint">Une idée ne passe jamais par un vote : on la complète, on réagit, puis on la place dans l'agenda.</p>
+
+<form method="get" class="form form--inline filters" aria-label="Filtrer les idées">
+  {% for field in filters %}
+  <div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+  {% endfor %}
+  <div class="field"><label for="tri">Trier par</label>
+    <select id="tri" name="tri">
+      <option value="date"{% if sort == "date" %} selected{% endif %}>Date de dépôt</option>
+      <option value="interet"{% if sort == "interet" %} selected{% endif %}>Nombre d'intéressés</option>
+      <option value="titre"{% if sort == "titre" %} selected{% endif %}>Titre</option>
+    </select></div>
+  <button type="submit" class="button button--secondary">Filtrer</button>
+</form>
+
+<div class="table-scroll">
+<table class="table idea-table idea-table--stack">
+  <caption class="visually-hidden">Idées, {{ ideas|length }} résultat{{ ideas|length|pluralize }}</caption>
+  <thead>
+    <tr>
+      <th scope="col"{% if sort == "titre" %} aria-sort="ascending"{% endif %}><a href="?{{ query }}{% if query %}&amp;{% endif %}tri=titre">Titre</a></th>
+      <th scope="col">Type</th>
+      <th scope="col">Espace</th>
+      <th scope="col">Porté par</th>
+      <th scope="col">Public visé</th>
+      <th scope="col">Statut</th>
+      <th scope="col"{% if sort == "interet" %} aria-sort="descending"{% endif %}><a href="?{{ query }}{% if query %}&amp;{% endif %}tri=interet">Intéressés</a></th>
+      <th scope="col"{% if sort == "date" %} aria-sort="descending"{% endif %}><a href="?{{ query }}{% if query %}&amp;{% endif %}tri=date">Déposée le</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for idea in ideas %}
+    <tr>
+      <th scope="row"><a href="{% url 'ideas:detail' idea.pk %}">{{ idea.title }}</a>{% if idea.is_external %} <span class="badge">extérieure</span>{% endif %}</th>
+      <td data-label="Type">{{ idea.get_kind_display }}</td>
+      <td data-label="Espace">{% if idea.space %}<span class="space-dot" style="--space-color: {{ idea.space.color }}"></span> {{ idea.space.name }}{% else %}—{% endif %}</td>
+      <td data-label="Porté par">{{ idea.owner.display_name }}</td>
+      <td data-label="Public visé">{{ idea.audience|default:"—" }}</td>
+      <td data-label="Statut"><span class="idea-status idea-status--{{ idea.status }}">{{ idea.get_status_display }}</span></td>
+      <td data-label="Intéressés">{{ idea.interest }}{% if idea.participants %} <span class="meta">({{ idea.participants }} participe{{ idea.participants|pluralize:"nt" }})</span>{% endif %}</td>
+      <td data-label="Déposée le">{{ idea.created_at|date:"j F Y" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="empty">Aucune idée ne correspond à ces filtres.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

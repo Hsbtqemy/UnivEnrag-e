@@ -215,17 +215,19 @@ def create(
     visio_link="",
     wants_public=False,
     override=False,
+    idea=None,
 ) -> Event:
     """Un participant crée un événement : confirmé d'emblée s'il ne bloque aucune salle.
 
-    CLAUDE.md, décision 10 : seuls les événements issus d'une idée commencent provisoires.
+    CLAUDE.md, décision 10 : seuls les événements issus d'une idée (`idea`) commencent
+    provisoires ; ils ne réservent la salle qu'à la confirmation.
     """
     _check_slot(start, end)
     _check_space(space)
-    derogations = _check_booking(
-        Event.Status.CONFIRMED, room, start, end, user=user, override=override
-    )
+    status = Event.Status.PROVISIONAL if idea is not None else Event.Status.CONFIRMED
+    derogations = _check_booking(status, room, start, end, user=user, override=override)
     event = Event(
+        idea=idea,
         owner=actor,
         title=title,
         start=start,
@@ -235,10 +237,11 @@ def create(
         place_text=place_text,
         description=description,
         visio_link=visio_link,
-        status=Event.Status.CONFIRMED,
-        confirmed_at=timezone.now(),
-        confirmed_by=user if can_manage(user) else None,
+        status=status,
     )
+    if status == Event.Status.CONFIRMED:
+        event.confirmed_at = timezone.now()
+        event.confirmed_by = user if can_manage(user) else None
     event.room_status = _room_status_for(event, room, start, end, user)
     _apply_public_wish(event, wants_public, user)
     event.save()
@@ -248,8 +251,8 @@ def create(
     return event
 
 
-def create_from_idea(idea, *, start, end, room, user=None) -> Event:
-    """Place une proposition dans le calendrier, en provisoire (hachuré)."""
+def create_from_idea(idea, *, start, end, room, actor=None, user=None) -> Event:
+    """Place une idée dans le calendrier, en provisoire (hachuré), pré-remplie (IDE-3)."""
     _check_slot(start, end)
     event = Event.objects.create(
         idea=idea,
@@ -260,12 +263,14 @@ def create_from_idea(idea, *, start, end, room, user=None) -> Event:
         start=start,
         end=end,
         room=room,
+        space=idea.space if idea.space_id and not idea.space.is_archived else None,
         status=Event.Status.PROVISIONAL,
         # Une proposition extérieure est faite pour être vue : public par défaut, la case
-        # reste modifiable par l'admin (fiche du POC, « Confirmer et publier »).
-        is_public=True,
+        # reste modifiable par l'admin (fiche du POC, « Confirmer et publier »). L'idée
+        # d'un membre suit la règle commune : rien n'est public par défaut (PUB-1).
+        is_public=idea.is_external,
     )
-    history.record(event, Action.PLACED, user=user, before={})
+    history.record(event, Action.PLACED, actor=actor, user=user, before={})
     return event
 
 
@@ -348,12 +353,14 @@ def move(
 @transaction.atomic
 def cancel(event: Event, *, actor, user=None, revision: int) -> Event:
     """Annule un événement : il reste visible, barré (CLAUDE.md AGE-1)."""
+    from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
+
     event = _lock_for_update(event, user=user, revision=revision)
     if event.status == Event.Status.CANCELLED:
         return event
     before = history.snapshot(event)
     event.status = Event.Status.CANCELLED
-    return _save(
+    _save(
         event,
         Action.CANCELLED,
         actor=actor,
@@ -361,6 +368,9 @@ def cancel(event: Event, *, actor, user=None, revision: int) -> Event:
         before=before,
         audit_action="agenda.event_cancelled",
     )
+    if event.idea_id:
+        ideas_services.event_cancelled(event.idea)
+    return event
 
 
 @transaction.atomic

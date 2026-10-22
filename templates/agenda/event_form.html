@@ -11,6 +11,8 @@
   {{ form.revision }}
   {% if poll %}<input type="hidden" name="sondage" value="{{ poll.pk }}">
   <p class="notice">Depuis le sondage « {{ poll.title }} » : il sera clos une fois l'événement créé.</p>{% endif %}
+  {% if idea %}<input type="hidden" name="idee" value="{{ idea.pk }}">
+  <p class="notice">Depuis l'idée « <a href="{% url 'ideas:detail' idea.pk %}">{{ idea.title }}</a> » : l'événement sera provisoire jusqu'à sa confirmation par un gestionnaire de l'agenda.</p>{% endif %}
   {% if form.non_field_errors %}
   <div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>
   {% endif %}

@@ -1,7 +1,7 @@
 /*
- * Vue de programmation (fiche du POC, « Placer » et « Confirmer ») :
- * colonnes par salle, provisoires hachurés, autres créneaux en pointillé,
- * panneau « À placer », confirmation par événement ou par sélection.
+ * Vue de programmation (CDC §3) : colonnes par salle, provisoires hachurés, autres
+ * créneaux en pointillé, panneau « À placer », filtres. Tout participant place et
+ * déplace sous son nom ; confirmer et publier n'apparaissent qu'aux habilités.
  *
  * Toute règle (conflit de salle, version périmée) est vérifiée par le serveur ; ce
  * script ne fait qu'envoyer l'intention et recharger l'affichage.
@@ -28,7 +28,24 @@
 
   // Par défaut, une journée avec une colonne par salle : la semaine par salle multiplie
   // les colonnes (jours × salles) et ne se lit que sur un très grand écran.
-  const ec = window.EventCalendar.create($("calendrier"), baseOptions({
+  const filters = {
+    kind: $("filtre-type"),
+    space: $("filtre-espace"),
+    audience: $("filtre-public"),
+    status: $("filtre-statut"),
+  };
+
+  function matches(props) {
+    const kind = filters.kind.value;
+    if (kind && (kind === "aucun" ? props.ideaKind : props.ideaKind !== kind)) return false;
+    const space = filters.space.value;
+    if (space && (space === "aucun" ? props.spaceId : String(props.spaceId) !== space)) return false;
+    if (filters.audience && filters.audience.value && props.audience !== filters.audience.value) return false;
+    if (filters.status.value && props.status !== filters.status.value) return false;
+    return true;
+  }
+
+  const options = {
     view: "resourceTimeGridDay",
     headerToolbar: {
       start: "prev,next today",
@@ -38,10 +55,13 @@
     resources: config.resources,
     datesAboveResources: true,
     eventSources: [{ url: config.eventsUrl }],
-    editable: true,
+    editable: config.canEdit,
     selectable: true,
     pointer: true,
     snapDuration: "00:15:00",
+    eventFilter(info) {
+      return matches(info.event.extendedProps);
+    },
     eventClassNames(info) {
       return selection.has(info.event.id) ? ["is-selected"] : [];
     },
@@ -95,7 +115,19 @@
       place(info.start, info.end, info.resource ? info.resource.id : null);
       ec.unselect();
     },
-  }));
+  };
+  const ec = window.EventCalendar.create($("calendrier"), baseOptions(options));
+
+  // La bibliothèque ne refiltre que si l'option change : il faut une nouvelle fonction.
+  const refilter = () => ec.setOption("eventFilter", (info) => options.eventFilter(info));
+  Object.values(filters).forEach((select) => select && select.addEventListener("change", refilter));
+
+  // Avertissements désactivables (CDC §3) : ils ne bloquent jamais rien.
+  const warningsToggle = $("voir-avertissements");
+  warningsToggle.addEventListener("change", () => {
+    document.body.classList.toggle("hide-warnings", !warningsToggle.checked);
+  });
+  const showWarnings = () => warningsToggle.checked;
 
   function refresh(withDetails) {
     reopenDetails = Boolean(withDetails && detailsId);
@@ -122,7 +154,7 @@
   }
 
   function withWarnings(message, warnings) {
-    if (!warnings || !warnings.length) return message;
+    if (!warnings || !warnings.length || !showWarnings()) return message;
     const inline = warnings.map((w) => w.charAt(0).toLowerCase() + w.slice(1));
     return `${message} Attention : ${inline.join(" ; ")}.`;
   }
@@ -131,15 +163,22 @@
     return withWarnings(`« ${title} » déplacé.`, warnings);
   }
 
+  function needName() {
+    if (config.canEdit) return false;
+    announce("Indiquez d'abord votre nom (en haut de la page) pour placer ou déplacer.", true);
+    return true;
+  }
+
+  // L'événement d'origine peut être hors de la période affichée : le créneau en
+  // pointillé porte lui-même sa version et son titre.
   async function moveToAlternative(props) {
-    const target = ec.getEventById(String(props.eventId));
-    if (!target) return;
+    if (needName()) return;
     const result = await postJSON(urlFor(config.moveUrl, props.eventId), {
       start: props.start,
       end: props.end,
-      revision: target.extendedProps.revision,
+      revision: props.revision,
     });
-    announce(result.ok ? movedMessage(target.title, result.warnings) : result.error, !result.ok);
+    announce(result.ok ? movedMessage(props.eventTitle, result.warnings) : result.error, !result.ok);
     refresh();
   }
 
@@ -171,6 +210,7 @@
 
   async function place(start, end, resourceId) {
     const button = pendingIdea;
+    if (needName()) return;
     let room = resourceId;
     if (room === null) room = button.dataset.room || config.freePlaceResource;
     const payload = { start: wallClock(start), room };
@@ -200,6 +240,7 @@
   const confirmButton = $("confirmer-selection");
 
   function updateSelectionBar() {
+    if (!confirmButton) return;
     const n = selection.size;
     $("selection-compte").textContent =
       n === 0 ? "Aucun événement sélectionné" : `${n} événement${n > 1 ? "s" : ""} sélectionné${n > 1 ? "s" : ""}`;
@@ -228,7 +269,7 @@
     refresh(true);
   }
 
-  confirmButton.addEventListener("click", () => confirmIds([...selection]));
+  if (confirmButton) confirmButton.addEventListener("click", () => confirmIds([...selection]));
 
   // --- Panneau de détails ------------------------------------------------------------
 
@@ -247,24 +288,33 @@
     $("details-quand").textContent = formatRange(event.start, event.end);
     $("details-ou").textContent = props.place;
     const owner = $("details-porteur");
-    owner.textContent = `${props.owner} · `;
-    const mail = document.createElement("a");
-    mail.href = `mailto:${props.ownerEmail}`;
-    mail.textContent = props.ownerEmail;
-    if (props.ownerEmail) owner.appendChild(mail);
+    owner.textContent = props.owner;
+    if (props.ownerEmail) {
+      // Seuls les comptes de gestion reçoivent l'e-mail (CLAUDE.md PUB-2).
+      const mail = document.createElement("a");
+      mail.href = `mailto:${props.ownerEmail}`;
+      mail.textContent = props.ownerEmail;
+      owner.append(" · ", mail);
+    }
 
     const warnings = $("details-avertissements");
-    warnings.replaceChildren(...props.warnings.map((w) => {
+    warnings.replaceChildren(...(showWarnings() ? props.warnings : []).map((w) => {
       const li = document.createElement("li");
       li.textContent = w;
       return li;
     }));
 
-    $("details-selection").checked = selection.has(detailsId);
-    $("details-selection").disabled = props.status === "confirmed";
-    $("details-confirmer").disabled = props.status === "confirmed";
-    $("details-public").checked = props.isPublic;
-    $("details-admin").href = props.adminUrl;
+    if (config.confirmUrl) {
+      $("details-selection").checked = selection.has(detailsId);
+      $("details-selection").disabled = props.status === "confirmed";
+      $("details-confirmer").disabled = props.status === "confirmed";
+    }
+    if (config.publicUrl) $("details-public").checked = props.isPublic;
+    $("details-fiche").href = props.url;
+    $("details-idee-lien").hidden = !props.ideaUrl;
+    $("details-idee").href = props.ideaUrl || "#";
+    // Verrouillé, ou pas de nom : pas de formulaire de déplacement.
+    $("details-deplacer").hidden = !config.canEdit || event.editable === false;
 
     const start = event.start;
     $("deplacer-date").value = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
@@ -282,15 +332,16 @@
 
   $("details-fermer").addEventListener("click", closeDetails);
 
-  $("details-selection").addEventListener("change", (e) => {
-    if (detailsId) toggleSelected(detailsId, e.target.checked);
-  });
+  if (config.confirmUrl) {
+    $("details-selection").addEventListener("change", (e) => {
+      if (detailsId) toggleSelected(detailsId, e.target.checked);
+    });
+    $("details-confirmer").addEventListener("click", () => {
+      if (detailsId) confirmIds([detailsId]);
+    });
+  }
 
-  $("details-confirmer").addEventListener("click", () => {
-    if (detailsId) confirmIds([detailsId]);
-  });
-
-  $("details-public").addEventListener("change", async (e) => {
+  if (config.publicUrl) $("details-public").addEventListener("change", async (e) => {
     if (!detailsId) return;
     const result = await postJSON(urlFor(config.publicUrl, detailsId), { isPublic: e.target.checked });
     announce(result.ok

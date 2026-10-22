@@ -8,6 +8,7 @@ toute page de `/gestion/` redirige vers la configuration ou la vérification.
 import secrets
 
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -69,13 +70,12 @@ class RequireTwoFactorMiddleware:
 
     def __call__(self, request):
         user = request.user
-        if (
-            settings.ADMIN_2FA_REQUIRED
-            and request.path.startswith("/gestion/")
-            and not request.path.startswith(EXEMPT_PREFIXES)
-            and user.is_authenticated
-            and not user.is_verified()
-        ):
-            name = "accounts:2fa_verify" if confirmed_totp(user) else "accounts:2fa_setup"
-            return redirect(f"{reverse(name)}?next={request.get_full_path()}")
+        if settings.ADMIN_2FA_REQUIRED and user.is_authenticated and not user.is_verified():
+            if not request.path.startswith("/gestion/"):
+                # Hors de /gestion/, une session sans TOTP n'a aucun droit (ACC-3) : elle
+                # navigue comme un participant, code d'accès compris.
+                request.user = AnonymousUser()
+            elif not request.path.startswith(EXEMPT_PREFIXES):
+                name = "accounts:2fa_verify" if confirmed_totp(user) else "accounts:2fa_setup"
+                return redirect(f"{reverse(name)}?next={request.get_full_path()}")
         return self.get_response(request)

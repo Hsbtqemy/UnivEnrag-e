@@ -156,7 +156,7 @@ def test_confirming_idea_in_approval_room_waits_for_rooms_manager(
     idea = make_idea(slots=[{"start": at(1, 10)}], room=approval_room)
     agenda_manager = make_manager("manage_agenda")
     ideas_services.accept(idea, user=agenda_manager)
-    event = services.confirm(idea.event, user=agenda_manager)
+    event = services.confirm(idea.events.get(), user=agenda_manager)
     assert event.room_pending
 
 

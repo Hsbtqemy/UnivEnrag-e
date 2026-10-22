@@ -25,7 +25,7 @@ def events(make_idea, at, room, admin_user):
             room=room,
         )
         ideas_services.accept(idea, user=admin_user)
-        event = idea.event
+        event = idea.events.get()
         if not public:
             event = services.set_public(event, is_public=False, user=admin_user)
         if confirm:

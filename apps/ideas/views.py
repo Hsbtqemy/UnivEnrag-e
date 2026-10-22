@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.accounts.capabilities import require_capability
+from apps.agenda.models import Event
 from apps.core import ratelimit
 from apps.core.access import public_view
 
@@ -53,7 +54,7 @@ def track(request, token):
         Idea.objects.select_related("owner", "wanted_room").prefetch_related("slots"),
         tracking_token=token,
     )
-    event = getattr(idea, "event", None)
+    event = idea.events.exclude(status=Event.Status.CANCELLED).order_by("start").first()
     form = None
     if idea.is_editable_by_owner:
         form = TrackingForm(request.POST or None, instance=Idea.objects.get(pk=idea.pk))
@@ -100,10 +101,12 @@ def moderation_accept(request, pk):
     except services.TransitionError as error:
         messages.error(request, str(error))
         return redirect("ideas:moderation")
-    if hasattr(idea, "event"):
+    if idea.events.exists():
         messages.success(request, f"« {idea.title} » est acceptée et placée en provisoire.")
     else:
-        messages.success(request, f"« {idea.title} » est acceptée : elle attend d'être placée.")
+        messages.success(
+            request, f"« {idea.title} » est acceptée : elle attend d'être placée (« À placer »)."
+        )
     return redirect("ideas:moderation")
 
 

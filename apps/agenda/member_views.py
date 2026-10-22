@@ -16,6 +16,7 @@ from apps.accounts.capabilities import require_capability
 from apps.actors.resolvers import remember_name
 from apps.actors.services import get_or_create_for_name
 from apps.core.dates import from_wall_clock
+from apps.ideas.models import Idea
 from apps.polls import services as polls_services
 from apps.polls.models import Poll, PollSlot
 from apps.rooms.models import Room
@@ -123,7 +124,47 @@ def _poll_for(request):
     return Poll.objects.filter(pk=poll_id, is_closed=False).first()
 
 
+def _idea_for(request):
+    """Création depuis une idée (`?idee=<id>`) : l'événement commence provisoire (décision 10)."""
+    idea_id = request.POST.get("idee") or request.GET.get("idee")
+    if not idea_id or not str(idea_id).isdigit():
+        return None
+    return (
+        Idea.objects.visible()
+        .exclude(status=Idea.Status.ABANDONED)
+        .select_related("space", "wanted_room")
+        .filter(pk=idea_id)
+        .first()
+    )
+
+
+def _initial_from_idea(idea) -> dict:
+    """Pré-remplissage (IDE-3) : titre, description, salle, espace, créneau préféré."""
+    slot = idea.preferred_precise_slot
+    if slot is not None:
+        start, end = timezone.localtime(slot.start), timezone.localtime(slot.end)
+    else:
+        tomorrow = timezone.localdate() + timedelta(days=1)
+        start = timezone.make_aware(datetime.combine(tomorrow, time(10)))
+        end = start + timedelta(minutes=idea.duration_minutes)
+    initial = {
+        "title": idea.title,
+        "description": idea.description,
+        "day": start.date(),
+        "start_time": start.time(),
+        "end_time": end.time(),
+    }
+    if idea.wanted_room_id and idea.wanted_room.is_active:
+        initial["room"] = idea.wanted_room
+    if idea.space_id and not idea.space.is_archived:
+        initial["space"] = idea.space
+    return initial
+
+
 def _initial_for_new(request) -> dict:
+    idea = _idea_for(request)
+    if idea is not None:
+        return _initial_from_idea(idea)
     poll = _poll_for(request)
     slot = poll and PollSlot.objects.filter(poll=poll, pk=request.GET.get("creneau") or 0).first()
     if slot:
@@ -171,11 +212,13 @@ def new(request):
         can_publish=can_publish,
         can_override=services.can_override(request.user),
     )
+    idea = _idea_for(request)
     if request.method == "POST" and form.is_valid():
         try:
             event = services.create(
                 actor=_actor_for(form.cleaned_data["author_name"]),
                 user=request.user,
+                idea=idea,
                 **form.service_kwargs(),
             )
         except services.EventError as error:
@@ -184,7 +227,13 @@ def new(request):
             poll = _poll_for(request)
             if poll is not None:
                 polls_services.close_with_event(poll, event)
-            if event.public_requested:
+            if idea is not None:
+                messages.success(
+                    request,
+                    f"« {event.title} » est placé en provisoire : un gestionnaire de l'agenda "
+                    "le confirmera.",
+                )
+            elif event.public_requested:
                 messages.success(
                     request, f"« {event.title} » est créé. La publication est demandée."
                 )
@@ -198,6 +247,7 @@ def new(request):
             "form": form,
             "event": None,
             "poll": _poll_for(request),
+            "idea": idea,
             "check_url": reverse("agenda:check"),
         },
     )
@@ -286,7 +336,7 @@ def cancel(request, pk):
 
 @require_POST
 def move(request, pk):
-    """Glisser-déposer dans l'agenda des membres."""
+    """Glisser-déposer dans l'agenda des membres et dans la programmation."""
     event = get_object_or_404(Event, pk=pk)
     if not request.actor_name and not services.can_manage(request.user):
         return JsonResponse(
@@ -299,13 +349,15 @@ def move(request, pk):
     except (TypeError, ValueError, json.JSONDecodeError):
         return JsonResponse({"ok": False, "error": "Requête incomplète."}, status=400)
     start, end = from_wall_clock(data.get("start", "")), from_wall_clock(data.get("end", ""))
+    # Dans la programmation, glisser vers une autre colonne change la salle.
+    room = serializers.room_from_resource(data["room"]) if "room" in data else event.room
     actor = _actor_for(request.actor_name) if request.actor_name else None
     try:
         event = services.move(
             event,
             start=start,
             end=end,
-            room=event.room,
+            room=room,
             revision=revision,
             actor=actor,
             user=request.user,

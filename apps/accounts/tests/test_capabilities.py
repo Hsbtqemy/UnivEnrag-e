@@ -38,9 +38,12 @@ def test_unknown_capability_is_an_error(admin_user):
         has_capability(admin_user, "tout_faire")
 
 
-def test_manager_without_agenda_right_gets_403_on_programming(client, make_manager):
+def test_manager_without_agenda_right_cannot_confirm(client, make_manager):
     login_verified(client, make_manager("manage_rooms"))
-    assert client.get(reverse("agenda:programming")).status_code == 403
+    response = client.post(
+        reverse("agenda:gestion_confirm"), '{"ids": [1]}', content_type="application/json"
+    )
+    assert response.status_code == 403
     assert client.get(reverse("ideas:moderation")).status_code == 403
 
 

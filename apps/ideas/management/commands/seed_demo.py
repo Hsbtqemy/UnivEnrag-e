@@ -19,7 +19,7 @@ from apps.agenda.models import Event
 from apps.core.dates import combine
 from apps.core.models import SiteSettings
 from apps.ideas import services as ideas_services
-from apps.ideas.models import Idea, IdeaSlot
+from apps.ideas.models import Idea, IdeaSlot, Reaction
 from apps.polls import services as polls_services
 from apps.polls.models import Poll
 from apps.presences import services as presences_services
@@ -46,6 +46,7 @@ class Command(BaseCommand):
             if reset:
                 # Dans l'ordre des clés protégées : ce qui cite une personne avant elle.
                 Poll.objects.all().delete()
+                Reaction.objects.all().delete()
                 Presence.objects.all().delete()
                 Event.objects.all().delete()
                 IdeaSlot.objects.all().delete()
@@ -66,7 +67,8 @@ class Command(BaseCommand):
             site.set_access_code(code)
             rooms = self._rooms()
             self._ideas(rooms, admin)
-            self._members(rooms)
+            spaces = self._members(rooms)
+            self._member_ideas(rooms, spaces, admin)
         self.stdout.write(self.style.SUCCESS("Démo chargée."))
         self.stdout.write(f"Code d'accès des membres : {code}")
         if password:
@@ -198,6 +200,107 @@ class Command(BaseCommand):
             room=cinema,
             space=working,
         )
+        return working, seminar
+
+    def _member_ideas(self, rooms, spaces, admin):
+        """Idées déposées par des membres, dans tous les états, avec des réactions."""
+        big, small, cinema = rooms
+        working, seminar = spaces
+        today = date.today()
+        monday = today + timedelta(days=7 - today.weekday())
+
+        def at(day_offset, hour, minute=0):
+            return combine(monday + timedelta(days=day_offset), time(hour, minute))
+
+        def person(name):
+            return get_or_create_for_name(name)
+
+        def react(idea, **kinds):
+            for kind, names in kinds.items():
+                for name in names:
+                    ideas_services.toggle_reaction(idea, actor=person(name), kind=kind)
+
+        # Un projet en préparation, sans créneau.
+        group = ideas_services.create(
+            actor=person("Nora Diallo"),
+            title="Groupe de travail sur la précarité",
+            kind=Idea.Kind.PROJECT,
+            space=working,
+            description="Recenser les situations de précarité et préparer un texte commun.",
+            audience="Tout le collectif",
+            needs="Une salle une fois par mois.",
+        )
+        ideas_services.set_status(group, Idea.Status.PREPARING, actor=person("Nora Diallo"))
+        react(
+            group,
+            participate=["Hugo Petit", "Inès Garnier"],
+            help=["Inès Garnier"],
+            interested=["Léa Rousseau", "Thomas Leroy"],
+        )
+
+        # Une envie, sans plus de détails.
+        cineclub = ideas_services.create(
+            actor=person("Hugo Petit"), title="Un ciné-club mensuel", kind=Idea.Kind.WISH
+        )
+        react(cineclub, interested=["Inès Garnier", "Nora Diallo"])
+
+        # Une idée d'événement avec un créneau précis : placée en provisoire.
+        writing = ideas_services.create(
+            actor=person("Léa Rousseau"),
+            title="Atelier : écrire une tribune",
+            kind=Idea.Kind.EVENT,
+            space=seminar,
+            description="Deux heures pour écrire ensemble une tribune sur les postes.",
+            format=Idea.Format.IN_PERSON,
+            duration_minutes=120,
+            wanted_room=small,
+            audience="Enseignants-chercheurs",
+            speakers_text="Léa Rousseau, Hugo Petit",
+            slots=[{"start": at(2, 14)}, {"start": at(3, 10)}],
+        )
+        react(writing, participate=["Nora Diallo"], interested=["Thomas Leroy"])
+
+        # Une idée d'événement sans date : dans « À placer ».
+        study_day = ideas_services.create(
+            actor=person("Inès Garnier"),
+            title="Journée d'étude sur l'université",
+            kind=Idea.Kind.EVENT,
+            space=seminar,
+            duration_minutes=480,
+            audience="Tout le collectif",
+            expected_count=60,
+            constraints="Pas un lundi.",
+            slots=[{"period_text": "Une journée fin novembre"}],
+        )
+        react(
+            study_day,
+            participate=["Hugo Petit", "Léa Rousseau", "Nora Diallo"],
+            help=["Thomas Leroy"],
+        )
+
+        # Une idée réalisée : son événement a eu lieu la semaine dernière.
+        welcome = ideas_services.create(
+            actor=person("Thomas Leroy"),
+            title="Accueil des nouveaux collègues",
+            kind=Idea.Kind.EVENT,
+            audience="Personnels BIATSS",
+        )
+        event = agenda_services.create(
+            actor=person("Thomas Leroy"),
+            title=welcome.title,
+            start=at(-5, 12),
+            end=at(-5, 14),
+            room=big,
+            idea=welcome,
+        )
+        agenda_services.confirm(event, user=admin)
+        ideas_services.mark_done()
+
+        # Une idée abandonnée.
+        picnic = ideas_services.create(
+            actor=person("Paul Henry"), title="Pique-nique de printemps", kind=Idea.Kind.WISH
+        )
+        ideas_services.set_status(picnic, Idea.Status.ABANDONED, actor=person("Paul Henry"))
 
     def _ideas(self, rooms, admin):
         big, small, cinema = rooms
@@ -244,7 +347,7 @@ class Command(BaseCommand):
             ),
         ]:
             ideas_services.accept(idea, user=admin)
-            agenda_services.confirm(idea.event, user=admin)
+            agenda_services.confirm(idea.events.get(), user=admin)
 
         # Acceptées et placées en provisoire, avec d'autres créneaux possibles.
         conference = submit(

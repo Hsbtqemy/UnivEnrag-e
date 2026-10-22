@@ -27,13 +27,14 @@ class Event(models.Model):
         APPROVED = "approved", "Validée"
         PENDING = "pending", "En attente de validation"
 
-    idea = models.OneToOneField(
+    # Une idée peut donner plusieurs événements (CLAUDE.md, décision 13).
+    idea = models.ForeignKey(
         "ideas.Idea",
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="event",
-        verbose_name="proposition d'origine",
+        related_name="events",
+        verbose_name="idée d'origine",
     )
     owner = models.ForeignKey(
         "actors.Actor", on_delete=models.PROTECT, related_name="events", verbose_name="porteur"

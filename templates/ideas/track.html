@@ -15,18 +15,20 @@
 {% endif %}
 
 <section class="status-box status-box--{{ idea.status }}" aria-labelledby="etat">
-  <h2 id="etat">État : {{ idea.get_status_display }}</h2>
+  <h2 id="etat">État : {{ idea.tracking_status_label }}</h2>
   {% if idea.status == "pending" %}
   <p>Votre proposition a été reçue. Le collectif va la lire.</p>
-  {% elif idea.status == "accepted" %}
+  {% elif idea.status == "new" or idea.status == "preparing" %}
   <p>Votre proposition est acceptée. Le collectif cherche une date et une salle{% if event %} : un créneau provisoire est envisagé, il n'est pas encore confirmé{% endif %}.</p>
-  {% elif idea.status == "planned" and event %}
-  <p>Votre événement est programmé :</p>
+  {% elif idea.status == "planned" or idea.status == "done" %}{% if event %}
+  <p>{% if idea.status == "done" %}Votre événement a eu lieu :{% else %}Votre événement est programmé :{% endif %}</p>
   <dl class="facts">
     <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
     <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
   </dl>
-  {% if event.is_public %}<p><a href="{% url 'agenda:public_detail' event.pk %}">Voir la page publique de l'événement</a></p>{% endif %}
+  {% if event.is_public %}<p><a href="{% url 'agenda:public_detail' event.pk %}">Voir la page publique de l'événement</a></p>{% endif %}{% endif %}
+  {% elif idea.status == "abandoned" %}
+  <p>Le projet a été abandonné.</p>
   {% elif idea.status == "refused" %}
   <p>Votre proposition n'a pas été retenue.{% if idea.refusal_reason %} Motif : {{ idea.refusal_reason }}{% endif %}</p>
   {% endif %}

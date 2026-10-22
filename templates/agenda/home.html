@@ -6,9 +6,10 @@
 <p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient.</p>
 {% endif %}
 
-<p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
+<p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
 
 <div class="home-cards">
+  <a class="home-card" href="{% url 'ideas:list' %}"><strong>Idées et projets</strong><span>{{ idea_count }} en cours{% if to_place %}, {{ to_place }} à placer dans l'agenda{% endif %}</span></a>
   <a class="home-card" href="{% url 'presences:board' %}"><strong>Qui est là ?</strong><span>{{ presence_count }} personne{{ presence_count|pluralize }} {{ presence_count|pluralize:"a,ont" }} annoncé {{ presence_count|pluralize:"sa,leur" }} présence cette semaine</span></a>
   <a class="home-card" href="{% url 'polls:list' %}"><strong>Sondages de dates</strong><span>{% if open_polls %}{{ open_polls|length }} en cours{% else %}aucun en cours{% endif %}</span></a>
 </div>

@@ -171,8 +171,8 @@ h2 { font-size: 1.25rem; }
 .prose p { margin: 0 0 .75rem; }
 
 .status-box { background: var(--surface); border: 1px solid var(--border); border-left: 6px solid var(--muted); border-radius: var(--radius); padding: .5rem 1.25rem; }
-.status-box--accepted { border-left-color: var(--accent); }
-.status-box--planned { border-left-color: var(--success); }
+.status-box--new, .status-box--preparing { border-left-color: var(--accent); }
+.status-box--planned, .status-box--done { border-left-color: var(--success); }
 .status-box--refused { border-left-color: var(--danger); }
 
 /* --- Modération ---------------------------------------------------------------- */
@@ -365,3 +365,31 @@ h2 { font-size: 1.25rem; }
 .home-card { display: grid; gap: .2rem; padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--text); }
 .home-card strong { color: var(--accent); }
 .home-card span { color: var(--muted); font-size: .92rem; }
+
+/* --- Lot E : idées des membres, programmation ouverte ------------------------------- */
+.hide-warnings .ec-event.ev-warning { box-shadow: none; }
+.to-place__list li { display: grid; gap: .2rem; }
+.to-place__link { font-size: .85rem; justify-self: end; }
+.filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: end; margin-bottom: 1rem; }
+.filters .field { margin: 0; }
+.idea-table th a { color: inherit; }
+.idea-table th[aria-sort] a::after { content: " ▾"; }
+.idea-table th[aria-sort="ascending"] a::after { content: " ▴"; }
+.idea-status { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .85rem; border: 1px solid var(--border); background: var(--surface); white-space: nowrap; }
+.idea-status--new { border-color: var(--accent); }
+.idea-status--preparing { border-color: var(--warning); }
+.idea-status--planned { background: var(--accent-soft); border-color: var(--accent); }
+.idea-status--done { color: var(--success); border-color: var(--success); }
+.idea-status--abandoned { color: var(--muted); text-decoration: line-through; }
+.reaction-list { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .5rem; }
+.reaction-list li { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
+.reaction-names { color: var(--muted); font-size: .9rem; }
+.idea-table th a { white-space: nowrap; }
+/* Sur téléphone, chaque idée devient une fiche : intitulé devant chaque valeur. */
+@media (max-width: 640px) {
+  .idea-table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .idea-table--stack, .idea-table--stack tbody, .idea-table--stack tr, .idea-table--stack th, .idea-table--stack td { display: block; width: 100%; }
+  .idea-table--stack tr { border-bottom: 1px solid var(--border); padding: .5rem 0; }
+  .idea-table--stack th, .idea-table--stack td { border: 0; padding: .15rem .25rem; }
+  .idea-table--stack td[data-label]::before { content: attr(data-label) " : "; color: var(--muted); }
+}
