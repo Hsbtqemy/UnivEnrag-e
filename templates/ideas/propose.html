@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Proposer un événement — Agenda du collectif{% endblock %}
+{% block content %}
+<h1>Proposer un événement</h1>
+<p class="lead">Décrivez votre projet et, si vous le pouvez, quelques créneaux possibles. Le collectif lit chaque proposition, puis lui trouve une date et une salle.</p>
+
+<form method="post" class="form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+
+  <fieldset>
+    <legend>Vous</legend>
+    {% include "includes/field.html" with field=form.owner_name %}
+    {% include "includes/field.html" with field=form.owner_email %}
+  </fieldset>
+
+  <fieldset>
+    <legend>L'événement</legend>
+    {% include "includes/field.html" with field=form.title %}
+    {% include "includes/field.html" with field=form.description %}
+    {% include "includes/field.html" with field=form.duration_minutes %}
+  </fieldset>
+
+  <fieldset>
+    <legend>Créneaux possibles <span class="optional">(facultatif)</span></legend>
+    <p class="field__help">Jusqu'à trois, du préféré au moins souhaité. Une date avec une heure, ou une période plus large.</p>
+    {% for slot in form.slot_groups %}
+    <div class="slot">
+      <p class="slot__title">Créneau {{ slot.number }}</p>
+      <div class="slot__fields">
+        {% include "includes/field.html" with field=slot.date %}
+        {% include "includes/field.html" with field=slot.time %}
+        {% include "includes/field.html" with field=slot.period %}
+      </div>
+    </div>
+    {% endfor %}
+  </fieldset>
+
+  <fieldset>
+    <legend>Précisions <span class="optional">(facultatif)</span></legend>
+    {% include "includes/field.html" with field=form.wanted_room %}
+    {% include "includes/field.html" with field=form.audience %}
+    {% include "includes/field.html" with field=form.expected_count %}
+  </fieldset>
+
+  <div class="trap" aria-hidden="true">
+    <label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>
+    <input type="text" name="{{ form.website.html_name }}" id="{{ form.website.id_for_label }}" tabindex="-1" autocomplete="off">
+  </div>
+  {{ form.rendered_at }}
+
+  <p class="notice">Votre nom sera affiché avec l'événement. Votre adresse e-mail ne sera vue que par les organisateurs du collectif.</p>
+  <button type="submit" class="button">Envoyer la proposition</button>
+</form>
+{% endblock %}

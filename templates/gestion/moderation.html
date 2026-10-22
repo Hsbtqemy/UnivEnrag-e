@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Modération — Agenda du collectif{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Propositions à modérer <span class="count">{{ pending|length }}</span></h1>
+  <p><a href="{% url 'agenda:programming' %}">Aller à la programmation →</a></p>
+</div>
+
+{% if pending %}
+<form id="lot" method="post" action="{% url 'ideas:refuse_bulk' %}">
+  {% csrf_token %}
+  <p class="bulk-bar"><button type="submit" class="button button--secondary">Écarter les propositions cochées (indésirables)</button></p>
+</form>
+
+<ul class="moderation-list">
+  {% for idea in pending %}
+  <li class="moderation-card">
+    <div class="moderation-card__select">
+      <input type="checkbox" name="ids" value="{{ idea.pk }}" form="lot" id="choix-{{ idea.pk }}">
+      <label for="choix-{{ idea.pk }}" class="visually-hidden">Sélectionner « {{ idea.title }} »</label>
+    </div>
+    <div class="moderation-card__body">
+      <h2>{{ idea.title }}</h2>
+      <p class="meta">Porté par <strong>{{ idea.owner.display_name }}</strong> · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a> · reçue le {{ idea.created_at|date:"j F à H:i" }}</p>
+      <div class="prose">{{ idea.description|linebreaks }}</div>
+      <dl class="facts facts--compact">
+        <div><dt>Durée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
+        <div><dt>Créneaux</dt><dd>{% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"D j F" }} {{ slot.start|time:"H:i" }}–{{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}aucun{% endfor %}</dd></div>
+        {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
+        {% if idea.audience %}<div><dt>Public</dt><dd>{{ idea.audience }}</dd></div>{% endif %}
+        {% if idea.expected_count %}<div><dt>Personnes attendues</dt><dd>{{ idea.expected_count }}</dd></div>{% endif %}
+      </dl>
+      <div class="actions">
+        <form method="post" action="{% url 'ideas:accept' idea.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="button">Accepter</button>
+        </form>
+        <details class="refuse">
+          <summary class="button button--secondary">Ne pas retenir…</summary>
+          <form method="post" action="{% url 'ideas:refuse' idea.pk %}" class="form form--inline">
+            {% csrf_token %}
+            <label for="motif-{{ idea.pk }}">Motif (visible par la personne sur son lien de suivi)</label>
+            <input type="text" name="reason" id="motif-{{ idea.pk }}" maxlength="300">
+            <button type="submit" class="button button--danger">Confirmer le refus</button>
+          </form>
+        </details>
+      </div>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Aucune proposition en attente.</p>
+{% endif %}
+
+{% if recent %}
+<section aria-labelledby="recentes">
+  <h2 id="recentes">Décisions récentes</h2>
+  <table class="table">
+    <thead><tr><th scope="col">Proposition</th><th scope="col">Porteur</th><th scope="col">État</th><th scope="col">Le</th></tr></thead>
+    <tbody>
+      {% for idea in recent %}
+      <tr>
+        <td>{{ idea.title }}</td>
+        <td>{{ idea.owner.display_name }} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a></td>
+        <td>{{ idea.get_status_display }}{% if idea.refusal_reason %} — {{ idea.refusal_reason }}{% endif %}</td>
+        <td>{{ idea.moderated_at|date:"j F H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

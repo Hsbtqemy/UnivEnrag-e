@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Suivi de votre proposition — Agenda du collectif{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+{% if is_new %}
+<div class="callout callout--strong" role="status">
+  <h1>Proposition envoyée, merci !</h1>
+  <p><strong>Gardez le lien de cette page</strong> : c'est le seul moyen de suivre votre proposition, aucun message ne vous sera envoyé.</p>
+  <p class="tracking-link"><label for="lien-suivi">Votre lien de suivi</label>
+    <input id="lien-suivi" type="text" readonly value="{{ tracking_url }}"></p>
+  <p>Vous pouvez aussi l'ajouter à vos favoris.</p>
+</div>
+{% else %}
+<h1>Suivi de votre proposition</h1>
+{% endif %}
+
+<section class="status-box status-box--{{ idea.status }}" aria-labelledby="etat">
+  <h2 id="etat">État : {{ idea.get_status_display }}</h2>
+  {% if idea.status == "pending" %}
+  <p>Votre proposition a été reçue. Le collectif va la lire.</p>
+  {% elif idea.status == "accepted" %}
+  <p>Votre proposition est acceptée. Le collectif cherche une date et une salle{% if event %} : un créneau provisoire est envisagé, il n'est pas encore confirmé{% endif %}.</p>
+  {% elif idea.status == "planned" and event %}
+  <p>Votre événement est programmé :</p>
+  <dl class="facts">
+    <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
+    <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
+  </dl>
+  {% if event.is_public %}<p><a href="{% url 'agenda:public_detail' event.pk %}">Voir la page publique de l'événement</a></p>{% endif %}
+  {% elif idea.status == "refused" %}
+  <p>Votre proposition n'a pas été retenue.{% if idea.refusal_reason %} Motif : {{ idea.refusal_reason }}{% endif %}</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="recap">
+  <h2 id="recap">Votre proposition</h2>
+  <dl class="facts">
+    <div><dt>Porteur</dt><dd>{{ idea.owner.display_name }}</dd></div>
+    <div><dt>Durée souhaitée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
+    {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
+    <div><dt>Créneaux envisagés</dt><dd>
+      {% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"l j F Y"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun, à fixer avec le collectif{% endfor %}
+    </dd></div>
+  </dl>
+</section>
+
+{% if form %}
+<section aria-labelledby="corriger">
+  <h2 id="corriger">Corriger votre proposition</h2>
+  <p class="field__help">Possible tant que l'événement n'est pas programmé.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {% for field in form %}{% include "includes/field.html" %}{% endfor %}
+    <button type="submit" class="button">Enregistrer les corrections</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

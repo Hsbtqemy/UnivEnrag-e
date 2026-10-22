@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Programmation — Agenda du collectif{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.css' %}">{% endblock %}
+{% block main_class %}page page--wide{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Programmation</h1>
+  <ul class="legend" aria-label="Légende">
+    <li><span class="swatch swatch--provisional"></span> Provisoire</li>
+    <li><span class="swatch swatch--confirmed"></span> Confirmé</li>
+    <li><span class="swatch swatch--alternative"></span> Autre créneau envisagé (cliquer pour y déplacer)</li>
+    <li><span class="swatch swatch--warning"></span> Même salle qu'un autre événement</li>
+  </ul>
+</div>
+
+<p id="annonce" class="live" role="status" aria-live="polite"></p>
+
+<div class="programming">
+  <aside class="to-place" aria-labelledby="a-placer">
+    <h2 id="a-placer">À placer <span class="count" id="a-placer-compte">{{ unplaced|length }}</span></h2>
+    <p class="hint">Choisissez une proposition, puis cliquez sur un créneau du calendrier (ou sélectionnez une plage).</p>
+    <ul class="to-place__list" id="a-placer-liste">
+      {% for idea in unplaced %}
+      <li>
+        <button type="button" class="to-place__item" aria-pressed="false"
+                data-idea-id="{{ idea.pk }}" data-duration="{{ idea.duration_minutes }}"
+                data-room="{{ idea.wanted_room_id|default:'' }}" data-title="{{ idea.title }}">
+          <span class="to-place__title">{{ idea.title }}</span>
+          <span class="to-place__meta">{{ idea.owner.display_name }} · {{ idea.get_duration_minutes_display }}{% if idea.wanted_room %} · {{ idea.wanted_room.name }}{% endif %}</span>
+          {% for slot in idea.slots.all %}<span class="to-place__period">{% if slot.is_precise %}{{ slot.start|date:"D j F, H:i" }}{% else %}{{ slot.period_text }}{% endif %}</span>{% endfor %}
+        </button>
+      </li>
+      {% empty %}
+      <li class="empty">Rien à placer.</li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <div class="programming__calendar">
+    <div class="selection-bar">
+      <span id="selection-compte">Aucun événement sélectionné</span>
+      <button type="button" class="button" id="confirmer-selection" disabled>Confirmer la sélection</button>
+    </div>
+    <div id="calendrier" class="calendar"></div>
+  </div>
+
+  <aside class="details" id="details" aria-labelledby="details-titre" hidden>
+    <h2 id="details-titre">Événement</h2>
+    <p class="details__status" id="details-statut"></p>
+    <dl class="facts facts--compact">
+      <div><dt>Quand</dt><dd id="details-quand"></dd></div>
+      <div><dt>Où</dt><dd id="details-ou"></dd></div>
+      <div><dt>Porté par</dt><dd id="details-porteur"></dd></div>
+    </dl>
+    <ul class="details__warnings" id="details-avertissements"></ul>
+    <div class="details__actions">
+      <label class="checkbox"><input type="checkbox" id="details-selection"> Sélectionner pour confirmation</label>
+      <button type="button" class="button" id="details-confirmer">Confirmer</button>
+      <label class="checkbox"><input type="checkbox" id="details-public"> Visible sur l'agenda public</label>
+    </div>
+    <form class="form form--compact" id="details-deplacer">
+      <fieldset>
+        <legend>Déplacer (sans glisser-déposer)</legend>
+        <div class="field"><label for="deplacer-date">Date</label><input type="date" id="deplacer-date" required></div>
+        <div class="field"><label for="deplacer-debut">Début</label><input type="time" id="deplacer-debut" step="900" required></div>
+        <div class="field"><label for="deplacer-fin">Fin</label><input type="time" id="deplacer-fin" step="900" required></div>
+        <div class="field"><label for="deplacer-salle">Salle</label>
+          <select id="deplacer-salle">
+            {% for room in rooms %}<option value="{{ room.pk }}">{{ room.label }}</option>{% endfor %}
+            <option value="{{ calendar_config.freePlaceResource }}">Lieu libre</option>
+          </select>
+        </div>
+        <button type="submit" class="button button--secondary">Déplacer</button>
+      </fieldset>
+    </form>
+    <p><a id="details-admin" href="#">Modifier les autres informations</a></p>
+    <button type="button" class="link-button" id="details-fermer">Fermer</button>
+  </aside>
+</div>
+{{ calendar_config|json_script:"calendar-config" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.js' %}"></script>
+<script src="{% static 'js/calendar-common.js' %}"></script>
+<script src="{% static 'js/programming.js' %}"></script>
+{% endblock %}

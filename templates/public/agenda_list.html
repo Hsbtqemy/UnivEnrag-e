@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Agenda — Agenda du collectif{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Prochains événements</h1>
+  <p class="view-switch" aria-label="Affichage">
+    <span aria-current="true">Liste</span>
+    <a href="{% url 'agenda:public_week' %}">Semaine</a>
+  </p>
+</div>
+
+{% for day, events in days %}
+<section class="day" aria-labelledby="jour-{{ forloop.counter }}">
+  <h2 id="jour-{{ forloop.counter }}" class="day__title">{{ day|date:"l j F Y"|capfirst }}</h2>
+  <ul class="event-list">
+    {% for event in events %}
+    <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+      <p class="event-card__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+      <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
+      <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% empty %}
+<p class="empty">Aucun événement à venir pour l'instant.</p>
+{% endfor %}
+
+<aside class="callout">
+  <p>Vous voulez organiser quelque chose ? <a href="{% url 'ideas:propose' %}">Proposez un événement</a> : le collectif lui trouvera une date et une salle.</p>
+</aside>
+{% endblock %}

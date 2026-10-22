@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Trop de demandes — Agenda du collectif{% endblock %}
+{% block content %}
+<h1>Trop de demandes</h1>
+<p>Plusieurs propositions ont été envoyées depuis cette connexion en peu de temps. Réessayez dans une heure.</p>
+<p><a href="{% url 'agenda:public_list' %}">Retour à l'agenda</a></p>
+{% endblock %}
