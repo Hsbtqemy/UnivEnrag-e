@@ -51,6 +51,34 @@
   --warning: #f5b26b;
   color-scheme: dark;
 }
+/* Mode « Enragé » : rouge braise, lueur de flammes en bas de l'écran. Seulement sur choix
+   explicite. Contrastes vérifiés (AA) : texte 15:1, liens et boutons plus de 9:1. */
+:root[data-theme="enrage"] {
+  --bg: #2b0707;
+  --surface: #3d0c0b;
+  --text: #fff1e6;
+  --muted: #f2b8a2;
+  --border: #8a2a1a;
+  --accent: #ffb547;
+  --accent-text: #2b0707;
+  --accent-soft: #5e1a0f;
+  --danger: #ff9c9c;
+  --success: #a6e3b0;
+  --warning: #ffd36b;
+  --focus: #ffe066;
+  color-scheme: dark;
+}
+:root[data-theme="enrage"] body {
+  background:
+    radial-gradient(120% 55% at 50% 115%, rgb(255 110 20 / .38), transparent 70%),
+    radial-gradient(70% 40% at 15% 105%, rgb(255 60 0 / .25), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+:root[data-theme="enrage"] .site-header {
+  background: linear-gradient(180deg, #5c0f0b, var(--surface));
+  border-bottom-color: var(--accent);
+}
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -252,6 +280,7 @@ h2 { font-size: 1.25rem; }
 /* Calendrier (@event-calendar) : aux couleurs du site, provisoire hachuré. */
 .calendar { background: var(--surface); border-radius: var(--radius); }
 .calendar .ec { --ec-bg-color: var(--surface); --ec-border-color: var(--border); --ec-text-color: var(--text); --ec-button-bg-color: var(--surface); --ec-button-border-color: var(--border); --ec-button-text-color: var(--text); --ec-button-active-bg-color: var(--accent-soft); --ec-today-bg-color: var(--accent-soft); }
+.calendar .ec-button:disabled { color: var(--muted); opacity: .7; }
 .is-placing .calendar .ec-body { cursor: crosshair; }
 
 .ec-event { overflow: hidden; }
@@ -447,10 +476,13 @@ a.badge { text-decoration: none; }
 .theme-toggle:hover { border-color: var(--border); }
 .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .theme-toggle svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.theme-toggle svg.theme-toggle__moon { fill: currentColor; stroke: none; }
-/* Mode clair : la lune propose le sombre ; mode sombre : le soleil propose le clair. */
-.theme-toggle__sun, .theme-toggle[aria-pressed="true"] .theme-toggle__moon { display: none; }
-.theme-toggle[aria-pressed="true"] .theme-toggle__sun { display: block; }
+.theme-toggle svg.theme-toggle__moon, .theme-toggle svg.theme-toggle__flame { fill: currentColor; stroke: none; }
+/* L'icône montre le mode suivant : clair → sombre (lune) → enragé (flamme) → clair (soleil). */
+.theme-toggle svg { display: none; }
+.theme-toggle[data-next="dark"] .theme-toggle__moon,
+.theme-toggle[data-next="enrage"] .theme-toggle__flame,
+.theme-toggle[data-next="light"] .theme-toggle__sun { display: block; }
+.theme-toggle[data-next="light"] { color: var(--accent); }
 
 /* Vue imprimable de l'agenda */
 .print-table { width: 100%; margin-bottom: 1.5rem; table-layout: fixed; }

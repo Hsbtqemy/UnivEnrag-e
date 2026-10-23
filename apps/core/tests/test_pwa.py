@@ -47,6 +47,9 @@ def test_pages_link_the_manifest(client, site):
 
 def test_theme_toggle_is_in_every_page_and_applied_before_the_stylesheet(client, site):
     body = client.get(reverse("public:home")).content.decode()
-    assert 'id="bouton-theme"' in body and 'aria-pressed="false" hidden' in body
+    button = body[body.index('id="bouton-theme"') :].split(">", 1)[0]
+    assert " hidden" in button  # affiché par le script seulement : rien d'inerte sans JS
+    for icon in ("moon", "flame", "sun"):
+        assert f"theme-toggle__{icon}" in body
     # Le script du thème passe avant la feuille de style : pas de clignotement.
     assert body.index("js/theme") < body.index("css/app")

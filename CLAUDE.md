@@ -39,7 +39,7 @@ Les participants n'ont pas de compte : ils entrent un **code d'accès commun** p
 | Base | **SQLite en WAL** : `transaction_mode="IMMEDIATE"`, `busy_timeout=5000`, `foreign_keys=ON`. Le seul code propre à SQLite (FTS5) est isolé dans `apps/core/search.py`, pour pouvoir passer à PostgreSQL au-delà de 300 personnes |
 | Interactivité | Rendu serveur + **htmx 2.0** + `django-htmx`. Pas de SPA, pas de chaîne Node |
 | Agenda | **`@event-calendar` 5.3** (vkurko/calendar, **MIT**), bundle autonome `@event-calendar/build` (`event-calendar.min.js` + `.min.css`) copié dans `static/vendor/`, jamais chargé depuis un CDN. Il fournit les vues semaine, mois et liste, **les colonnes par salle** (`resourceTimeGridDay` / `resourceTimeGridWeek`) et le glisser-déposer (plugin interaction inclus). Son API est proche de FullCalendar, sans module payant |
-| CSS | Pico CSS 2 copiée dans le dépôt + `static/css/app.css` (variables, mode sombre) |
+| CSS | Pico CSS 2 copiée dans le dépôt + `static/css/app.css` (variables ; modes clair, sombre et « Enragé » rouge braise, choisis par l’icône de l’en-tête, `static/js/theme.js`) |
 | Formats | `icalendar` 6 ; `django.contrib.syndication` (RSS) ; CSV natif (UTF-8 avec BOM, séparateur `;`) ; **WeasyPrint** (PDF, polices dans le dépôt) |
 | Markdown | `markdown` + `nh3`. Balises autorisées : p, br, strong, em, ul, ol, li, a. Les liens reçoivent `rel="nofollow noopener"` |
 | Historique | Modèle maison `agenda.EventChange` (avant/après par champ + instantané pour restaurer), dont l'auteur est un `Actor` |
