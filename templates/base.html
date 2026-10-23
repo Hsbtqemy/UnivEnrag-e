@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}{{ site.collective_name }}{% endblock %}</title>
   {% block robots %}{% endblock %}
   {# Avant la feuille de style : le thème choisi s'applique sans clignotement. #}
@@ -17,51 +17,45 @@
 <body class="{% block body_class %}{% endblock %}">
   <a class="skip-link" href="#contenu">Aller au contenu</a>
   <header class="site-header">
-    <div class="site-header__inner">
-      <a class="site-name" href="/">{{ site.collective_name }}</a>
-      {% with current=request.resolver_match.view_name app=request.resolver_match.app_name %}
-      <nav aria-label="Navigation principale">
-        <ul class="nav">
-          {% if has_access %}
-          <li><a href="{% url 'agenda:home' %}"{% if current == 'agenda:home' %} aria-current="page"{% endif %}>Accueil</a></li>
-          <li><a href="{% url 'agenda:calendar' %}"{% if current in 'agenda:calendar agenda:detail agenda:new agenda:edit agenda:subscriptions agenda:programming' %} aria-current="page"{% endif %}>Agenda</a></li>
-          <li><a href="{% url 'ideas:list' %}"{% if current in 'ideas:list ideas:new ideas:detail ideas:edit' %} aria-current="page"{% endif %}>Idées</a></li>
-          <li><a href="{% url 'agenda:rooms' %}"{% if current == 'agenda:rooms' %} aria-current="page"{% endif %}>Salles</a></li>
-          <li><a href="{% url 'presences:board' %}"{% if app == 'presences' %} aria-current="page"{% endif %}>Qui est là ?</a></li>
-          <li><a href="{% url 'polls:list' %}"{% if app == 'polls' %} aria-current="page"{% endif %}>Sondages</a></li>
-          <li><a href="{% url 'public:home' %}"{% if current == 'public:home' %} aria-current="page"{% endif %}>Site public</a></li>
-          {% else %}
-          <li><a href="{% url 'public:home' %}"{% if current == 'public:home' %} aria-current="page"{% endif %}>Le collectif</a></li>
-          <li><a href="{% url 'agenda:public_list' %}"{% if current == 'agenda:public_list' or current == 'agenda:public_detail' %} aria-current="page"{% endif %}>Agenda</a></li>
-          <li><a href="{% url 'ideas:public_list' %}"{% if current == 'ideas:public_list' or current == 'ideas:public_detail' %} aria-current="page"{% endif %}>Idées</a></li>
-          <li><a href="{% url 'public:news_list' %}"{% if current == 'public:news_list' or current == 'public:news_detail' %} aria-current="page"{% endif %}>Actualités</a></li>
-          <li><a href="{% url 'public:contact' %}"{% if current == 'public:contact' %} aria-current="page"{% endif %}>Contact</a></li>
-          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'ideas:propose' %} aria-current="page"{% endif %}>Proposer une idée</a></li>
-          {% endif %}
-          {% if is_manager %}
-          <li><a href="{% url 'accounts:gestion_home' %}"{% if current == 'accounts:gestion_home' %} aria-current="page"{% endif %}>Gestion</a></li>
-          {% elif not has_access %}
-          <li><a href="{% url 'core:access' %}"{% if current == 'core:access' %} aria-current="page"{% endif %}>Espace membres</a></li>
-          {% endif %}
-          <li class="nav__theme">
-            <button type="button" id="bouton-theme" class="theme-toggle" aria-label="Changer de mode d'affichage" hidden>
-              <svg class="theme-toggle__moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
-              <svg class="theme-toggle__flame" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22c-4.4 0-7.5-3-7.5-7.2 0-3.2 1.9-5.6 3.6-7.4.4-.4 1-.1 1 .4 0 1.5.6 2.8 1.6 3.4.3-3.6 2-6.6 4.8-9 .4-.3 1-.1 1 .4.2 2.6 1.4 4.3 2.7 6 1.3 1.7 2.3 3.5 2.3 6.1C21.5 19 16.6 22 12 22zm.2-2.4c1.8 0 3.3-1.3 3.3-3.2 0-1.5-.9-2.6-1.8-3.6-.3 1.2-1 2-2 2.3-.4.1-.8-.2-.7-.6.2-.9.1-1.9-.4-2.8-1.4 1.3-2.3 2.8-2.3 4.4 0 2 1.7 3.5 3.9 3.5z"/></svg>
-              <svg class="theme-toggle__sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
-            </button>
-          </li>
-        </ul>
-      </nav>
-      {% endwith %}
-      {% if has_access %}
-      <div class="header-tools">
-        <p class="whoami">
-          {% if request.actor_name %}Vous : <strong>{{ request.actor_name }}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
-          {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% endif %}
-        </p>
+    <div class="site-header__bar">
+      <div class="site-header__inner">
+        <a class="site-name" href="/">{{ site.collective_name }}</a>
+        <nav class="nav-tabs" aria-label="Navigation principale">
+          <ul class="nav">
+            {% for item in nav.items %}
+            <li class="nav__item{% if item.primary %} nav__item--primary{% endif %}">
+              <a class="nav__link{% if item.cta %} nav__link--cta{% endif %}" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}<span class="nav__label">{{ item.label }}</span><span class="nav__short" aria-hidden="true">{{ item.short }}</span></a>
+            </li>
+            {% endfor %}
+            {% if nav.more %}
+            <li class="nav__more{% if nav.more_current %} nav__more--current{% endif %}">
+              <details>
+                <summary>{% include "includes/nav_icon.html" with name="more" %}<span>Plus</span></summary>
+                <ul class="nav__menu">
+                  {% for item in nav.more %}
+                  <li><a href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}{{ item.label }}</a></li>
+                  {% endfor %}
+                </ul>
+              </details>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+        <button type="button" id="bouton-theme" class="theme-toggle" aria-label="Changer de mode d'affichage" hidden>
+          <svg class="theme-toggle__moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
+          <svg class="theme-toggle__flame" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22c-4.4 0-7.5-3-7.5-7.2 0-3.2 1.9-5.6 3.6-7.4.4-.4 1-.1 1 .4 0 1.5.6 2.8 1.6 3.4.3-3.6 2-6.6 4.8-9 .4-.3 1-.1 1 .4.2 2.6 1.4 4.3 2.7 6 1.3 1.7 2.3 3.5 2.3 6.1C21.5 19 16.6 22 12 22zm.2-2.4c1.8 0 3.3-1.3 3.3-3.2 0-1.5-.9-2.6-1.8-3.6-.3 1.2-1 2-2 2.3-.4.1-.8-.2-.7-.6.2-.9.1-1.9-.4-2.8-1.4 1.3-2.3 2.8-2.3 4.4 0 2 1.7 3.5 3.9 3.5z"/></svg>
+          <svg class="theme-toggle__sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+        </button>
       </div>
-      {% endif %}
     </div>
+    {% if has_access %}
+    <div class="site-header__tools">
+      <p class="whoami">
+        {% if request.actor_name %}Vous : <strong>{{ request.actor_name }}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
+        {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% endif %}
+      </p>
+    </div>
+    {% endif %}
   </header>
   <main id="contenu" class="{% block main_class %}page{% endblock %}">
     {% include "includes/messages.html" %}

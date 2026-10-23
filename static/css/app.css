@@ -75,7 +75,7 @@
     var(--bg);
   background-attachment: fixed;
 }
-:root[data-theme="enrage"] .site-header {
+:root[data-theme="enrage"] .site-header__bar {
   background: linear-gradient(180deg, #5c0f0b, var(--surface));
   border-bottom-color: var(--accent);
 }
@@ -113,14 +113,72 @@ h2 { font-size: 1.25rem; }
 
 /* --- En-tête et pied ------------------------------------------------------------- */
 
-.site-header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.site-header__bar { background: var(--surface); border-bottom: 1px solid var(--border); }
 .site-header__inner {
-  max-width: 72rem; margin: 0 auto; padding: .75rem 1rem;
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem;
+  max-width: 72rem; margin: 0 auto; padding: .6rem 1rem;
+  display: flex; align-items: center; gap: .75rem;
 }
-.site-name { font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; }
-.nav { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: center; }
-.nav a[aria-current="page"] { font-weight: 700; }
+.site-name { font-weight: 700; font-size: 1.1rem; color: var(--text); text-decoration: none; margin-right: auto; }
+.site-header__tools { max-width: 72rem; margin: 0 auto; padding: .3rem 1rem 0; }
+
+/* Navigation, décrite dans apps/accounts/navigation.py. Sur téléphone : barre d'onglets
+   en bas de l'écran, les liens secondaires sous « Plus » (un <details>, sans JavaScript). */
+.nav { list-style: none; margin: 0; padding: 0; }
+.nav__link, .nav__more summary { text-decoration: none; color: var(--muted); }
+.nav__icon { width: 1.4rem; height: 1.4rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nav__label { display: none; }
+.nav-tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.nav__item:not(.nav__item--primary) { display: none; }
+.nav__link, .nav__more summary {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem;
+  min-height: 3.6rem; padding: .35rem .15rem; font-size: .72rem; line-height: 1.2; text-align: center;
+  border-top: 3px solid transparent; cursor: pointer;
+}
+.nav__link[aria-current="page"], .nav__more--current summary { color: var(--accent); border-top-color: var(--accent); font-weight: 600; }
+.nav__link--cta .nav__icon { color: var(--accent-text); background: var(--accent); border-radius: 50%; padding: .2rem; width: 1.65rem; height: 1.65rem; }
+.nav__link--cta { color: var(--accent); font-weight: 600; }
+.nav__more { position: relative; }
+.nav__more summary { list-style: none; }
+.nav__more summary::-webkit-details-marker { display: none; }
+.nav__more details[open] summary { color: var(--text); }
+.nav__menu {
+  position: absolute; right: .5rem; bottom: calc(100% + .5rem); min-width: 14rem;
+  list-style: none; margin: 0; padding: .35rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgb(0 0 0 / .25);
+}
+.nav__menu a { display: flex; align-items: center; gap: .65rem; padding: .65rem .75rem; border-radius: 6px; color: var(--text); text-decoration: none; }
+.nav__menu a:hover { background: var(--accent-soft); }
+.nav__menu a[aria-current="page"] { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+
+/* Sur ordinateur : des onglets, l'onglet en cours souligné au ras de l'en-tête. */
+@media (min-width: 60rem) {
+  body { padding-bottom: 0; }
+  .site-header__inner { padding-block: 0; min-height: 3.75rem; align-items: stretch; }
+  .site-name, .theme-toggle { align-self: center; }
+  .nav-tabs { position: static; background: none; border: 0; padding: 0; display: flex; }
+  .nav { display: flex; align-items: stretch; gap: .15rem; }
+  .nav__item, .nav__item:not(.nav__item--primary) { display: flex; }
+  .nav__icon, .nav__short, .nav__more { display: none; }
+  .nav__label { display: inline; }
+  .nav__link {
+    flex-direction: row; min-height: 0; padding: 0 .65rem; font-size: 1rem; font-weight: 500;
+    border-top: 0; border-bottom: 3px solid transparent; margin-bottom: -1px;
+  }
+  .nav__link:hover { color: var(--text); border-bottom-color: var(--border); }
+  .nav__link[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 650; }
+  .nav__link--cta, .nav__link--cta:hover {
+    align-self: center; margin: 0 .25rem 0 .5rem; padding: .4rem .9rem; border: 0; border-radius: var(--radius);
+    background: var(--accent); color: var(--accent-text); font-weight: 600;
+  }
+  .nav__link--cta[aria-current="page"] { color: var(--accent-text); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+}
 
 .site-footer { max-width: 72rem; margin: 3rem auto 0; padding: 1rem; color: var(--muted); font-size: .9rem; }
 
@@ -467,10 +525,7 @@ a.badge { text-decoration: none; }
 .news-list h2, .news-list h3 { margin: .1rem 0 .3rem; font-size: 1.15rem; }
 .news-list .meta { margin: 0; }
 
-/* Outils de l'en-tête : nom retenu ; bouton clair / sombre, une icône au bout de la navigation */
-.header-tools { width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .4rem 1rem; }
-.header-tools .whoami { width: auto; }
-.nav__theme { display: flex; }
+/* Bouton clair / sombre / enragé, une icône au bout de l'en-tête */
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; padding: 0; color: var(--text); background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; }
 .theme-toggle[hidden] { display: none; }
 .theme-toggle:hover { border-color: var(--border); }
@@ -503,7 +558,7 @@ a.badge { text-decoration: none; }
     color-scheme: light;
   }
   .site-header, .site-footer, .skip-link, .messages, .no-print, .theme-toggle { display: none !important; }
-  body { background: #fff; color: #000; font-size: 10.5pt; }
+  body { background: #fff; color: #000; font-size: 10.5pt; padding-bottom: 0; }
   .page, .page--wide { max-width: none; margin: 0; padding: 0; }
   a { color: inherit; text-decoration: none; }
   h2 { break-after: avoid; }
