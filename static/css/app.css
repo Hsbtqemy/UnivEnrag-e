@@ -438,12 +438,19 @@ a.badge { text-decoration: none; }
 .news-list h2, .news-list h3 { margin: .1rem 0 .3rem; font-size: 1.15rem; }
 .news-list .meta { margin: 0; }
 
-/* Outils de l'en-tête : nom retenu, bouton clair / sombre */
+/* Outils de l'en-tête : nom retenu ; bouton clair / sombre, une icône au bout de la navigation */
 .header-tools { width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .4rem 1rem; }
 .header-tools .whoami { width: auto; }
-.theme-toggle { font: inherit; font-size: .9rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: .15rem .7rem; cursor: pointer; }
-.theme-toggle:hover { border-color: var(--accent); }
-.theme-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.nav__theme { display: flex; }
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; padding: 0; color: var(--text); background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; }
+.theme-toggle[hidden] { display: none; }
+.theme-toggle:hover { border-color: var(--border); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-toggle svg.theme-toggle__moon { fill: currentColor; stroke: none; }
+/* Mode clair : la lune propose le sombre ; mode sombre : le soleil propose le clair. */
+.theme-toggle__sun, .theme-toggle[aria-pressed="true"] .theme-toggle__moon { display: none; }
+.theme-toggle[aria-pressed="true"] .theme-toggle__sun { display: block; }
 
 /* Vue imprimable de l'agenda */
 .print-table { width: 100%; margin-bottom: 1.5rem; table-layout: fixed; }
