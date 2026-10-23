@@ -115,7 +115,7 @@ Les dépendances vont dans un seul sens : `core ← actors ← audit ← account
 
 ### Code d'accès et vues publiques
 
-- `AccessCodeMiddleware` est **fermé par défaut** : une vue n'est publique que si elle porte `@public_view`. Sont publiques : `/`, `/p/*`, `/acces/`, `/sante/`, `/static/*`, `/gestion/connexion/`, et les flux à jeton.
+- `AccessCodeMiddleware` est **fermé par défaut** : une vue n'est publique que si elle porte `@public_view`. Sont publiques : `/`, `/p/*`, `/acces/`, `/sante/`, `/static/*`, `/gestion/*` (connexion : `/gestion/admin/login/`), et les flux à jeton.
 - Une saisie réussie pose le cookie signé `acces = SiteSettings.access_code_stamp` (400 jours, httponly, Secure, Lax). Changer le code régénère `access_code_stamp`, ce qui invalide aussitôt tous les cookies.
 - Les flux iCal et RSS internes passent par `/flux/<feeds_token>/…`. Ce jeton est indépendant du code d'accès et révocable par le superuser. Les flux publics (`/p/agenda.ics`, `/p/decisions.rss`) n'ont pas de jeton.
 - Toute réponse non publique porte `X-Robots-Tag: noindex, nofollow` et `<meta name="robots" content="noindex">`. `robots.txt` n'autorise que `/` et `/p/`.
