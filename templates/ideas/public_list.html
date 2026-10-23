@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Idées — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Idées et projets</h1>
+  <p class="actions"><a class="button" href="{% url 'ideas:propose' %}">Proposer une idée</a></p>
+</div>
+<p class="lead">Ce que le collectif imagine, prépare ou a déjà réalisé. Une idée vous parle ? Dites-le sur sa page : « Je participe », « Je peux aider » ou « Intéressé·e ».</p>
+
+{% if ideas %}
+<ul class="event-list">
+  {% for idea in ideas %}
+  <li class="event-card"{% if idea.space %} style="--room-color: {{ idea.space.color }}"{% endif %}>
+    <p class="event-card__time">{{ idea.get_kind_display }} · <span class="idea-status idea-status--{{ idea.status }}">{{ idea.get_status_display }}</span></p>
+    <h2 class="event-card__title"><a href="{% url 'ideas:public_detail' idea.pk %}">{{ idea.title }}</a></h2>
+    <p class="event-card__meta">{% if idea.public_owner_name %}Proposée par {{ idea.public_owner_name }} · {% endif %}{{ idea.created_at|date:"j F Y" }}{% if idea.space %} · {{ idea.space.name }}{% endif %}</p>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Aucune idée affichée pour l'instant.</p>
+{% endif %}
+{% endblock %}

@@ -33,9 +33,10 @@
           {% else %}
           <li><a href="{% url 'public:home' %}"{% if current == 'public:home' %} aria-current="page"{% endif %}>Le collectif</a></li>
           <li><a href="{% url 'agenda:public_list' %}"{% if current == 'agenda:public_list' or current == 'agenda:public_detail' %} aria-current="page"{% endif %}>Agenda</a></li>
+          <li><a href="{% url 'ideas:public_list' %}"{% if current == 'ideas:public_list' or current == 'ideas:public_detail' %} aria-current="page"{% endif %}>Idées</a></li>
           <li><a href="{% url 'public:news_list' %}"{% if current == 'public:news_list' or current == 'public:news_detail' %} aria-current="page"{% endif %}>Actualités</a></li>
           <li><a href="{% url 'public:contact' %}"{% if current == 'public:contact' %} aria-current="page"{% endif %}>Contact</a></li>
-          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'ideas:propose' %} aria-current="page"{% endif %}>Proposer un événement</a></li>
+          <li><a class="button button--small" href="{% url 'ideas:propose' %}"{% if current == 'ideas:propose' %} aria-current="page"{% endif %}>Proposer une idée</a></li>
           {% endif %}
           {% if is_manager %}
           <li><a href="{% url 'accounts:gestion_home' %}"{% if current == 'accounts:gestion_home' %} aria-current="page"{% endif %}>Gestion</a></li>

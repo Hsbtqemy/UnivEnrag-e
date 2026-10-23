@@ -33,8 +33,8 @@
     <li><strong>Agenda</strong> : confirmer, verrouiller, restaurer une version, publier.</li>
     <li><strong>Salles</strong> : salles et horaires, réservations à valider, dérogation (salle occupée ou fermée).</li>
     <li><strong>Espaces</strong> : créer, modifier, archiver les espaces.</li>
-    <li><strong>Modération</strong> : propositions venues de l'extérieur.</li>
-    <li><strong>Page publique</strong> : publier ou retirer un événement de l'agenda public.</li>
+    <li><strong>Modération</strong> : propositions venues de l'extérieur, idées affichées publiquement.</li>
+    <li><strong>Page publique</strong> : publier ou retirer un événement de l'agenda public ou une idée de la page des idées.</li>
     <li><strong>Votes</strong> et <strong>Exports</strong> : pour les phases suivantes.</li>
   </ul>
   <p>Toute action d'un compte de gestion est notée dans le journal d'activité.</p>
@@ -47,7 +47,8 @@
   </ul>
 
   <h2 id="moderation">Propositions venues de l'extérieur</h2>
-  <p><strong>Gestion → Modération des propositions.</strong> « Accepter » range la proposition parmi les idées ; si elle a un créneau précis, elle est placée en provisoire. « Ne pas retenir… » demande un motif, que la personne lit sur son lien de suivi. Les envois indésirables se cochent et s'écartent ensemble.</p>
+  <p><strong>Gestion → Modération des propositions.</strong> Le formulaire public reçoit des événements, des projets et des envies. « Accepter » range la proposition parmi les idées ; si c'est un événement avec un créneau précis, il est placé en provisoire. Cochez « L'afficher aussi sur la page publique » pour la montrer dans <a href="{% url 'ideas:public_list' %}">les idées publiques</a>. « Ne pas retenir… » demande un motif, que la personne lit sur son lien de suivi. Les envois indésirables se cochent et s'écartent ensemble.</p>
+  <p><strong>Afficher ou retirer une idée de la page publique</strong>, y compris une idée de membre : sur sa fiche (Idées → l'idée), cadre « Page publique », réservé aux droits Modération ou Page publique. Vous pouvez y masquer le nom de la personne ; respectez son choix si elle l'a demandé au dépôt. Le public lit le titre, le type, la description, l'espace, le format et le public visé ; il peut réagir sous un nom que seuls les membres voient, et ne peut pas retirer une réaction.</p>
   <p>Le site n'écrit jamais à personne. Pour joindre le porteur, cliquez sur son adresse : elle s'ouvre dans votre messagerie. Cette adresse n'apparaît jamais publiquement.</p>
 
   <h2 id="confirmer">Confirmer des événements</h2>

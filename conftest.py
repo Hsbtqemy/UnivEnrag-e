@@ -2,10 +2,12 @@ from datetime import date, time, timedelta
 
 import pytest
 from django.contrib.auth.models import Permission
+from django.core import signing
 from django.urls import reverse
 from django_otp import DEVICE_ID_SESSION_KEY
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from apps.core.antispam import SALT as ANTISPAM_SALT
 from apps.core.dates import combine
 from apps.core.models import SiteSettings
 from apps.ideas import services as ideas_services
@@ -114,3 +116,15 @@ def make_idea(db):
         )
 
     return build
+
+
+@pytest.fixture
+def old_enough_token(monkeypatch):
+    """Un horodatage signé vieux de 10 secondes : un humain a eu le temps de remplir."""
+    import time as time_module
+
+    real_time = time_module.time
+    monkeypatch.setattr(time_module, "time", lambda: real_time() - 10)
+    token = signing.TimestampSigner(salt=ANTISPAM_SALT).sign("form")
+    monkeypatch.setattr(time_module, "time", real_time)
+    return token

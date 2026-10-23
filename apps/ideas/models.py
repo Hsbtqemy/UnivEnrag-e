@@ -27,6 +27,11 @@ class IdeaQuerySet(models.QuerySet):
         """Les idées que voient les membres (ni à modérer, ni écartées)."""
         return self.filter(status__in=Idea.VISIBLE_STATUSES)
 
+    def public(self):
+        """Seul point d'entrée de la page publique des idées (CLAUDE.md PUB-1) : cochées par
+        un habilité, et ni à modérer, ni écartées, ni abandonnées."""
+        return self.filter(is_public=True, status__in=Idea.PUBLIC_STATUSES)
+
     def to_place(self):
         """Colonne « À placer » : idées d'événement sans événement en cours (IDE-2)."""
         from apps.agenda.models import Event  # les idées dépendent de l'agenda
@@ -82,6 +87,7 @@ class Idea(models.Model):
         Status.DONE,
         Status.ABANDONED,
     )
+    PUBLIC_STATUSES = (Status.NEW, Status.PREPARING, Status.PLANNED, Status.DONE)
 
     origin = models.CharField(
         "origine", max_length=10, choices=Origin.choices, default=Origin.MEMBER
@@ -127,6 +133,11 @@ class Idea(models.Model):
     status = models.CharField(
         "état", max_length=10, choices=Status.choices, default=Status.NEW, db_index=True
     )
+    # Rien n'est public par défaut (CLAUDE.md PUB-1) : un habilité « modération » ou
+    # « page publique » choisit les idées affichées sur `/p/idees/`.
+    is_public = models.BooleanField("affichée sur la page publique", default=False)
+    # Choix de la personne qui dépose l'idée : son nom n'apparaît pas sur la page publique.
+    owner_hidden = models.BooleanField("nom masqué sur la page publique", default=False)
     refusal_reason = models.CharField("motif", max_length=300, blank=True)
     tracking_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     moderated_at = models.DateTimeField(null=True, blank=True)
@@ -166,6 +177,14 @@ class Idea(models.Model):
     def is_editable_by_owner(self) -> bool:
         """Lien de suivi d'une proposition extérieure : corrigeable tant que rien n'est fixé."""
         return self.status in (self.Status.PENDING, self.Status.NEW, self.Status.PREPARING)
+
+    @property
+    def is_shown_publicly(self) -> bool:
+        return self.is_public and self.status in self.PUBLIC_STATUSES
+
+    @property
+    def public_owner_name(self) -> str:
+        return "" if self.owner_hidden else self.owner.display_name
 
     @property
     def is_editable(self) -> bool:

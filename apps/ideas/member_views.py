@@ -14,8 +14,9 @@ from apps.agenda.models import Event
 from apps.agenda.services import EventError
 
 from . import services
-from .forms import IdeaFilterForm, IdeaForm, ReactionForm, StatusForm
+from .forms import IdeaFilterForm, IdeaForm, PublishForm, ReactionForm, StatusForm
 from .models import Idea, IdeaSlot, Reaction
+from .views import can_publish
 
 # Tri du tableau : clé dans l'adresse → ordre en base. Le premier est celui par défaut.
 SORTS = {
@@ -119,6 +120,11 @@ def idea_detail(request, pk):
             "show_email": is_manager(request.user) and bool(idea.owner_email),
             "can_create_event": idea.status in Idea.VISIBLE_STATUSES
             and idea.status != Idea.Status.ABANDONED,
+            "publish_form": PublishForm(
+                initial={"is_public": idea.is_public, "owner_hidden": idea.owner_hidden}
+            )
+            if can_publish(request.user)
+            else None,
         },
     )
 

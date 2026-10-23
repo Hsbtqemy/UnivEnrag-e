@@ -161,6 +161,7 @@ if ENV == "prod":
 PROPOSAL_MIN_FILL_SECONDS = 3
 PROPOSAL_RATE_LIMIT = (5, 3600)  # 5 propositions par heure et par adresse IP
 CONTACT_RATE_LIMIT = (5, 3600)  # 5 messages de contact par heure et par adresse IP
+PUBLIC_REACTION_RATE_LIMIT = (200, 600)  # réactions depuis la page publique des idées
 # DÉCISION (à confirmer) : messages de contact effacés après un an (purge_contact_messages).
 CONTACT_KEEP_DAYS = 365
 

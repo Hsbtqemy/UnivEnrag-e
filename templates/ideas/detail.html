@@ -7,6 +7,7 @@
   <span class="badge">{{ idea.get_kind_display }}</span>
   <span class="idea-status idea-status--{{ idea.status }}">{{ idea.get_status_display }}</span>
   {% if idea.is_external %}<span class="badge">Proposition extérieure</span>{% endif %}
+  {% if idea.is_shown_publicly %}<a class="badge badge--public" href="{% url 'ideas:public_detail' idea.pk %}">Sur la page publique{% if idea.owner_hidden %}, sans nom{% endif %}</a>{% endif %}
 </p>
 <p class="meta">Portée par {{ idea.owner.display_name }}{% if show_email %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a>{% endif %} · déposée le {{ idea.created_at|date:"j F Y" }}{% if idea.updated_by %} · complétée par {{ idea.updated_by.display_name }}{% endif %}</p>
 
@@ -84,4 +85,17 @@
   <p class="hint">Planifiée : un événement est confirmé. Elle passera à « Réalisée » une fois la date passée.</p>
   {% endif %}
 </section>
+
+{% if publish_form %}
+<section aria-labelledby="page-publique">
+  <h2 id="page-publique">Page publique</h2>
+  <p class="hint">Réservé aux gestionnaires « modération » ou « page publique ». Le public y lit le titre, le type, la description, l'espace, le format et le public visé, et peut réagir sous un nom qu'il ne voit pas affiché. Jamais l'e-mail, les besoins, les contraintes, les intervenants pressentis ni les créneaux.</p>
+  <form method="post" action="{% url 'ideas:publish' idea.pk %}" class="form form--compact">
+    {% csrf_token %}
+    {% include "includes/checkbox.html" with field=publish_form.is_public %}
+    {% include "includes/checkbox.html" with field=publish_form.owner_hidden %}
+    <button type="submit" class="button button--secondary">Enregistrer</button>
+  </form>
+</section>
+{% endif %}
 {% endblock %}

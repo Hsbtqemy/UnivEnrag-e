@@ -10,18 +10,6 @@ from apps.ideas.models import Idea
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture
-def old_enough_token(monkeypatch):
-    """Un horodatage signé vieux de 10 secondes : un humain a eu le temps de remplir."""
-    import time as time_module
-
-    real_time = time_module.time
-    monkeypatch.setattr(time_module, "time", lambda: real_time() - 10)
-    token = signing.TimestampSigner(salt=SALT).sign("form")
-    monkeypatch.setattr(time_module, "time", real_time)
-    return token
-
-
 def form_data(token, at, **overrides):
     start = at(1, 14)
     data = {

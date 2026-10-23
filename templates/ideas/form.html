@@ -38,6 +38,7 @@
   </details>
 
   {% include "includes/field.html" with field=form.author_name %}
+  {% if form.owner_hidden %}{% include "includes/checkbox.html" with field=form.owner_hidden %}{% endif %}
   <button type="submit" class="button">{% if idea %}Enregistrer{% else %}Déposer l'idée{% endif %}</button>
 </form>
 {% endblock %}

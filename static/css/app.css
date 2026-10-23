@@ -309,7 +309,8 @@ h2 { font-size: 1.25rem; }
 .field-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 1rem; }
 @media (max-width: 520px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row .field:first-child { grid-column: 1 / -1; } }
 .field--checkbox { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
-.field--checkbox input { width: 1.2rem; height: 1.2rem; }
+.field--checkbox input { width: 1.2rem; height: 1.2rem; flex: none; }
+.field--checkbox label { flex: 1; min-width: 0; margin: 0; }
 .field--checkbox .field__help { flex-basis: 100%; }
 .more { margin: 0 0 1.25rem; }
 .more summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }
@@ -324,6 +325,8 @@ h2 { font-size: 1.25rem; }
 .badge--confirmed { background: color-mix(in srgb, var(--success) 18%, transparent); }
 .badge--cancelled { background: color-mix(in srgb, var(--danger) 18%, transparent); }
 .badge--locked { background: color-mix(in srgb, var(--warning) 22%, transparent); }
+.badge--public { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+a.badge { text-decoration: none; }
 .event-detail--cancelled h1 { text-decoration: line-through; }
 
 .actions-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin: 1.5rem 0; display: grid; gap: .75rem; }

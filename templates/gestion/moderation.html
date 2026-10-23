@@ -21,18 +21,19 @@
       <label for="choix-{{ idea.pk }}" class="visually-hidden">Sélectionner « {{ idea.title }} »</label>
     </div>
     <div class="moderation-card__body">
-      <h2>{{ idea.title }}</h2>
-      <p class="meta">Porté par <strong>{{ idea.owner.display_name }}</strong> · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a> · reçue le {{ idea.created_at|date:"j F à H:i" }}</p>
+      <h2>{{ idea.title }} <span class="badge">{{ idea.get_kind_display }}</span></h2>
+      <p class="meta">Porté par <strong>{{ idea.owner.display_name }}</strong>{% if idea.owner_hidden %} (souhaite que son nom ne soit pas affiché publiquement){% endif %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a> · reçue le {{ idea.created_at|date:"j F à H:i" }}</p>
       <div class="prose">{{ idea.description|linebreaks }}</div>
       <dl class="facts facts--compact">
-        <div><dt>Durée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
-        <div><dt>Créneaux</dt><dd>{% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"D j F" }} {{ slot.start|time:"H:i" }}–{{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}aucun{% endfor %}</dd></div>
+        {% if idea.kind == "event" %}<div><dt>Durée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
+        <div><dt>Créneaux</dt><dd>{% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"D j F" }} {{ slot.start|time:"H:i" }}–{{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}aucun{% endfor %}</dd></div>{% endif %}
         {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
         {% if idea.audience %}<div><dt>Public</dt><dd>{{ idea.audience }}</dd></div>{% endif %}
         {% if idea.expected_count %}<div><dt>Personnes attendues</dt><dd>{{ idea.expected_count }}</dd></div>{% endif %}
       </dl>
+      <p><label class="checkbox"><input type="checkbox" name="public" value="1" form="accepter-{{ idea.pk }}"> En l'acceptant, l'afficher aussi sur la page publique des idées</label></p>
       <div class="actions">
-        <form method="post" action="{% url 'ideas:accept' idea.pk %}">
+        <form method="post" action="{% url 'ideas:accept' idea.pk %}" id="accepter-{{ idea.pk }}">
           {% csrf_token %}
           <button type="submit" class="button">Accepter</button>
         </form>

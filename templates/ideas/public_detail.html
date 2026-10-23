@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ idea.title }} — Idées — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<article class="event-detail">
+  <p class="back"><a href="{% url 'ideas:public_list' %}">← Toutes les idées</a></p>
+  <h1>{{ idea.title }}</h1>
+  <p class="badges">
+    <span class="badge">{{ idea.get_kind_display }}</span>
+    <span class="idea-status idea-status--{{ idea.status }}">{{ idea.get_status_display }}</span>
+  </p>
+  <p class="meta">{% if idea.public_owner_name %}Proposée par {{ idea.public_owner_name }} · {% endif %}{{ idea.created_at|date:"j F Y" }}</p>
+  {% if idea.description %}<div class="prose">{{ idea.description|linebreaks }}</div>{% endif %}
+  <dl class="facts">
+    {% if idea.space %}<div><dt>Espace</dt><dd>{{ idea.space.name }}</dd></div>{% endif %}
+    {% if idea.format %}<div><dt>Format</dt><dd>{{ idea.get_format_display }}</dd></div>{% endif %}
+    {% if idea.audience %}<div><dt>Public visé</dt><dd>{{ idea.audience }}</dd></div>{% endif %}
+  </dl>
+
+  {% if events %}
+  <section aria-labelledby="rendez-vous">
+    <h2 id="rendez-vous">Rendez-vous</h2>
+    <ul class="event-list">
+      {% for event in events %}
+      <li class="event-card">
+        <p class="event-card__time">{{ event.start|date:"l j F Y"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+        <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
+        <p class="event-card__meta">{{ event.place_label }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section aria-labelledby="reactions-titre" id="reactions">
+    <h2 id="reactions-titre">Ça vous parle ?</h2>
+    <form method="post" action="{% url 'ideas:public_react' idea.pk %}" class="form form--compact reactions">
+      {% csrf_token %}
+      {% include "includes/field.html" with field=form.author_name %}
+      <ul class="reaction-list">
+        {% for reaction in reactions %}
+        <li><button type="submit" name="kind" value="{{ reaction.kind }}" class="button button--small button--secondary">{{ reaction.label }} · {{ reaction.count }}</button></li>
+        {% endfor %}
+      </ul>
+    </form>
+  </section>
+</article>
+{% endblock %}

@@ -101,22 +101,37 @@ class SlotFieldsMixin:
         return slots
 
 
+HIDE_NAME_LABEL = "Ne pas afficher mon nom sur la page publique"
+
+
 class ProposeForm(IdeaFieldsMixin, SlotFieldsMixin, AntiSpamFormMixin):
+    kind = forms.ChoiceField(
+        label="Vous proposez",
+        choices=[
+            (Idea.Kind.EVENT, "Un événement (rencontre, atelier, projection…)"),
+            (Idea.Kind.PROJECT, "Un projet"),
+            (Idea.Kind.WISH, "Une envie, une idée à creuser"),
+        ],
+        initial=Idea.Kind.EVENT,
+        required=False,  # faute de choix (formulaire ouvert avant l'ajout du type) : événement
+        widget=forms.RadioSelect,
+    )
     owner_name = forms.CharField(
         label="Votre nom",
         max_length=120,
-        help_text="Il sera affiché avec l'événement.",
+        help_text="Il sera affiché avec votre proposition si elle est publiée.",
     )
     owner_email = forms.EmailField(
         label="Votre adresse e-mail",
         help_text="Seuls les organisateurs du collectif la verront, pour vous écrire si besoin.",
     )
-    title = forms.CharField(label="Titre de l'événement", max_length=120)
+    owner_hidden = forms.BooleanField(label=HIDE_NAME_LABEL, required=False)
+    title = forms.CharField(label="Titre", max_length=120)
     description = forms.CharField(
         label="Description",
         max_length=3000,
         widget=forms.Textarea(attrs={"rows": 6}),
-        help_text="De quoi il s'agit, pour qui, comment ça se déroule.",
+        help_text="De quoi il s'agit, pour qui, comment ça se déroulerait.",
     )
     duration_minutes = forms.TypedChoiceField(
         label="Durée souhaitée",
@@ -141,8 +156,10 @@ class ProposeForm(IdeaFieldsMixin, SlotFieldsMixin, AntiSpamFormMixin):
     )
 
     field_order = [
+        "kind",
         "owner_name",
         "owner_email",
+        "owner_hidden",
         "title",
         "description",
         "duration_minutes",
@@ -165,16 +182,26 @@ class ProposeForm(IdeaFieldsMixin, SlotFieldsMixin, AntiSpamFormMixin):
 
     def clean(self):
         cleaned = super().clean()
-        cleaned["slots"] = self.clean_slots(cleaned)
+        cleaned["kind"] = cleaned.get("kind") or Idea.Kind.EVENT
+        # Créneaux et salle ne valent que pour un événement (voir `services.submit`).
+        is_event = cleaned.get("kind") == Idea.Kind.EVENT
+        cleaned["slots"] = self.clean_slots(cleaned) if is_event else []
         return cleaned
 
 
 class TrackingForm(IdeaFieldsMixin, forms.ModelForm):
     class Meta:
         model = Idea
-        fields = ["title", "description", "audience", "expected_count", "owner_email"]
+        fields = [
+            "title",
+            "description",
+            "audience",
+            "expected_count",
+            "owner_email",
+            "owner_hidden",
+        ]
         widgets = {"description": forms.Textarea(attrs={"rows": 6})}
-        labels = {"owner_email": "Votre adresse e-mail"}
+        labels = {"owner_email": "Votre adresse e-mail", "owner_hidden": HIDE_NAME_LABEL}
 
 
 class RefuseForm(forms.Form):
@@ -251,6 +278,13 @@ class IdeaForm(ActorNameFormMixin, SlotFieldsMixin, forms.ModelForm):
         self.fields["format"].choices = [("", "Non précisé"), *Idea.Format.choices]
         self.fields["kind"].choices = Idea.Kind.choices
         self.add_slot_fields()
+        if self.instance.pk is None:
+            # Choisi au dépôt par la personne elle-même : les autres participants qui
+            # complètent l'idée ne le changent pas.
+            self.fields["owner_hidden"] = forms.BooleanField(
+                label="Si l'idée est publiée sur la page publique, ne pas y afficher mon nom",
+                required=False,
+            )
         if self.instance.pk and not self.is_bound:
             self.initial.update(self.slot_initial(self.instance))
 
@@ -266,7 +300,10 @@ class IdeaForm(ActorNameFormMixin, SlotFieldsMixin, forms.ModelForm):
 
     def service_kwargs(self) -> dict:
         data = self.cleaned_data
-        return {name: data[name] for name in self.Meta.fields} | {"slots": data["slots"]}
+        kwargs = {name: data[name] for name in self.Meta.fields} | {"slots": data["slots"]}
+        if "owner_hidden" in data:
+            kwargs["owner_hidden"] = data["owner_hidden"]
+        return kwargs
 
 
 class IdeaFilterForm(forms.Form):
@@ -316,6 +353,27 @@ CURRENT_STATUSES = [Idea.Status.NEW, Idea.Status.PREPARING, Idea.Status.PLANNED]
 
 class ReactionForm(ActorNameFormMixin, forms.Form):
     kind = forms.ChoiceField(choices=Reaction.Kind.choices)
+
+
+class PublicReactionForm(ActorNameFormMixin, forms.Form):
+    """Réagir depuis la page publique : le nom est demandé, il n'est pas affiché."""
+
+    kind = forms.ChoiceField(choices=Reaction.Kind.choices)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields[
+            "author_name"
+        ].help_text = (
+            "Les organisateurs le voient ; la page publique n'affiche que le nombre de réactions."
+        )
+
+
+class PublishForm(forms.Form):
+    is_public = forms.BooleanField(label="Afficher cette idée sur la page publique", required=False)
+    owner_hidden = forms.BooleanField(
+        label="Masquer le nom de la personne qui l'a proposée", required=False
+    )
 
 
 class StatusForm(ActorNameFormMixin, forms.Form):

@@ -45,7 +45,22 @@
   </section>
 </div>
 
+{% if ideas %}
+<section aria-labelledby="idees">
+  <h2 id="idees">Idées en cours</h2>
+  <ul class="news-list">
+    {% for idea in ideas %}
+    <li>
+      <p class="meta">{{ idea.get_kind_display }} · {{ idea.get_status_display }}</p>
+      <h3><a href="{% url 'ideas:public_detail' idea.pk %}">{{ idea.title }}</a></h3>
+    </li>
+    {% endfor %}
+  </ul>
+  <p><a href="{% url 'ideas:public_list' %}">Toutes les idées</a></p>
+</section>
+{% endif %}
+
 <aside class="callout">
-  <p>Vous voulez organiser quelque chose avec nous ? <a href="{% url 'ideas:propose' %}">Proposez un événement</a>. Une question ? <a href="{% url 'public:contact' %}">Écrivez-nous</a>.</p>
+  <p>Vous voulez organiser quelque chose avec nous ? <a href="{% url 'ideas:propose' %}">Proposez une idée</a> : un événement, un projet ou une simple envie. Une question ? <a href="{% url 'public:contact' %}">Écrivez-nous</a>.</p>
 </aside>
 {% endblock %}

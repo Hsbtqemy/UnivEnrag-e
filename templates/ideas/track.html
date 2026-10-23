@@ -19,7 +19,7 @@
   {% if idea.status == "pending" %}
   <p>Votre proposition a été reçue. Le collectif va la lire.</p>
   {% elif idea.status == "new" or idea.status == "preparing" %}
-  <p>Votre proposition est acceptée. Le collectif cherche une date et une salle{% if event %} : un créneau provisoire est envisagé, il n'est pas encore confirmé{% endif %}.</p>
+  <p>Votre proposition est acceptée{% if idea.kind == "event" %}. Le collectif cherche une date et une salle{% if event %} : un créneau provisoire est envisagé, il n'est pas encore confirmé{% endif %}{% else %} : elle a rejoint les idées du collectif{% endif %}.</p>
   {% elif idea.status == "planned" or idea.status == "done" %}{% if event %}
   <p>{% if idea.status == "done" %}Votre événement a eu lieu :{% else %}Votre événement est programmé :{% endif %}</p>
   <dl class="facts">
@@ -32,17 +32,21 @@
   {% elif idea.status == "refused" %}
   <p>Votre proposition n'a pas été retenue.{% if idea.refusal_reason %} Motif : {{ idea.refusal_reason }}{% endif %}</p>
   {% endif %}
+  {% if idea.is_shown_publicly %}
+  <p><a href="{% url 'ideas:public_detail' idea.pk %}">Voir votre idée sur la page publique</a>{% if idea.owner_hidden %} (sans votre nom){% endif %}</p>
+  {% endif %}
 </section>
 
 <section aria-labelledby="recap">
   <h2 id="recap">Votre proposition</h2>
   <dl class="facts">
-    <div><dt>Porteur</dt><dd>{{ idea.owner.display_name }}</dd></div>
-    <div><dt>Durée souhaitée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
+    <div><dt>Type</dt><dd>{{ idea.get_kind_display }}</dd></div>
+    <div><dt>Porteur</dt><dd>{{ idea.owner.display_name }}{% if idea.owner_hidden %} (nom non affiché publiquement){% endif %}</dd></div>
+    {% if idea.kind == "event" %}<div><dt>Durée souhaitée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
     {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
     <div><dt>Créneaux envisagés</dt><dd>
       {% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"l j F Y"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun, à fixer avec le collectif{% endfor %}
-    </dd></div>
+    </dd></div>{% endif %}
   </dl>
 </section>
 
@@ -52,7 +56,7 @@
   <p class="field__help">Possible tant que l'événement n'est pas programmé.</p>
   <form method="post" class="form">
     {% csrf_token %}
-    {% for field in form %}{% include "includes/field.html" %}{% endfor %}
+    {% for field in form %}{% if field.name == "owner_hidden" %}{% include "includes/checkbox.html" %}{% else %}{% include "includes/field.html" %}{% endif %}{% endfor %}
     <button type="submit" class="button">Enregistrer les corrections</button>
   </form>
 </section>

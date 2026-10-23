@@ -13,7 +13,7 @@ Une idée ne passe jamais par un vote (CLAUDE.md IDE-1).
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Max, Q
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 
 from apps.actors.services import get_or_create_for_name
@@ -44,7 +44,14 @@ MEMBER_EDITABLE_FIELDS = [
     "constraints",
     "wanted_room",
 ]
-OWNER_EDITABLE_FIELDS = ["title", "description", "audience", "expected_count", "owner_email"]
+OWNER_EDITABLE_FIELDS = [
+    "title",
+    "description",
+    "audience",
+    "expected_count",
+    "owner_email",
+    "owner_hidden",
+]
 
 
 class TransitionError(Exception):
@@ -88,13 +95,18 @@ def _place_on_preferred_slot(idea: Idea, *, actor=None, user=None):
 
 
 @transaction.atomic
-def create(*, actor, title, kind=Idea.Kind.EVENT, slots=(), **fields) -> Idea:
+def create(*, actor, title, kind=Idea.Kind.EVENT, slots=(), owner_hidden=False, **fields) -> Idea:
     """Dépôt d'une idée par un participant : seuls le nom, le titre et le type comptent."""
     unknown = set(fields) - set(MEMBER_EDITABLE_FIELDS)
     if unknown:
         raise TypeError(f"Champs inconnus : {', '.join(sorted(unknown))}")
     idea = Idea.objects.create(
-        origin=Idea.Origin.MEMBER, owner=actor, title=title, kind=kind, **fields
+        origin=Idea.Origin.MEMBER,
+        owner=actor,
+        title=title,
+        kind=kind,
+        owner_hidden=owner_hidden,
+        **fields,
     )
     _save_slots(idea, slots)
     _place_on_preferred_slot(idea, actor=actor)
@@ -152,6 +164,29 @@ def toggle_reaction(idea: Idea, *, actor, kind: str) -> bool:
         return False
     Reaction.objects.create(idea=idea, actor=actor, kind=kind)
     return True
+
+
+@transaction.atomic
+def add_public_reaction(idea: Idea, *, actor, kind: str) -> bool:
+    """Réaction depuis la page publique : on l'ajoute, on ne la retire jamais (n'importe qui
+    peut taper n'importe quel nom). Renvoie `False` si elle existait déjà."""
+    if kind not in Reaction.Kind.values:
+        raise ValueError(f"Réaction inconnue : {kind}")
+    if not Idea.objects.public().filter(pk=idea.pk).exists():
+        raise TransitionError("Cette idée n'est pas sur la page publique.")
+    _, created = Reaction.objects.get_or_create(idea=idea, actor=actor, kind=kind)
+    return created
+
+
+def reaction_counts(idea: Idea) -> list[dict]:
+    """Pour la page publique : le nombre de personnes par réaction, sans leurs noms."""
+    counts = {
+        row["kind"]: row["n"] for row in idea.reactions.values("kind").annotate(n=Count("id"))
+    }
+    return [
+        {"kind": kind, "label": Reaction.Kind(kind).label, "count": counts.get(kind, 0)}
+        for kind in Reaction.Kind.values
+    ]
 
 
 def reactions_by_kind(idea: Idea) -> list[dict]:
@@ -225,19 +260,28 @@ def submit(
     owner_email,
     title,
     description,
-    duration_minutes,
+    duration_minutes=Idea.Duration.TWO_HOURS,
+    kind=Idea.Kind.EVENT,
+    owner_hidden=False,
     audience="",
     expected_count=None,
     wanted_room=None,
     slots=(),
 ) -> Idea:
-    """Enregistre une proposition reçue du formulaire public ; elle attend la modération."""
+    """Enregistre une idée reçue du formulaire public ; elle attend la modération.
+
+    Créneaux et salle ne valent que pour un événement : ils sont ignorés pour un projet
+    ou une envie.
+    """
+    if kind != Idea.Kind.EVENT:
+        slots, wanted_room = (), None
     idea = Idea.objects.create(
         origin=Idea.Origin.EXTERNAL,
-        kind=Idea.Kind.EVENT,
+        kind=kind,
         status=Status.PENDING,
         owner=get_or_create_for_name(owner_name),
         owner_email=owner_email,
+        owner_hidden=owner_hidden,
         title=title,
         description=description,
         duration_minutes=duration_minutes,
@@ -250,14 +294,29 @@ def submit(
 
 
 @transaction.atomic
-def accept(idea: Idea, *, user) -> Idea:
-    """Accepte une proposition : elle rejoint les idées, placée si elle a un créneau précis."""
+def accept(idea: Idea, *, user, public: bool = False) -> Idea:
+    """Accepte une proposition : elle rejoint les idées, placée si elle a un créneau précis.
+    Avec `public`, elle s'affiche aussi sur la page publique des idées."""
     idea = Idea.objects.select_for_update().get(pk=idea.pk)
     _moderate(idea, Status.NEW)
     idea.moderated_at, idea.moderated_by = timezone.now(), user
+    idea.is_public = public
     idea.save()
-    audit.log(user, "ideas.accepted", idea)
+    audit.log(user, "ideas.accepted", idea, public=public)
     _place_on_preferred_slot(idea, user=user)
+    return idea
+
+
+@transaction.atomic
+def set_public(idea: Idea, *, user, is_public: bool, owner_hidden: bool) -> Idea:
+    """Affiche ou retire une idée de la page publique, avec ou sans le nom de son porteur.
+    Réservé aux habilités « modération » ou « page publique » (contrôlé par la vue)."""
+    idea = Idea.objects.select_for_update().get(pk=idea.pk)
+    if is_public and idea.status not in Idea.PUBLIC_STATUSES:
+        raise TransitionError("Seule une idée acceptée et en cours peut être publiée.")
+    idea.is_public, idea.owner_hidden = is_public, owner_hidden
+    idea.save(update_fields=["is_public", "owner_hidden", "updated_at"])
+    audit.log(user, "ideas.public", idea, is_public=is_public, owner_hidden=owner_hidden)
     return idea
 
 

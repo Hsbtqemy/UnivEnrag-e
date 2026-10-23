@@ -25,8 +25,17 @@ class ReactionInline(admin.TabularInline):
 @admin.register(Idea)
 class IdeaAdmin(AuditedAdminMixin, CapabilityAdminMixin, admin.ModelAdmin):
     capability = "moderate"
-    list_display = ["title", "kind", "origin", "owner", "email_link", "status", "created_at"]
-    list_filter = ["status", "origin", "kind", "space", "wanted_room"]
+    list_display = [
+        "title",
+        "kind",
+        "origin",
+        "owner",
+        "email_link",
+        "status",
+        "is_public",
+        "created_at",
+    ]
+    list_filter = ["status", "is_public", "origin", "kind", "space", "wanted_room"]
     search_fields = ["title", "owner__display_name", "owner_email"]
     readonly_fields = ["tracking_token", "created_at", "moderated_at", "moderated_by"]
     inlines = [IdeaSlotInline, ReactionInline]

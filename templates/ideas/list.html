@@ -40,7 +40,7 @@
   <tbody>
     {% for idea in ideas %}
     <tr>
-      <th scope="row"><a href="{% url 'ideas:detail' idea.pk %}">{{ idea.title }}</a>{% if idea.is_external %} <span class="badge">extérieure</span>{% endif %}</th>
+      <th scope="row"><a href="{% url 'ideas:detail' idea.pk %}">{{ idea.title }}</a>{% if idea.is_external %} <span class="badge">extérieure</span>{% endif %}{% if idea.is_shown_publicly %} <span class="badge badge--public">publique</span>{% endif %}</th>
       <td data-label="Type">{{ idea.get_kind_display }}</td>
       <td data-label="Espace">{% if idea.space %}<span class="space-dot" style="--space-color: {{ idea.space.color }}"></span> {{ idea.space.name }}{% else %}—{% endif %}</td>
       <td data-label="Porté par">{{ idea.owner.display_name }}</td>

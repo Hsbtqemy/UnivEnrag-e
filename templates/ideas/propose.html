@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Proposer un événement — {{ site.collective_name }}{% endblock %}
+{% load static %}
+{% block title %}Proposer une idée — {{ site.collective_name }}{% endblock %}
 {% block content %}
-<h1>Proposer un événement</h1>
-<p class="lead">Décrivez votre projet et, si vous le pouvez, quelques créneaux possibles. Le collectif lit chaque proposition, puis lui trouve une date et une salle.</p>
+<h1>Proposer une idée</h1>
+<p class="lead">Un événement à organiser, un projet à lancer, ou simplement une envie : décrivez-la. Le collectif lit chaque proposition ; une fois acceptée, elle rejoint les idées du collectif, et peut être affichée sur <a href="{% url 'ideas:public_list' %}">la page des idées</a>.</p>
 
 <form method="post" class="form" novalidate>
   {% csrf_token %}
@@ -11,36 +12,40 @@
   {% endif %}
 
   <fieldset>
+    <legend>Votre idée</legend>
+    {% include "includes/field.html" with field=form.kind %}
+    {% include "includes/field.html" with field=form.title %}
+    {% include "includes/field.html" with field=form.description %}
+  </fieldset>
+
+  <fieldset>
     <legend>Vous</legend>
     {% include "includes/field.html" with field=form.owner_name %}
     {% include "includes/field.html" with field=form.owner_email %}
+    {% include "includes/checkbox.html" with field=form.owner_hidden %}
   </fieldset>
 
-  <fieldset>
-    <legend>L'événement</legend>
-    {% include "includes/field.html" with field=form.title %}
-    {% include "includes/field.html" with field=form.description %}
-    {% include "includes/field.html" with field=form.duration_minutes %}
-  </fieldset>
-
-  <fieldset>
-    <legend>Créneaux possibles <span class="optional">(facultatif)</span></legend>
-    <p class="field__help">Jusqu'à trois, du préféré au moins souhaité. Une date avec une heure, ou une période plus large.</p>
-    {% for slot in form.slot_groups %}
-    <div class="slot">
-      <p class="slot__title">Créneau {{ slot.number }}</p>
-      <div class="slot__fields">
-        {% include "includes/field.html" with field=slot.date %}
-        {% include "includes/field.html" with field=slot.time %}
-        {% include "includes/field.html" with field=slot.period %}
+  <div id="si-evenement">
+    <fieldset>
+      <legend>Pour un événement : durée et créneaux possibles <span class="optional">(facultatif)</span></legend>
+      {% include "includes/field.html" with field=form.duration_minutes %}
+      <p class="field__help">Jusqu'à trois créneaux, du préféré au moins souhaité. Une date avec une heure, ou une période plus large.</p>
+      {% for slot in form.slot_groups %}
+      <div class="slot">
+        <p class="slot__title">Créneau {{ slot.number }}</p>
+        <div class="slot__fields">
+          {% include "includes/field.html" with field=slot.date %}
+          {% include "includes/field.html" with field=slot.time %}
+          {% include "includes/field.html" with field=slot.period %}
+        </div>
       </div>
-    </div>
-    {% endfor %}
-  </fieldset>
+      {% endfor %}
+      {% include "includes/field.html" with field=form.wanted_room %}
+    </fieldset>
+  </div>
 
   <fieldset>
     <legend>Précisions <span class="optional">(facultatif)</span></legend>
-    {% include "includes/field.html" with field=form.wanted_room %}
     {% include "includes/field.html" with field=form.audience %}
     {% include "includes/field.html" with field=form.expected_count %}
   </fieldset>
@@ -51,7 +56,8 @@
   </div>
   {{ form.rendered_at }}
 
-  <p class="notice">Votre nom sera affiché avec l'événement. Votre adresse e-mail ne sera vue que par les organisateurs du collectif.</p>
+  <p class="notice">Si votre proposition est publiée, votre nom l'accompagne, sauf si vous avez coché la case ci-dessus. Votre adresse e-mail ne sera vue que par les organisateurs du collectif.</p>
   <button type="submit" class="button">Envoyer la proposition</button>
 </form>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/propose.js' %}"></script>{% endblock %}
