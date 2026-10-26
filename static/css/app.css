@@ -183,7 +183,10 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .site-footer { max-width: 72rem; margin: 3rem auto 0; padding: 1rem; color: var(--muted); font-size: .9rem; }
 
 .page { max-width: 48rem; margin: 0 auto; padding: 1.5rem 1rem; }
-.page--wide { max-width: none; padding: 1rem; }
+/* Pages larges (agenda, listes) : la largeur de l'en-tête, pour que le titre et le nom du
+   site s'alignent ; la programmation, à trois colonnes, prend tout l'écran. */
+.page--wide { max-width: 72rem; padding: 1.5rem 1rem; }
+.page--full { max-width: none; padding: 1rem; }
 
 .page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; }
 .lead { font-size: 1.1rem; color: var(--muted); }
@@ -208,6 +211,12 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .button:disabled { opacity: .5; cursor: not-allowed; }
 .button--small { padding: .3rem .75rem; font-size: .95rem; }
 .button--secondary { background: transparent; color: var(--accent); }
+/* Plusieurs actions de même poids, collées en une barre (« Imprimer · Télécharger · S'abonner »). */
+.button-bar { display: inline-flex; flex-wrap: wrap; margin: 0; }
+.button-bar .button { border-radius: 0; margin-left: -1px; }
+.button-bar .button:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
+.button-bar .button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.button-bar .button:hover { background: var(--accent-soft); filter: none; }
 .button--danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .link-button { background: none; border: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
 
@@ -340,9 +349,38 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .calendar { background: var(--surface); border-radius: var(--radius); }
 .calendar .ec { --ec-bg-color: var(--surface); --ec-border-color: var(--border); --ec-text-color: var(--text); --ec-button-bg-color: var(--surface); --ec-button-border-color: var(--border); --ec-button-text-color: var(--text); --ec-button-active-bg-color: var(--accent-soft); --ec-today-bg-color: var(--accent-soft); }
 .calendar .ec-button:disabled { color: var(--muted); opacity: .7; }
+.calendar .ec-button { border-radius: var(--radius); font: inherit; }
+.calendar .ec-button-group .ec-button { border-radius: 0; }
+.calendar .ec-button-group .ec-button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.calendar .ec-button-group .ec-button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.calendar .ec-title { font-size: 1.35rem; font-weight: 700; }
+.calendar .ec-title::first-letter { text-transform: uppercase; }
+.calendar .ec-toolbar { margin-bottom: .75rem; }
+
+/* Vue mois : une vraie grille de calendrier. Numéro du jour en haut à gauche, aujourd'hui
+   dans une pastille, week-end et jours du mois voisin plus discrets, cases assez hautes
+   pour qu'on lise une page d'agenda et non un tableau. */
+.calendar .ec-month-view .ec-main { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.calendar .ec-month-view .ec-col-head { padding: .55rem .6rem; text-align: left; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--bg); }
+.calendar .ec-month-view .ec-day { min-height: 6.5rem; background: var(--surface); }
+.calendar .ec-month-view .ec-day.ec-sat, .calendar .ec-month-view .ec-day.ec-sun { background: color-mix(in srgb, var(--bg) 60%, var(--surface)); }
+.calendar .ec-month-view .ec-day.ec-other-month { background: var(--bg); }
+.calendar .ec-month-view .ec-day.ec-other-month .ec-day-head time { opacity: .45; }
+.calendar .ec-month-view .ec-day-head { flex-direction: row; justify-content: flex-start; padding: .4rem .5rem .2rem; font-size: .9rem; }
+.calendar .ec-month-view .ec-day-head time { display: inline-grid; place-items: center; min-width: 1.75rem; height: 1.75rem; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.calendar .ec-month-view .ec-day.ec-today { background: var(--surface); }
+.calendar .ec-month-view .ec-day.ec-today .ec-day-head time { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+.calendar .ec-month-view .ec-event { border-radius: 4px; padding: .1rem .35rem; margin: 0 .3rem .2rem; font-size: .85rem; }
+@media (max-width: 640px) {
+  .calendar .ec-month-view .ec-day { min-height: 3.6rem; }
+  .calendar .ec-month-view .ec-col-head { padding: .4rem .2rem; text-align: center; font-size: .7rem; letter-spacing: 0; }
+  .calendar .ec-month-view .ec-day-head { justify-content: center; padding: .2rem 0 0; }
+  .calendar .ec-month-view .ec-day-head time { min-width: 1.5rem; height: 1.5rem; font-size: .85rem; }
+  .calendar .ec-month-view .ec-event { margin: 0 .1rem .15rem; padding: 0 .15rem; }
+}
 /* Une période sans rendez-vous le dit au milieu de la grille, qui reste visible. */
 .calendar-frame { position: relative; }
-.calendar-empty { position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); max-width: calc(100% - 2rem); margin: 0; padding: .6rem 1rem; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 10px rgb(0 0 0 / .08); color: var(--muted); pointer-events: none; }
+.calendar-empty { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); max-width: calc(100% - 2rem); margin: 0; padding: .7rem 1.25rem; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; box-shadow: 0 4px 18px rgb(0 0 0 / .08); color: var(--muted); pointer-events: none; }
 .calendar-empty[hidden] { display: none; }
 .is-placing .calendar .ec-body { cursor: crosshair; }
 
@@ -544,7 +582,7 @@ a.badge { text-decoration: none; }
 @media (max-width: 640px) {
   .public-week .ec-day-grid .ec-event { font-size: .7rem; padding: 0 .15rem; }
   .public-week .ec-day-grid .ec-day-head { font-size: .8rem; }
-  .calendar-empty { position: static; transform: none; max-width: none; margin-top: .5rem; box-shadow: none; }
+  .calendar-empty { position: static; transform: none; max-width: none; margin-top: .5rem; box-shadow: none; border-radius: var(--radius); }
 }
 
 /* Pages d'aide */
