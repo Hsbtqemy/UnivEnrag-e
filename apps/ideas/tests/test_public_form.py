@@ -108,7 +108,7 @@ def test_moderation_requires_staff(client):
 def test_extra_slots_and_details_are_folded_on_a_fresh_form(client, site):
     body = client.get(reverse("ideas:propose")).content.decode()
     assert '<details class="more">' in body
-    assert "<details class=\"more\" open>" not in body
+    assert '<details class="more" open>' not in body
     assert "Créneau souhaité" in body
 
 
