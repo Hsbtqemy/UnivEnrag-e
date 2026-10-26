@@ -1,0 +1,8 @@
+{% comment %}En-tête commun de « Proposer » et « Nous écrire » : une seule page pour le visiteur,
+deux circuits derrière (une idée passe par la modération et peut devenir publique ; un message
+ne l'est jamais et s'efface au bout d'un an). `active` vaut « idee » ou « message ».{% endcomment %}
+<h1>Proposer ou nous écrire</h1>
+<nav class="choice-tabs" aria-label="Ce que vous voulez faire">
+  <a href="{% url 'ideas:propose' %}"{% if active == "idee" %} aria-current="page"{% endif %}>Proposer une idée<span>un événement, un projet, une envie</span></a>
+  <a href="{% url 'public:contact' %}"{% if active == "message" %} aria-current="page"{% endif %}>Nous écrire<span>une question, un message</span></a>
+</nav>

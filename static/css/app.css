@@ -194,6 +194,12 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .empty { color: var(--muted); font-style: italic; }
 /* Une page ou une liste encore vide : un cadre en pointillé et, s'il y en a une, l'action
    qui la remplira. */
+/* « Proposer une idée | Nous écrire » : deux onglets en tête de la même page. */
+.choice-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: 0 0 1.25rem; }
+.choice-tabs a { display: grid; gap: .1rem; padding: .7rem 1rem; text-decoration: none; font-weight: 700; color: var(--accent); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.choice-tabs a span { font-weight: 400; font-size: .9rem; color: var(--muted); }
+.choice-tabs a:hover { border-color: var(--accent); }
+.choice-tabs a[aria-current="page"] { border: 2px solid var(--accent); background: var(--accent-soft); }
 .empty-state { margin: 1rem 0; padding: 1.5rem 1.25rem; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
 .empty-state p { margin: 0 0 .75rem; }
 .empty-state p:last-child { margin-bottom: 0; }

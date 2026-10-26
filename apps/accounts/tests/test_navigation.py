@@ -23,7 +23,7 @@ def test_member_primary_page_does_not_mark_more(member_client):
 
 def test_visitor_navigation_has_call_to_action(client, site):
     html = Client().get(reverse("public:news_list")).content.decode()
-    assert "nav__link--cta" in html and "Proposer une idée" in html
+    assert "nav__link--cta" in html and "Proposer ou écrire" in html
     assert "Espace membres" in html and "Gestion" not in html
     assert "nav__more--current" not in html  # Actualités est dans la barre du bas
 

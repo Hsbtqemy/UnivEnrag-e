@@ -132,3 +132,16 @@ def test_visitors_and_members_have_their_own_navigation(client, member_client):
     assert "Actualités" in visitor and "Espace membres" in visitor
     member = member_client.get(reverse("agenda:home")).content.decode()
     assert "Site public" in member and "Espace membres" not in member
+
+
+def test_contact_is_a_tab_of_the_propose_page(client):
+    """« Nous écrire » et « Proposer une idée » forment une seule page à deux onglets."""
+    contact = client.get(reverse("public:contact")).content.decode()
+    propose = client.get(reverse("ideas:propose")).content.decode()
+    for body in (contact, propose):
+        assert "Proposer ou nous écrire" in body
+        assert reverse("public:contact") in body and reverse("ideas:propose") in body
+    assert 'aria-current="page">Nous écrire' in contact
+    assert 'aria-current="page">Proposer une idée' in propose
+    # Le bouton de l'en-tête est l'onglet en cours sur les deux pages ; plus de lien « Contact ».
+    assert ">Contact<" not in contact
