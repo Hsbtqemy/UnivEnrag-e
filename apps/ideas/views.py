@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import has_capability, is_manager, require_capability
 from apps.actors.resolvers import remember_name
@@ -91,14 +91,14 @@ def can_publish(user) -> bool:
     return has_capability(user, "moderate") or has_capability(user, "manage_public")
 
 
-@require_GET
+@require_safe
 @public_view
 def public_list(request):
     ideas = Idea.objects.public().select_related("owner", "space").order_by("-created_at")
     return render(request, "ideas/public_list.html", {"ideas": ideas})
 
 
-@require_GET
+@require_safe
 @public_view
 def public_detail(request, pk):
     idea = get_object_or_404(Idea.objects.public().select_related("owner", "space"), pk=pk)

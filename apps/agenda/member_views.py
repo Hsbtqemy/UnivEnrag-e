@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import require_capability
 from apps.actors.resolvers import remember_name
@@ -60,7 +60,7 @@ def _calendar_url(event_or_date) -> str:
 # --- Agenda ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 def calendar(request):
     rooms = list(Room.objects.filter(is_active=True))
     spaces = list(Space.objects.open())
@@ -86,7 +86,7 @@ def calendar(request):
     )
 
 
-@require_GET
+@require_safe
 def events_json(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
     events = Event.objects.select_related("owner", "room", "space")
@@ -103,7 +103,7 @@ def events_json(request):
     )
 
 
-@require_GET
+@require_safe
 def check_slot(request):
     """Vérification en direct, avant l'enregistrement (CLAUDE.md AGE-7)."""
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
@@ -463,7 +463,7 @@ def public_requests(request):
 # --- Salles ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 def rooms(request):
     """Les salles du collectif : capacité, mode de réservation, horaires, accès (CDC §6)."""
     rooms = Room.objects.filter(is_active=True).prefetch_related("opening_hours")

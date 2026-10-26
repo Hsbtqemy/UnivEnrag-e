@@ -41,6 +41,7 @@
             {% endif %}
           </ul>
         </nav>
+        {% for item in nav.header %}<a class="header-link" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}<span>{{ item.short }}</span></a>{% endfor %}
         <button type="button" id="bouton-theme" class="theme-toggle" aria-label="Changer de mode d'affichage" hidden>
           <svg class="theme-toggle__moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
           <svg class="theme-toggle__flame" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22c-4.4 0-7.5-3-7.5-7.2 0-3.2 1.9-5.6 3.6-7.4.4-.4 1-.1 1 .4 0 1.5.6 2.8 1.6 3.4.3-3.6 2-6.6 4.8-9 .4-.3 1-.1 1 .4.2 2.6 1.4 4.3 2.7 6 1.3 1.7 2.3 3.5 2.3 6.1C21.5 19 16.6 22 12 22zm.2-2.4c1.8 0 3.3-1.3 3.3-3.2 0-1.5-.9-2.6-1.8-3.6-.3 1.2-1 2-2 2.3-.4.1-.8-.2-.7-.6.2-.9.1-1.9-.4-2.8-1.4 1.3-2.3 2.8-2.3 4.4 0 2 1.7 3.5 3.9 3.5z"/></svg>
@@ -51,8 +52,8 @@
     {% if has_access %}
     <div class="site-header__tools">
       <p class="whoami">
-        {% if request.actor_name %}Vous : <strong>{{ request.actor_name }}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
-        {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% endif %}
+        {% if request.actor_name or request.actor %}Vous : <strong>{% if request.actor_name %}{{ request.actor_name }}{% else %}{{ request.actor.display_name }}{% endif %}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>
+        {% else %}<a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">Indiquer votre nom</a>{% if is_manager %} <span class="meta">(il signe vos actions dans l'agenda et les idées)</span>{% endif %}{% endif %}
       </p>
     </div>
     {% endif %}

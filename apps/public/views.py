@@ -6,7 +6,7 @@ from django.contrib.syndication.views import Feed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_safe
 
 from apps.accounts.capabilities import require_capability
 from apps.agenda import ical
@@ -22,7 +22,7 @@ from .forms import ContactForm, PresentationForm
 from .models import NewsPost
 
 
-@require_GET
+@require_safe
 @public_view
 def home(request):
     now = timezone.now()
@@ -40,13 +40,13 @@ def home(request):
     )
 
 
-@require_GET
+@require_safe
 @public_view
 def news_list(request):
     return render(request, "public/news_list.html", {"news": NewsPost.objects.public()})
 
 
-@require_GET
+@require_safe
 @public_view
 def news_detail(request, slug):
     post = get_object_or_404(NewsPost.objects.public(), slug=slug)

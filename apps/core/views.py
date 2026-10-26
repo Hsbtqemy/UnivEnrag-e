@@ -9,7 +9,7 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_safe
 
 from . import access, ratelimit
 from .models import SiteSettings
@@ -67,7 +67,7 @@ def access_code(request):
     )
 
 
-@require_GET
+@require_safe
 @access.public_view
 def robots_txt(request):
     lines = [
@@ -80,7 +80,7 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines) + "\n", content_type="text/plain")
 
 
-@require_GET
+@require_safe
 @never_cache
 @access.public_view
 def health(request):
@@ -93,14 +93,14 @@ def health(request):
     return HttpResponse("ok\n", content_type="text/plain")
 
 
-@require_GET
+@require_safe
 @access.public_view
 def privacy(request):
     """Finalité, responsables, durées et droits (CLAUDE.md « Sécurité et RGPD »)."""
     return render(request, "public/privacy.html", {"site": SiteSettings.get()})
 
 
-@require_GET
+@require_safe
 def help_page(request):
     """Aide des membres : derrière le code d'accès, comme le reste de l'espace interne."""
     return render(request, "core/help.html")
@@ -113,7 +113,7 @@ BACKGROUND_COLOR = "#f7f7f5"
 SW_LOGIC_VERSION = "1"  # à changer quand templates/core/sw.js change de comportement
 
 
-@require_GET
+@require_safe
 @access.public_view
 def manifest(request):
     name = SiteSettings.get().collective_name
@@ -144,7 +144,7 @@ def manifest(request):
     return response
 
 
-@require_GET
+@require_safe
 @never_cache
 @access.public_view
 def service_worker(request):
@@ -171,7 +171,7 @@ def service_worker(request):
     )
 
 
-@require_GET
+@require_safe
 @access.public_view
 def offline(request):
     return render(request, "core/offline.html", {"site": SiteSettings.get()})

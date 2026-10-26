@@ -69,3 +69,17 @@ def test_poll_page_works_without_a_name(member_client, at):
         slots=[(at(1, 10), at(1, 11)), (at(2, 10), at(2, 11))],
     )
     assert member_client.get(f"/sondages/{poll.pk}/").status_code == 200
+
+
+def test_whoami_shows_the_account_person_without_a_cookie(admin_client, admin_user, site):
+    """Un compte relié à une personne n'a pas à redonner son nom (CLAUDE.md, modèle acteur)."""
+    actor = get_or_create_for_name("Camille Martin")
+    actor.user = admin_user
+    actor.save(update_fields=["user"])
+    body = admin_client.get(reverse("agenda:home")).content.decode()
+    assert "Vous : <strong>Camille Martin</strong>" in body
+
+
+def test_manager_without_name_is_told_why_it_matters(admin_client, site):
+    body = admin_client.get(reverse("agenda:home")).content.decode()
+    assert "il signe vos actions" in body

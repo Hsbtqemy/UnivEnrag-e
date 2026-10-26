@@ -6,7 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import is_manager, require_capability
 from apps.actors.services import get_or_create_for_name
@@ -26,7 +26,7 @@ from .models import Event
 # --- Public ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 @public_view
 def public_agenda(request):
     """Agenda public : la semaine en calendrier, puis la liste des prochains événements."""
@@ -40,21 +40,21 @@ def public_agenda(request):
     return render(request, "public/agenda.html", {"days": days, "calendar_config": config})
 
 
-@require_GET
+@require_safe
 @public_view
 def public_week(request):
     """Ancienne adresse de la vue semaine, peut-être déjà partagée : tout est sur une page."""
     return redirect("agenda:public_list", permanent=True)
 
 
-@require_GET
+@require_safe
 @public_view
 def public_detail(request, pk):
     event = get_object_or_404(ical.public_events(), pk=pk)
     return render(request, "public/event_detail.html", {"event": event})
 
 
-@require_GET
+@require_safe
 @public_view
 def public_events_json(request):
     events = ical.public_events()
@@ -64,7 +64,7 @@ def public_events_json(request):
     return JsonResponse([serializers.public_event(e) for e in events], safe=False)
 
 
-@require_GET
+@require_safe
 @public_view
 def public_ics(request):
     body = ical.public_calendar(
@@ -80,7 +80,7 @@ def public_ics(request):
 # --- Interne ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 def home(request):
     """Accueil des membres : prochains événements, provisoires compris (marqués comme tels)."""
     now = timezone.now()
@@ -112,7 +112,7 @@ def home(request):
 # (CLAUDE.md AGE-3, décision 11).
 
 
-@require_GET
+@require_safe
 def programming(request):
     rooms = list(Room.objects.filter(is_active=True))
     resources = [{"id": str(r.pk), "title": r.name} for r in rooms]
@@ -149,7 +149,7 @@ def programming(request):
     )
 
 
-@require_GET
+@require_safe
 def programming_events(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
     base = Event.objects.active().select_related("owner", "room", "space", "idea")
