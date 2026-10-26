@@ -339,6 +339,10 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .calendar { background: var(--surface); border-radius: var(--radius); }
 .calendar .ec { --ec-bg-color: var(--surface); --ec-border-color: var(--border); --ec-text-color: var(--text); --ec-button-bg-color: var(--surface); --ec-button-border-color: var(--border); --ec-button-text-color: var(--text); --ec-button-active-bg-color: var(--accent-soft); --ec-today-bg-color: var(--accent-soft); }
 .calendar .ec-button:disabled { color: var(--muted); opacity: .7; }
+/* Une période sans rendez-vous le dit au milieu de la grille, qui reste visible. */
+.calendar-frame { position: relative; }
+.calendar-empty { position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); max-width: calc(100% - 2rem); margin: 0; padding: .6rem 1rem; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 10px rgb(0 0 0 / .08); color: var(--muted); pointer-events: none; }
+.calendar-empty[hidden] { display: none; }
 .is-placing .calendar .ec-body { cursor: crosshair; }
 
 .ec-event { overflow: hidden; }
@@ -511,10 +515,13 @@ a.badge { text-decoration: none; }
   .idea-table--stack td[data-label]::before { content: attr(data-label) " : "; color: var(--muted); }
 }
 
-/* Agenda public : grille de la semaine sur grand écran seulement. */
+/* Agenda public : le mois en grille, sur tous les écrans. Sur téléphone, les cases sont
+   étroites : des pastilles plus petites, le détail est dans la liste en dessous. */
 .public-week { margin-bottom: 2rem; }
 @media (max-width: 640px) {
-  .public-week { display: none; }
+  .public-week .ec-day-grid .ec-event { font-size: .7rem; padding: 0 .15rem; }
+  .public-week .ec-day-grid .ec-day-head { font-size: .8rem; }
+  .calendar-empty { position: static; transform: none; max-width: none; margin-top: .5rem; box-shadow: none; }
 }
 
 /* Pages d'aide */

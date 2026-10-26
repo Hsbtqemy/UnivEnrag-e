@@ -64,6 +64,8 @@
      "resourceTimeGridWeek", "resourceTimeGridDay"].forEach((v) => {
       views[v] = { buttonText: frenchText };
     });
+    // En vue mois, la colonne est un jour de la semaine, pas une date : « lun. ».
+    views.dayGridMonth.dayHeaderFormat = { weekday: "short" };
     return {
       locale: "fr-FR",
       firstDay: 1,
