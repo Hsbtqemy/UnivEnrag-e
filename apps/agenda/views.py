@@ -107,8 +107,9 @@ def home(request):
 
 
 # --- Programmation (CDC §3) --------------------------------------------------------------
-# Ouverte à tous les participants : chacun place et déplace, sous son nom. Confirmer et
-# publier restent réservés (CLAUDE.md AGE-3, décision 11).
+# Consultable par tous les participants. Placer et déplacer, sous son nom, seulement si le
+# réglage du site l'ouvre (décision 22). Confirmer et publier restent réservés
+# (CLAUDE.md AGE-3, décision 11).
 
 
 @require_GET
@@ -124,7 +125,7 @@ def programming(request):
         "placeUrl": reverse("agenda:place_idea", args=[0]),
         "confirmUrl": reverse("agenda:gestion_confirm") if can_confirm else "",
         "publicUrl": reverse("agenda:gestion_public", args=[0]) if can_publish else "",
-        "canEdit": bool(request.actor_name) or can_confirm,
+        "canEdit": services.can_edit(request.user) and (bool(request.actor_name) or can_confirm),
         "resources": resources,
         "freePlaceResource": serializers.FREE_PLACE_RESOURCE,
     }
@@ -165,7 +166,7 @@ def programming_events(request):
             .prefetch_related("idea__slots")
         )
     manager = services.can_manage(request.user)
-    can_edit = bool(request.actor_name) or manager
+    can_edit = services.can_edit(request.user) and (bool(request.actor_name) or manager)
 
     payload = [
         serializers.programming_event(
@@ -200,6 +201,8 @@ def _error(message: str, status: int = 400, **extra) -> JsonResponse:
 def place_idea(request, pk):
     """Une idée de « À placer » posée sur un créneau, en provisoire, sous le nom retenu."""
     idea = get_object_or_404(Idea.objects.visible(), pk=pk)
+    if not services.can_edit(request.user):
+        return _error("Les gestionnaires de l'agenda placent les idées.", status=403)
     if not request.actor_name and not services.can_manage(request.user):
         return _error("Indiquez d'abord votre nom pour placer une idée.")
     data = _json_body(request)

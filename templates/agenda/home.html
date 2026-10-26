@@ -6,7 +6,7 @@
 <p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient. Première visite ? <a href="{% url 'core:help' %}">Comment ça marche</a>.</p>
 {% endif %}
 
-<p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
+<p class="actions">{% if can_edit_agenda %}<a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a>{% else %}<a class="button" href="{% url 'ideas:new' %}">+ Proposer un événement ou une idée</a>{% endif %} <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
 
 <div class="home-cards">
   <a class="home-card" href="{% url 'ideas:list' %}"><strong>Idées et projets</strong><span>{{ idea_count }} en cours{% if to_place %}, {{ to_place }} à placer dans l'agenda{% endif %}</span></a>

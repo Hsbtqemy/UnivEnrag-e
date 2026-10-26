@@ -44,7 +44,7 @@
   <p class="empty">{% if idea.kind == "event" and idea.status == "new" or idea.kind == "event" and idea.status == "preparing" %}Pas encore placée : elle attend dans « À placer ».{% else %}Aucun événement.{% endif %}</p>
   {% endif %}
   <p class="actions">
-    {% if can_create_event %}<a class="button button--secondary" href="{% url 'agenda:new' %}?idee={{ idea.pk }}">Créer un événement depuis cette idée</a>{% endif %}
+    {% if can_create_event and can_edit_agenda %}<a class="button button--secondary" href="{% url 'agenda:new' %}?idee={{ idea.pk }}">Créer un événement depuis cette idée</a>{% endif %}
     <a class="button button--secondary" href="{% url 'agenda:programming' %}">Ouvrir la programmation</a>
   </p>
 </section>

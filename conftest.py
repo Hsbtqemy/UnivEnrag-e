@@ -61,7 +61,19 @@ ACCESS_CODE = "code-du-collectif"
 def site(db):
     settings_obj = SiteSettings.get()
     settings_obj.set_access_code(ACCESS_CODE)
+    # La plupart des tests décrivent l'agenda ouvert aux membres ; le réglage par défaut
+    # (fermé, décision 22) a ses propres tests avec `members_cannot_edit`.
+    settings_obj.members_edit_agenda = True
+    settings_obj.save(update_fields=["members_edit_agenda"])
     return settings_obj
+
+
+@pytest.fixture
+def members_cannot_edit(site):
+    """Le réglage de lancement : les membres consultent et proposent (décision 22)."""
+    site.members_edit_agenda = False
+    site.save(update_fields=["members_edit_agenda"])
+    return site
 
 
 @pytest.fixture

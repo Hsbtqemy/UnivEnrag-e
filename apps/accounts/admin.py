@@ -176,7 +176,7 @@ class SiteSettingsForm(forms.ModelForm):
 
     class Meta:
         model = SiteSettings
-        fields = ["collective_name", "privacy_contact"]
+        fields = ["collective_name", "privacy_contact", "members_edit_agenda"]
 
 
 @admin.register(SiteSettings)
@@ -188,6 +188,7 @@ class SiteSettingsAdmin(SuperuserAdminMixin, admin.ModelAdmin):
     fields = [
         "collective_name",
         "privacy_contact",
+        "members_edit_agenda",
         "access_code_status",
         "new_access_code",
         "regenerate_feeds_token",
@@ -218,6 +219,10 @@ class SiteSettingsAdmin(SuperuserAdminMixin, admin.ModelAdmin):
         if form.cleaned_data.get("regenerate_feeds_token"):
             obj.regenerate_feeds_token()
             audit.log(request.user, "core.feeds_token_regenerated", obj)
-        changed = [f for f in ("collective_name", "privacy_contact") if f in form.changed_data]
+        changed = [
+            f
+            for f in ("collective_name", "privacy_contact", "members_edit_agenda")
+            if f in form.changed_data
+        ]
         if changed:
             audit.log(request.user, "core.settings_changed", obj, fields=changed)

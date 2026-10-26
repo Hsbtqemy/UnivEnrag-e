@@ -13,8 +13,8 @@
     <li><span class="swatch swatch--warning"></span> Même salle qu'un autre événement</li>
   </ul>
 </div>
-<p class="hint">Chacun place et déplace les idées, sous son nom.{% if can_confirm %} Vous pouvez confirmer : seul un conflit de salle l'empêche.{% else %} La confirmation revient aux gestionnaires de l'agenda.{% endif %}</p>
-{% if not calendar_config.canEdit %}
+<p class="hint">{% if can_edit_agenda %}Chacun place et déplace les idées, sous son nom.{% else %}Les gestionnaires de l'agenda placent les idées et confirment les événements.{% endif %}{% if can_confirm %} Vous pouvez confirmer : seul un conflit de salle l'empêche.{% elif can_edit_agenda %} La confirmation revient aux gestionnaires de l'agenda.{% endif %}</p>
+{% if can_edit_agenda and not calendar_config.canEdit %}
 <p class="notice">Pour placer ou déplacer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez d'abord votre nom</a>.</p>
 {% endif %}
 
@@ -52,17 +52,17 @@
 <div class="programming">
   <aside class="to-place" aria-labelledby="a-placer">
     <h2 id="a-placer">À placer <span class="count" id="a-placer-compte">{{ unplaced|length }}</span></h2>
-    <p class="hint">Choisissez une idée, puis cliquez sur un créneau du calendrier (ou sélectionnez une plage).</p>
+    {% if can_edit_agenda %}<p class="hint">Choisissez une idée, puis cliquez sur un créneau du calendrier (ou sélectionnez une plage).</p>{% endif %}
     <ul class="to-place__list" id="a-placer-liste">
       {% for idea in unplaced %}
       <li>
-        <button type="button" class="to-place__item" aria-pressed="false"
+        {% if can_edit_agenda %}<button type="button" class="to-place__item" aria-pressed="false"
                 data-idea-id="{{ idea.pk }}" data-duration="{{ idea.duration_minutes }}"
-                data-room="{{ idea.wanted_room_id|default:'' }}" data-title="{{ idea.title }}">
+                data-room="{{ idea.wanted_room_id|default:'' }}" data-title="{{ idea.title }}">{% else %}<div class="to-place__item">{% endif %}
           <span class="to-place__title">{{ idea.title }}</span>
           <span class="to-place__meta">{{ idea.owner.display_name }} · {{ idea.get_duration_minutes_display }}{% if idea.wanted_room %} · {{ idea.wanted_room.name }}{% endif %}</span>
           {% for slot in idea.slots.all %}<span class="to-place__period">{% if slot.is_precise %}{{ slot.start|date:"D j F, H:i" }}{% else %}{{ slot.period_text }}{% endif %}</span>{% endfor %}
-        </button>
+        {% if can_edit_agenda %}</button>{% else %}</div>{% endif %}
         <a class="to-place__link" href="{% url 'ideas:detail' idea.pk %}">Voir l'idée<span class="visually-hidden"> « {{ idea.title }} »</span></a>
       </li>
       {% empty %}

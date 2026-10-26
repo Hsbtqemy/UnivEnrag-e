@@ -25,7 +25,7 @@
   <h2 id="actions" class="visually-hidden">Actions</h2>
   <div class="actions">
     {% if can_edit %}<a class="button" href="{% url 'agenda:edit' event.pk %}">Modifier</a>{% endif %}
-    <a class="button button--secondary" href="{% url 'agenda:new' %}?depuis={{ event.pk }}">Dupliquer</a>
+    {% if can_edit_agenda %}<a class="button button--secondary" href="{% url 'agenda:new' %}?depuis={{ event.pk }}">Dupliquer</a>{% endif %}
   </div>
 
   {% if can_edit %}

@@ -1,5 +1,5 @@
 from . import navigation
-from .capabilities import capabilities_of, is_manager
+from .capabilities import can_edit_agenda, capabilities_of, is_manager
 
 
 def management(request):
@@ -10,6 +10,14 @@ def management(request):
     nav = navigation.build(
         request, has_access=getattr(request, "has_access", False), is_manager=manager
     )
+    # Les membres modifient-ils l'agenda ? (décision 22) Utile à toutes les pages qui
+    # proposent « Nouvel événement », « Réserver » ou « Fixer ce créneau ».
+    editing = can_edit_agenda(user)
     if not manager:
-        return {"capabilities": set(), "is_manager": False, "nav": nav}
-    return {"capabilities": capabilities_of(user), "is_manager": True, "nav": nav}
+        return {"capabilities": set(), "is_manager": False, "nav": nav, "can_edit_agenda": editing}
+    return {
+        "capabilities": capabilities_of(user),
+        "is_manager": True,
+        "nav": nav,
+        "can_edit_agenda": editing,
+    }

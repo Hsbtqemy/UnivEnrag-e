@@ -37,12 +37,13 @@
       <th scope="row">Total</th>
       {% for r in results.slots %}
       <td{% if r.is_best %} class="best"{% endif %}><strong>{{ r.yes }}</strong> oui{% if r.maybe %} · {{ r.maybe }} si besoin{% endif %}
-        {% if not poll.is_closed %}<br><a class="button button--small{% if not r.is_best %} button--secondary{% endif %}" href="{% url 'agenda:new' %}?sondage={{ poll.pk }}&amp;creneau={{ r.slot.pk }}">Fixer ce créneau</a>{% endif %}
+        {% if not poll.is_closed and can_edit_agenda %}<br><a class="button button--small{% if not r.is_best %} button--secondary{% endif %}" href="{% url 'agenda:new' %}?sondage={{ poll.pk }}&amp;creneau={{ r.slot.pk }}">Fixer ce créneau</a>{% endif %}
       </td>
       {% endfor %}
     </tr>
   </tfoot>
 </table>
+{% if not poll.is_closed and not can_edit_agenda %}<p class="hint">Un gestionnaire de l'agenda fixera le créneau retenu.</p>{% endif %}
 </div>
 
 {% if not poll.is_closed %}

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.capabilities import has_capability
+from apps.accounts.capabilities import can_edit_agenda, has_capability
 from apps.actors.services import normalize_name
 from apps.audit import audit
 
@@ -63,6 +63,12 @@ def describe_slot(event) -> str:
 
 def can_manage(user) -> bool:
     return has_capability(user, "manage_agenda")
+
+
+def can_edit(user) -> bool:
+    """Écrire dans l'agenda : habilité « agenda », ou tout participant si le réglage du site
+    l'ouvre (décision 22)."""
+    return can_edit_agenda(user)
 
 
 def can_publish(user) -> bool:

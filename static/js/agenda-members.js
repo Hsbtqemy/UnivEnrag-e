@@ -54,7 +54,8 @@
     view: narrow ? "listWeek" : "timeGridWeek",
     headerToolbar: { start: "prev,next today", center: "title", end: "dayGridMonth,timeGridWeek,listWeek" },
     eventSources: [{ url: config.eventsUrl }],
-    selectable: true,
+    // Sans droit d'écriture (décision 22), un clic sur un créneau ne crée rien.
+    selectable: config.canCreate,
     pointer: true,
     dayMaxEvents: true,
     snapDuration: "00:15:00",
@@ -83,7 +84,7 @@
       window.location.href = info.event.extendedProps.url;
     },
     dateClick(info) {
-      openNew(info.date, null);
+      if (config.canCreate) openNew(info.date, null);
     },
     select(info) {
       openNew(info.start, info.end);

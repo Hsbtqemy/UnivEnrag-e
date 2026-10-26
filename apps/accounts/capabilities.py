@@ -23,6 +23,17 @@ def has_capability(user, codename: str) -> bool:
     return user.is_superuser or user.has_perm(f"accounts.{codename}")
 
 
+def can_edit_agenda(user) -> bool:
+    """Écrire dans l'agenda (créer, modifier, déplacer, annuler, placer une idée).
+
+    Un habilité « agenda » le peut toujours ; un participant seulement si le réglage du site
+    l'ouvre (CLAUDE.md AGE-3, décision 22). Le nom retenu reste exigé à part.
+    """
+    from apps.core.models import SiteSettings
+
+    return has_capability(user, "manage_agenda") or SiteSettings.get().members_edit_agenda
+
+
 def capabilities_of(user) -> set[str]:
     return {code for code in CAPABILITY_LABELS if has_capability(user, code)}
 

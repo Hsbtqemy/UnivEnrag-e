@@ -25,13 +25,18 @@
   <p>À votre première action, le site vous demande un nom ou un pseudo. Il s'affiche avec ce que vous faites et votre navigateur le retient : en haut de page, « Vous : … · changer ». Le même nom saisi sur votre téléphone et votre ordinateur désigne la même personne ; si quelqu'un porte déjà votre prénom, ajoutez une initiale.</p>
 
   <h2 id="evenement">Ajouter un événement</h2>
+  {% if not can_edit_agenda %}
+  <p>Les gestionnaires de l'agenda placent et confirment les événements. Pour en proposer un, <strong>« + Proposer un événement ou une idée »</strong> depuis l'accueil (ou Idées → « + Déposer une idée »). Avec une date et une heure précises, votre idée apparaît tout de suite en provisoire dans l'agenda ; sinon, elle attend dans « À placer ».</p>
+  {% else %}
   <p>Depuis l'accueil, <strong>« + Nouvel événement »</strong>, ou un clic directement sur un créneau de l'agenda. Le titre, le jour et les heures suffisent ; le reste (salle, espace, description, intervenants, visio) est dans « Plus de détails ».</p>
   <ul>
     <li>En choisissant une salle, le formulaire dit tout de suite si elle est libre. Une salle déjà réservée par un événement confirmé, ou fermée à cette heure, ne peut pas être prise ; une salle « sur validation » met la réservation en attente de l'accord d'un gestionnaire.</li>
     <li>Si un intervenant est déjà attendu ailleurs au même moment, le formulaire le signale, sans rien bloquer.</li>
     <li>Rien n'est public d'office : cochez « Demander la publication » pour que l'événement apparaisse sur l'agenda public, après accord d'un gestionnaire.</li>
   </ul>
+  {% endif %}
 
+  {% if can_edit_agenda %}
   <h2 id="modifier">Modifier, déplacer, dupliquer, annuler</h2>
   <ul>
     <li><strong>Déplacer</strong> : faites glisser l'événement dans l'agenda, ou ouvrez-le puis « Modifier ».</li>
@@ -39,6 +44,7 @@
     <li><strong>Annuler</strong> : « Annuler l'événement… » sur sa fiche. Il reste visible, barré : rien n'est jamais effacé.</li>
   </ul>
   <p>Chaque changement est noté dans l'historique de l'événement (qui, quand, avant, après). Un événement verrouillé ne se modifie plus que par un gestionnaire.</p>
+  {% endif %}
 
   <h2 id="provisoire">Provisoire ou confirmé ?</h2>
   <p>Un événement que vous créez directement est confirmé, si sa salle est libre. Un événement issu d'une idée commence <strong>provisoire</strong> (hachuré) : un gestionnaire de l'agenda le confirme une fois le créneau arrêté.</p>
@@ -54,13 +60,13 @@
   </ul>
 
   <h2 id="programmation">La programmation par salle</h2>
-  <p><strong>Agenda → « Programmation par salle »</strong> montre une colonne par salle, pour voir d'un coup d'œil les événements en parallèle et les salles libres. Choisissez une idée dans « À placer », puis cliquez sur un créneau. Les cadres en pointillé sont les autres créneaux envisagés d'un événement : un clic l'y déplace. Sans souris, ouvrez l'événement : un formulaire « Déplacer » est là.</p>
+  <p><strong>Agenda → « Programmation par salle »</strong> montre une colonne par salle, pour voir d'un coup d'œil les événements en parallèle et les salles libres. {% if can_edit_agenda %}Choisissez une idée dans « À placer », puis cliquez sur un créneau. Les cadres en pointillé sont les autres créneaux envisagés d'un événement : un clic l'y déplace. Sans souris, ouvrez l'événement : un formulaire « Déplacer » est là.{% else %}Les gestionnaires de l'agenda y placent les idées en attente (« À placer ») ; vous pouvez la consulter.{% endif %}</p>
 
   <h2 id="presences">Qui est là ?</h2>
   <p><strong>« Indiquer ma présence »</strong> : cochez les demi-journées où vous serez là cette semaine, avec le lieu. « Reprendre ma semaine précédente » recoche tout en un clic. Le tableau « Qui est là ? » montre qui sera où. Ces présences sont effacées après 60 jours.</p>
 
   <h2 id="sondages">Trouver une date</h2>
-  <p><strong>Sondages → « + Nouveau sondage »</strong> : proposez de 2 à 8 créneaux, partagez l'adresse, chacun répond « Oui » ou « Si besoin » sous son nom. Le meilleur créneau est mis en évidence ; « Fixer ce créneau » crée l'événement et clôt le sondage.</p>
+  <p><strong>Sondages → « + Nouveau sondage »</strong> : proposez de 2 à 8 créneaux, partagez l'adresse, chacun répond « Oui » ou « Si besoin » sous son nom. Le meilleur créneau est mis en évidence ; {% if can_edit_agenda %}« Fixer ce créneau » crée l'événement et clôt le sondage.{% else %}Un gestionnaire de l'agenda fixe ensuite le créneau retenu, ce qui crée l'événement et clôt le sondage.{% endif %}</p>
 
   <h2 id="abonnement">L'agenda dans votre téléphone</h2>
   <p><strong>Agenda → « S'abonner »</strong> donne une adresse à ajouter dans votre application d'agenda (téléphone, Thunderbird, Outlook…) : tout l'agenda, un espace ou une salle, mis à jour automatiquement. Cette adresse ouvre l'agenda interne : ne la diffusez pas.</p>

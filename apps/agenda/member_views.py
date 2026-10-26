@@ -37,6 +37,17 @@ def _done(response, form):
     return response
 
 
+EDITING_CLOSED = (
+    "Les gestionnaires de l'agenda placent les événements : proposez le vôtre en déposant une idée."
+)
+
+
+def _editing_closed(request):
+    """Édition réservée aux habilités (décision 22) : on renvoie vers le dépôt d'une idée."""
+    messages.info(request, EDITING_CLOSED)
+    return redirect("ideas:new")
+
+
 def _calendar_url(event_or_date) -> str:
     day = (
         timezone.localtime(event_or_date.start).date()
@@ -53,11 +64,13 @@ def _calendar_url(event_or_date) -> str:
 def calendar(request):
     rooms = list(Room.objects.filter(is_active=True))
     spaces = list(Space.objects.open())
+    editing = services.can_edit(request.user)
     config = {
         "eventsUrl": reverse("agenda:events_json"),
         "moveUrl": reverse("agenda:move", args=[0]),
         "newUrl": reverse("agenda:new"),
-        "canEdit": bool(request.actor_name),
+        "canCreate": editing,
+        "canEdit": editing and (bool(request.actor_name) or services.can_manage(request.user)),
         "date": request.GET.get("date", ""),
     }
     return render(
@@ -80,7 +93,7 @@ def events_json(request):
     if start and end:
         events = events.overlapping(start, end)
     manager = services.can_manage(request.user)
-    can_edit = bool(request.actor_name) or manager
+    can_edit = services.can_edit(request.user) and (bool(request.actor_name) or manager)
     return JsonResponse(
         [
             serializers.member_event(e, editable=can_edit and (manager or not e.is_locked))
@@ -205,6 +218,8 @@ def _initial_for_new(request) -> dict:
 
 
 def new(request):
+    if not services.can_edit(request.user):
+        return _editing_closed(request)
     can_publish = services.can_publish(request.user)
     form = EventForm(
         request.POST or None,
@@ -271,7 +286,8 @@ def detail(request, pk):
             "can_manage": services.can_manage(request.user),
             "can_validate_room": services.can_override(request.user),
             "can_publish": services.can_publish(request.user),
-            "can_edit": event.status != Event.Status.CANCELLED
+            "can_edit": services.can_edit(request.user)
+            and event.status != Event.Status.CANCELLED
             and (not event.is_locked or services.can_manage(request.user)),
         },
     )
@@ -279,6 +295,9 @@ def detail(request, pk):
 
 def edit(request, pk):
     event = get_object_or_404(Event.objects.select_related("room"), pk=pk)
+    if not services.can_edit(request.user):
+        messages.error(request, EDITING_CLOSED)
+        return redirect("agenda:detail", pk=pk)
     if event.status == Event.Status.CANCELLED:
         messages.error(request, "Un événement annulé ne se modifie plus.")
         return redirect("agenda:detail", pk=pk)
@@ -317,6 +336,9 @@ def edit(request, pk):
 @require_POST
 def cancel(request, pk):
     event = get_object_or_404(Event, pk=pk)
+    if not services.can_edit(request.user):
+        messages.error(request, EDITING_CLOSED)
+        return redirect("agenda:detail", pk=pk)
     form = ActionForm(request.POST, actor_name=request.actor_name)
     if not form.is_valid():
         messages.error(request, "Indiquez votre nom pour annuler l'événement.")
@@ -339,6 +361,8 @@ def cancel(request, pk):
 def move(request, pk):
     """Glisser-déposer dans l'agenda des membres et dans la programmation."""
     event = get_object_or_404(Event, pk=pk)
+    if not services.can_edit(request.user):
+        return JsonResponse({"ok": False, "error": EDITING_CLOSED}, status=403)
     if not request.actor_name and not services.can_manage(request.user):
         return JsonResponse(
             {"ok": False, "error": "Indiquez d'abord votre nom pour modifier l'agenda."},
