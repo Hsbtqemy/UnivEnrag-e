@@ -85,9 +85,16 @@ def _visitor_items(is_manager: bool) -> list[NavItem]:
             matches=("ideas:public_list", "ideas:public_detail"),
             primary=True,
         ),
-        NavItem("Contact", "public:contact", "mail"),
+        # « Nous écrire » est un onglet de la même page que « Proposer une idée » : un seul
+        # lien pour les deux, les données restent séparées (idée modérée, message privé).
         NavItem(
-            "Proposer une idée", "ideas:propose", "plus", primary=True, cta=True, short="Proposer"
+            "Proposer ou écrire",
+            "ideas:propose",
+            "plus",
+            matches=("ideas:propose", "ideas:sent", "public:contact"),
+            primary=True,
+            cta=True,
+            short="Proposer",
         ),
     ]
     if is_manager:

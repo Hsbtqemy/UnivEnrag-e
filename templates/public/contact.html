@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Contact — {{ site.collective_name }}{% endblock %}
+{% block title %}Nous écrire — {{ site.collective_name }}{% endblock %}
 {% block content %}
-<h1>Nous écrire</h1>
-<p class="lead">Votre message arrive aux organisateurs du collectif. Le site n'envoie aucun e-mail : on vous répond depuis notre propre messagerie si vous laissez une adresse.</p>
+{% include "includes/propose_tabs.html" with active="message" %}
+<p class="lead">Une question, une demande, un mot : votre message arrive aux organisateurs du collectif. Il n'est jamais publié. Le site n'envoie aucun e-mail : on vous répond depuis notre propre messagerie si vous laissez une adresse.</p>
 <form method="post" class="form" novalidate>
   {% csrf_token %}
   {% if form.non_field_errors %}<div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}

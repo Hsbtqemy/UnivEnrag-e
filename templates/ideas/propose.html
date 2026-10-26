@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Proposer une idée — {{ site.collective_name }}{% endblock %}
 {% block content %}
-<h1>Proposer une idée</h1>
+{% include "includes/propose_tabs.html" with active="idee" %}
 <p class="lead">Un événement à organiser, un projet à lancer, ou simplement une envie : décrivez-la. Le collectif lit chaque proposition ; une fois acceptée, elle rejoint les idées du collectif, et peut être affichée sur <a href="{% url 'ideas:public_list' %}">la page des idées</a>.</p>
 
 <form method="post" class="form" novalidate>
