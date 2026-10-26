@@ -9,6 +9,7 @@
   <a href="?semaine={{ next }}">Semaine suivante →</a>
 </nav>
 <p class="lead">Cochez les demi-journées où vous serez présent·e, et indiquez où si vous le souhaitez. Les autres membres le verront dans « Qui est là ? ».</p>
+<p class="hint">« Permanence publique » : la page publique annoncera qu'une personne du collectif est là ce jour-là, à ce lieu, sans jamais dire qui.</p>
 <p><a class="button button--secondary button--small" href="?semaine={{ monday|date:'Y-m-d' }}&amp;reprendre=1">Reprendre ma semaine précédente</a></p>
 
 <form method="post" class="form">
@@ -24,6 +25,7 @@
       {% endfor %}
       <label class="week-day__place" for="lieu-{{ day.key }}">Lieu</label>
       <input id="lieu-{{ day.key }}" name="lieu-{{ day.key }}" value="{{ day.place }}" list="lieux" maxlength="80" placeholder="Bât. A, local…">
+      <label class="checkbox"><input type="checkbox" name="ouvert-{{ day.key }}"{% if day.is_open %} checked{% endif %}> Permanence publique</label>
     </fieldset>
     {% endfor %}
   </div>

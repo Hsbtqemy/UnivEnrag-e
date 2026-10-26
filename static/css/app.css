@@ -524,6 +524,8 @@ a.badge { text-decoration: none; }
 .news-list { list-style: none; padding: 0; display: grid; gap: 1.25rem; }
 .news-list h2, .news-list h3 { margin: .1rem 0 .3rem; font-size: 1.15rem; }
 .news-list .meta { margin: 0; }
+.permanence-list { list-style: none; padding: 0; display: grid; gap: .75rem; }
+.permanence-list ul { margin: .2rem 0 0; padding-left: 1.25rem; }
 
 /* Bouton clair / sombre / enragé, une icône au bout de l'en-tête */
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; padding: 0; color: var(--text); background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; }

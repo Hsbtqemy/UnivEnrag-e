@@ -11,7 +11,7 @@
   <strong>Du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}{% if is_current %} (cette semaine){% endif %}</strong>
   <a href="?semaine={{ next }}">Semaine suivante →</a>
 </nav>
-<p class="hint">Présences annoncées par {{ people_count }} personne{{ people_count|pluralize }}.</p>
+<p class="hint">Présences annoncées par {{ people_count }} personne{{ people_count|pluralize }}. Les « permanences » sont annoncées sur la page publique, avec le lieu mais sans le nom.</p>
 
 <div class="table-scroll">
 <table class="table presence-table">
@@ -30,7 +30,7 @@
         {% if cell.people %}
         <p class="presence-count">{{ cell.people|length }}</p>
         <ul class="presence-list">
-          {% for name, place in cell.people %}<li>{{ name }}{% if place %} <span class="presence-place">· {{ place }}</span>{% endif %}</li>{% endfor %}
+          {% for name, place, is_open in cell.people %}<li>{{ name }}{% if place %} <span class="presence-place">· {{ place }}</span>{% endif %}{% if is_open %} <span class="badge">permanence</span>{% endif %}</li>{% endfor %}
         </ul>
         {% endif %}
       </td>

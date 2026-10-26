@@ -48,15 +48,25 @@ def _selections_from_post(post, monday: date) -> dict:
     return selections
 
 
+def _open_days_from_post(post, monday: date) -> set[date]:
+    return {day for day in services.week_days(monday) if post.get(f"ouvert-{day.isoformat()}")}
+
+
 def my_week(request):
-    """Je coche les demi-journées où je serai là, avec un lieu par jour."""
+    """Je coche les demi-journées où je serai là, avec un lieu par jour, et je dis si c'est
+    une permanence ouverte au public (décision 23)."""
     monday = services.parse_week(request.GET.get("semaine") or request.POST.get("semaine"))
     name_form = NameForm(request.POST or None, actor_name=request.actor_name)
     if request.method == "POST":
         selections = _selections_from_post(request.POST, monday)
+        open_days = _open_days_from_post(request.POST, monday)
         if name_form.is_valid():
             actor = get_or_create_for_name(name_form.cleaned_data["author_name"])
-            count = services.save_week(actor, monday, selections)
+            try:
+                count = services.save_week(actor, monday, selections, open_days)
+            except services.PresenceError as error:
+                messages.error(request, str(error))
+                return _render_week(request, monday, selections, open_days, name_form)
             messages.success(
                 request,
                 f"Votre semaine est enregistrée ({count} demi-journée{'s' if count > 1 else ''}).",
@@ -67,11 +77,16 @@ def my_week(request):
     else:
         if request.GET.get("reprendre"):
             selections = services.previous_week_selections(request.actor, monday)
+            open_days = services.previous_open_days(request.actor, monday)
             if not selections:
                 messages.info(request, "Rien de déclaré la semaine précédente.")
         else:
             selections = services.selections_for(request.actor, monday)
+            open_days = services.open_days_for(request.actor, monday)
+    return _render_week(request, monday, selections, open_days, name_form)
 
+
+def _render_week(request, monday, selections, open_days, name_form):
     days = []
     for day in services.week_days(monday):
         checked = {period for (d, period) in selections if d == day}
@@ -89,6 +104,7 @@ def my_week(request):
                     for period in Presence.Period
                 ],
                 "place": place,
+                "is_open": day in open_days,
             }
         )
     return render(

@@ -15,6 +15,7 @@ from apps.core.access import public_view
 from apps.core.markdown import render as render_markdown
 from apps.core.models import SiteSettings
 from apps.ideas.models import Idea
+from apps.presences import services as presences_services
 
 from . import services
 from .forms import ContactForm, PresentationForm
@@ -31,6 +32,7 @@ def home(request):
         {
             "events": ical.public_events().filter(end__gte=now)[:5],
             "news": NewsPost.objects.public()[:3],
+            "permanences": presences_services.public_permanences(),
             "ideas": Idea.objects.public()
             .filter(status__in=[Idea.Status.NEW, Idea.Status.PREPARING, Idea.Status.PLANNED])
             .order_by("-created_at")[:3],

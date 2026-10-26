@@ -50,7 +50,7 @@ def test_board_lists_people_by_half_day():
     services.save_week(get_or_create_for_name("Paul"), MONDAY, {(MONDAY, "morning"): ""})
     rows = services.board(MONDAY)
     morning_monday = rows[0][0]
-    assert morning_monday.people == [("Marie", "Bât. A"), ("Paul", "")]
+    assert morning_monday.people == [("Marie", "Bât. A", False), ("Paul", "", False)]
     assert services.count_people(MONDAY) == 2
 
 

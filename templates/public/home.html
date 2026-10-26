@@ -45,6 +45,23 @@
   </section>
 </div>
 
+{% if permanences %}
+<section aria-labelledby="permanences">
+  <h2 id="permanences">Où nous trouver</h2>
+  <p class="hint">Quelqu'un du collectif sera là, passez nous voir.</p>
+  <ul class="permanence-list">
+    {% for day in permanences %}
+    <li>
+      <strong>{{ day.day|date:"l j F"|capfirst }}</strong>
+      <ul>
+        {% for label, places in day.slots %}<li>{{ label }} : {{ places|join:", " }}</li>{% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 {% if ideas %}
 <section aria-labelledby="idees">
   <h2 id="idees">Idées en cours</h2>
