@@ -25,7 +25,13 @@ def test_visitor_navigation_has_call_to_action(client, site):
     html = Client().get(reverse("public:news_list")).content.decode()
     assert "nav__link--cta" in html and "Proposer une idée" in html
     assert "Espace membres" in html and "Gestion" not in html
-    assert "nav__more--current" in html  # Actualités est rangée sous « Plus »
+    assert "nav__more--current" not in html  # Actualités est dans la barre du bas
+
+
+def test_visitor_home_is_under_more_on_phone(client, site):
+    """La page d'arrivée n'occupe pas la barre du bas : le nom du site y ramène."""
+    html = Client().get(reverse("public:home")).content.decode()
+    assert "nav__more--current" in html
 
 
 def test_manager_sees_management_tab(member_client, admin_user):

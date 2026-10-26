@@ -59,8 +59,11 @@ def _member_items(is_manager: bool) -> list[NavItem]:
 
 
 def _visitor_items(is_manager: bool) -> list[NavItem]:
+    # Sur téléphone, la barre du bas sert ce qu'on vient consulter : l'agenda, puis les
+    # nouvelles. « Le collectif » reste la page d'arrivée (`/`, le nom du site y ramène) et
+    # passe sous « Plus » ; sur ordinateur, tout est en onglets, dans cet ordre.
     items = [
-        NavItem("Le collectif", "public:home", "home", primary=True, short="Accueil"),
+        NavItem("Le collectif", "public:home", "home"),
         NavItem(
             "Agenda",
             "agenda:public_list",
@@ -69,17 +72,18 @@ def _visitor_items(is_manager: bool) -> list[NavItem]:
             primary=True,
         ),
         NavItem(
+            "Actualités",
+            "public:news_list",
+            "news",
+            matches=("public:news_list", "public:news_detail"),
+            primary=True,
+        ),
+        NavItem(
             "Idées",
             "ideas:public_list",
             "idea",
             matches=("ideas:public_list", "ideas:public_detail"),
             primary=True,
-        ),
-        NavItem(
-            "Actualités",
-            "public:news_list",
-            "news",
-            matches=("public:news_list", "public:news_detail"),
         ),
         NavItem("Contact", "public:contact", "mail"),
         NavItem(

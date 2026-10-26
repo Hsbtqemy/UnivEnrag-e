@@ -611,6 +611,18 @@ a.badge { text-decoration: none; }
 /* Page publique */
 .presentation { font-size: 1.05rem; max-width: 46rem; }
 .public-home { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 2rem; margin: 1.5rem 0; }
+/* Accueil public : un titre de section et son lien « Tout l'agenda → » sur la même ligne. */
+.home-section { margin: 1.75rem 0; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.section-head h2 { margin-bottom: .6rem; }
+.section-head a { font-size: .95rem; white-space: nowrap; }
+.event-list--grid { grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.news-card { padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.news-card h3 { margin: .1rem 0 .3rem; font-size: 1.1rem; }
+.news-card h3 a { text-decoration: none; }
+.news-card h3 a:hover, .news-card h3 a:focus-visible { text-decoration: underline; }
+.news-card .meta, .news-card p:last-child { margin: 0; }
+.callout--actions .actions { margin-bottom: 0; }
 .news-list { list-style: none; padding: 0; display: grid; gap: 1.25rem; }
 .news-list h2, .news-list h3 { margin: .1rem 0 .3rem; font-size: 1.15rem; }
 .news-list .meta { margin: 0; }

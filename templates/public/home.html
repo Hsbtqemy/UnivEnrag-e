@@ -8,46 +8,30 @@
 <div class="prose presentation">{{ site.presentation|markdown }}</div>
 {% endif %}
 
-<div class="public-home">
-  <section aria-labelledby="a-venir">
+{% comment %}L'accueil d'un visiteur : qui nous sommes, quand et où nous voir. Le détail est dans
+l'agenda et les actualités, que la barre de navigation met en premier.{% endcomment %}
+<section class="home-section" aria-labelledby="a-venir">
+  <div class="section-head">
     <h2 id="a-venir">Prochains rendez-vous</h2>
-    {% if events %}
-    <ul class="event-list">
-      {% for event in events %}
-      <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
-        <p class="event-card__time">{{ event.start|date_fr:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
-        <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
-        <p class="event-card__meta">{{ event.place_label }}</p>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="empty">Aucun rendez-vous public annoncé pour l'instant.</p>
-    {% endif %}
-    <p><a href="{% url 'agenda:public_list' %}">Tout l'agenda</a> · <a href="{% url 'agenda:public_ics' %}">s'y abonner (iCal)</a></p>
-  </section>
-
-  <section aria-labelledby="actualites">
-    <h2 id="actualites">Actualités</h2>
-    {% if news %}
-    <ul class="news-list">
-      {% for post in news %}
-      <li>
-        <p class="meta">{{ post.published_at|date_fr:"j F Y" }}</p>
-        <h3><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h3>
-        {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
-      </li>
-      {% endfor %}
-    </ul>
-    <p><a href="{% url 'public:news_list' %}">Toutes les actualités</a> · <a href="{% url 'public:news_feed' %}">s'y abonner (RSS)</a></p>
-    {% else %}
-    <p class="empty">Pas encore d'actualité.</p>
-    {% endif %}
-  </section>
-</div>
+    <a href="{% url 'agenda:public_list' %}">Tout l'agenda →</a>
+  </div>
+  {% if events %}
+  <ul class="event-list event-list--grid">
+    {% for event in events %}
+    <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+      <p class="event-card__time">{{ event.start|date_fr:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+      <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
+      <p class="event-card__meta">{{ event.place_label }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty-state"><p>Aucun rendez-vous public annoncé pour l'instant.</p><p>Pour être prévenu·e des prochains, <a href="{% url 'agenda:public_ics' %}">abonnez-vous à l'agenda</a>.</p></div>
+  {% endif %}
+</section>
 
 {% if permanences %}
-<section aria-labelledby="permanences">
+<section class="home-section" aria-labelledby="permanences">
   <h2 id="permanences">Où nous trouver</h2>
   <p class="hint">Quelqu'un du collectif sera là, passez nous voir.</p>
   <ul class="permanence-list">
@@ -63,22 +47,41 @@
 </section>
 {% endif %}
 
-{% if ideas %}
-<section aria-labelledby="idees">
-  <h2 id="idees">Idées en cours</h2>
-  <ul class="news-list">
-    {% for idea in ideas %}
-    <li>
-      <p class="meta">{{ idea.get_kind_display }} · {{ idea.get_status_display }}</p>
-      <h3><a href="{% url 'ideas:public_detail' idea.pk %}">{{ idea.title }}</a></h3>
-    </li>
-    {% endfor %}
-  </ul>
-  <p><a href="{% url 'ideas:public_list' %}">Toutes les idées</a></p>
-</section>
+{% if news or ideas %}
+<div class="public-home">
+  {% if news %}
+  <section aria-labelledby="actualites">
+    <div class="section-head">
+      <h2 id="actualites">Dernière actualité</h2>
+      <a href="{% url 'public:news_list' %}">Toutes →</a>
+    </div>
+    {% with post=news.0 %}
+    <article class="news-card">
+      <p class="meta">{{ post.published_at|date_fr:"j F Y" }}</p>
+      <h3><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h3>
+      {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
+    </article>
+    {% endwith %}
+  </section>
+  {% endif %}
+  {% if ideas %}
+  <section aria-labelledby="idees">
+    <div class="section-head">
+      <h2 id="idees">Idées en cours</h2>
+      <a href="{% url 'ideas:public_list' %}">Toutes →</a>
+    </div>
+    <ul class="poll-list">
+      {% for idea in ideas %}
+      <li><a href="{% url 'ideas:public_detail' idea.pk %}">{{ idea.title }}</a> <span class="meta">· {{ idea.get_kind_display|lower }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
 {% endif %}
 
-<aside class="callout">
-  <p>Vous voulez organiser quelque chose avec nous ? <a href="{% url 'ideas:propose' %}">Proposez une idée</a> : un événement, un projet ou une simple envie. Une question ? <a href="{% url 'public:contact' %}">Écrivez-nous</a>.</p>
+<aside class="callout callout--actions">
+  <p>Vous voulez organiser quelque chose avec nous ? Un événement, un projet ou une simple envie.</p>
+  <p class="actions"><a class="button" href="{% url 'ideas:propose' %}">Proposer une idée</a> <a class="button button--secondary" href="{% url 'public:contact' %}">Nous écrire</a></p>
 </aside>
 {% endblock %}
