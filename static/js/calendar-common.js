@@ -79,6 +79,8 @@
       buttonText: frenchText,
       views,
       eventTimeFormat: { hour: "2-digit", minute: "2-digit" },
+      // « +2 autres » au lieu de « +2 more ».
+      moreLinkContent: (arg) => `+${arg.num} autre${arg.num > 1 ? "s" : ""}`,
       slotLabelFormat: { hour: "2-digit", minute: "2-digit" },
       dayHeaderFormat: { weekday: "short", day: "numeric", month: "numeric" },
       ...extra,

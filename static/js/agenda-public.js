@@ -41,7 +41,8 @@
       end: narrow ? "" : "dayGridMonth,timeGridWeek",
     },
     eventSources: [{ url: config.eventsUrl }],
-    dayMaxEvents: true,
+    // Un nombre fixe : avec des cases plus hautes, le calcul automatique en cachait.
+    dayMaxEvents: 3,
     displayEventEnd: false,
     eventClick(info) {
       const url = info.event.extendedProps.url;

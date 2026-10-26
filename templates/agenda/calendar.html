@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-head">
   <h1>Agenda</h1>
-  <p class="actions"><a class="button button--secondary" href="{% url 'agenda:subscriptions' %}">S'abonner</a> <a class="button button--secondary" href="{% url 'agenda:export' %}">Exporter ou imprimer</a> <a class="button button--secondary" href="{% url 'agenda:programming' %}">Programmation par salle</a> {% if can_edit_agenda %}<a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a>{% else %}<a class="button" href="{% url 'ideas:new' %}">+ Proposer un événement</a>{% endif %}</p>
+  <p class="actions"><span class="button-bar"><a class="button button--secondary button--small" href="{% url 'agenda:subscriptions' %}">S'abonner</a><a class="button button--secondary button--small" href="{% url 'agenda:export' %}">Exporter ou imprimer</a><a class="button button--secondary button--small" href="{% url 'agenda:programming' %}">Programmation par salle</a></span> {% if can_edit_agenda %}<a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a>{% else %}<a class="button" href="{% url 'ideas:new' %}">+ Proposer un événement</a>{% endif %}</p>
 </div>
 
 {% if can_edit_agenda and not request.actor_name %}

@@ -10,7 +10,7 @@
     <h1>Agenda</h1>
     <p class="lead">Les rendez-vous publics du collectif, ouverts à toutes et à tous.</p>
   </div>
-  <p class="actions"><a class="button button--secondary" href="{% url 'agenda:public_print' %}">Imprimer</a> <a class="button button--secondary" href="{% url 'agenda:public_download' %}">Télécharger (.ics)</a> <a class="button button--secondary" href="{% url 'agenda:public_ics' %}">S'abonner</a></p>
+  <p class="button-bar"><a class="button button--secondary button--small" href="{% url 'agenda:public_print' %}">Imprimer</a><a class="button button--secondary button--small" href="{% url 'agenda:public_download' %}">Télécharger (.ics)</a><a class="button button--secondary button--small" href="{% url 'agenda:public_ics' %}">S'abonner</a></p>
 </div>
 
 {# Le mois en calendrier, même vide : on doit voir tout de suite qu'on est sur l'agenda. #}
@@ -20,7 +20,7 @@
     <div id="calendrier" class="calendar"></div>
     <p id="agenda-vide" class="calendar-empty" role="status" hidden></p>
   </div>
-  <p class="hint">Cliquez sur un événement pour l'ouvrir. Tous les événements à venir sont aussi listés ci-dessous.</p>
+  {% if days %}<p class="hint">Cliquez sur un événement pour l'ouvrir. Tous les événements à venir sont aussi listés ci-dessous.</p>{% endif %}
 </section>
 
 <section aria-labelledby="prochains">
@@ -39,7 +39,7 @@
     </ul>
   </section>
   {% empty %}
-  <p class="empty">Aucun événement à venir pour l'instant. Pour être prévenu·e des prochains, <a href="{% url 'agenda:public_ics' %}">abonnez-vous à l'agenda</a>.</p>
+  <div class="empty-state"><p>Aucun événement à venir pour l'instant.</p><p>Pour être prévenu·e des prochains, <a href="{% url 'agenda:public_ics' %}">abonnez-vous à l'agenda</a>.</p></div>
   {% endfor %}
 </section>
 

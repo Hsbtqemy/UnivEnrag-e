@@ -19,6 +19,6 @@
   {% endfor %}
 </ul>
 {% else %}
-<p class="empty">Aucune idée affichée pour l'instant.</p>
+<div class="empty-state"><p>Aucune idée affichée pour l'instant.</p><p>Vous en avez une ? <a href="{% url 'ideas:propose' %}">Proposez-la</a> : un événement, un projet ou une simple envie.</p></div>
 {% endif %}
 {% endblock %}

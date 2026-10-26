@@ -177,18 +177,26 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
     align-self: center; margin: 0 .25rem 0 .5rem; padding: .4rem .9rem; border: 0; border-radius: var(--radius);
     background: var(--accent); color: var(--accent-text); font-weight: 600;
   }
-  .nav__link--cta[aria-current="page"] { color: var(--accent-text); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+  .nav__link--cta[aria-current="page"] { color: var(--accent-text); filter: brightness(.88); }
 }
 
-.site-footer { max-width: 72rem; margin: 3rem auto 0; padding: 1rem; color: var(--muted); font-size: .9rem; }
+.site-footer { max-width: 72rem; margin: 3rem auto 0; padding: 1.25rem 1rem; color: var(--muted); font-size: .9rem; text-align: center; border-top: 1px solid var(--border); }
 
 .page { max-width: 48rem; margin: 0 auto; padding: 1.5rem 1rem; }
-.page--wide { max-width: none; padding: 1rem; }
+/* Pages larges (agenda, listes) : la largeur de l'en-tête, pour que le titre et le nom du
+   site s'alignent ; la programmation, à trois colonnes, prend tout l'écran. */
+.page--wide { max-width: 72rem; padding: 1.5rem 1rem; }
+.page--full { max-width: none; padding: 1rem; }
 
 .page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; }
 .lead { font-size: 1.1rem; color: var(--muted); }
 .hint { color: var(--muted); font-size: .9rem; }
 .empty { color: var(--muted); font-style: italic; }
+/* Une page ou une liste encore vide : un cadre en pointillé et, s'il y en a une, l'action
+   qui la remplira. */
+.empty-state { margin: 1rem 0; padding: 1.5rem 1.25rem; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
+.empty-state p { margin: 0 0 .75rem; }
+.empty-state p:last-child { margin-bottom: 0; }
 .count {
   display: inline-block; min-width: 1.6em; padding: 0 .4em; border-radius: 1em;
   background: var(--accent-soft); color: var(--text); font-size: .85em; text-align: center;
@@ -208,6 +216,12 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .button:disabled { opacity: .5; cursor: not-allowed; }
 .button--small { padding: .3rem .75rem; font-size: .95rem; }
 .button--secondary { background: transparent; color: var(--accent); }
+/* Plusieurs actions de même poids, collées en une barre (« Imprimer · Télécharger · S'abonner »). */
+.button-bar { display: inline-flex; flex-wrap: wrap; margin: 0; }
+.button-bar .button { border-radius: 0; margin-left: -1px; }
+.button-bar .button:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
+.button-bar .button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.button-bar .button:hover { background: var(--accent-soft); filter: none; }
 .button--danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .link-button { background: none; border: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
 
@@ -268,6 +282,10 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 }
 .event-card__time { margin: 0; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .event-card__title { margin: .1rem 0; font-size: 1.1rem; }
+/* Dans une carte, le titre est un lien évident (couleur, graisse, place) : le soulignement
+   ne vient qu'au survol ou au clavier. Dans le texte courant, les liens restent soulignés. */
+.event-card__title a, .news-list h2 a, .news-list h3 a, .tool-list a, .poll-list a { text-decoration: none; }
+.event-card__title a:hover, .event-card__title a:focus-visible, .news-list h2 a:hover, .news-list h2 a:focus-visible, .news-list h3 a:hover, .news-list h3 a:focus-visible, .tool-list a:hover, .tool-list a:focus-visible, .poll-list a:hover, .poll-list a:focus-visible { text-decoration: underline; }
 .event-card__meta { margin: 0; color: var(--muted); }
 
 .event-detail { border-left: 6px solid var(--room-color, var(--accent)); padding-left: 1rem; }
@@ -340,9 +358,46 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .calendar { background: var(--surface); border-radius: var(--radius); }
 .calendar .ec { --ec-bg-color: var(--surface); --ec-border-color: var(--border); --ec-text-color: var(--text); --ec-button-bg-color: var(--surface); --ec-button-border-color: var(--border); --ec-button-text-color: var(--text); --ec-button-active-bg-color: var(--accent-soft); --ec-today-bg-color: var(--accent-soft); }
 .calendar .ec-button:disabled { color: var(--muted); opacity: .7; }
+.calendar .ec-button { border-radius: var(--radius); font: inherit; }
+.calendar .ec-button-group .ec-button { border-radius: 0; }
+.calendar .ec-button-group .ec-button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.calendar .ec-button-group .ec-button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.calendar .ec-title { font-size: 1.35rem; font-weight: 700; }
+.calendar .ec-title::first-letter { text-transform: uppercase; }
+.calendar .ec-toolbar { margin-bottom: .75rem; }
+
+/* Vue mois : une vraie grille de calendrier. Numéro du jour en haut à gauche, aujourd'hui
+   dans une pastille, week-end et jours du mois voisin plus discrets, cases assez hautes
+   pour qu'on lise une page d'agenda et non un tableau. */
+.calendar .ec-month-view .ec-main { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.calendar .ec-month-view .ec-col-head { padding: .55rem .6rem; text-align: left; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--bg); }
+.calendar .ec-month-view .ec-day { min-height: 6.5rem; background: var(--surface); }
+.calendar .ec-month-view .ec-day.ec-sat, .calendar .ec-month-view .ec-day.ec-sun { background: color-mix(in srgb, var(--bg) 60%, var(--surface)); }
+.calendar .ec-month-view .ec-day.ec-other-month { background: var(--bg); }
+.calendar .ec-month-view .ec-day.ec-other-month .ec-day-head time { opacity: .45; }
+.calendar .ec-month-view .ec-day-head { flex-direction: row; justify-content: flex-start; padding: .4rem .5rem .2rem; font-size: .9rem; }
+.calendar .ec-month-view .ec-day-head time { display: inline-grid; place-items: center; min-width: 1.75rem; height: 1.75rem; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.calendar .ec-month-view .ec-day.ec-today { background: var(--surface); }
+.calendar .ec-month-view .ec-day.ec-today .ec-day-head time { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+.calendar .ec-month-view .ec-event { border-radius: 4px; padding: .1rem .35rem; margin: 0 .3rem .2rem; font-size: .85rem; }
+/* Vues semaine et jour : mêmes en-têtes que le mois, aujourd'hui en couleur plutôt qu'en
+   colonne entièrement teintée. */
+.calendar .ec-time-grid .ec-main { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.calendar .ec-time-grid .ec-col-head { padding: .5rem .3rem; font-size: .85rem; font-weight: 600; color: var(--muted); background: var(--bg); }
+.calendar .ec-time-grid .ec-col-head.ec-today { color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+.calendar .ec-time-grid .ec-day.ec-today { --ec-day-bg-color: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+.calendar .ec-time-grid .ec-event { border-radius: 4px; }
+.actions .button-bar { margin: 0; vertical-align: middle; }
+@media (max-width: 640px) {
+  .calendar .ec-month-view .ec-day { min-height: 3.6rem; }
+  .calendar .ec-month-view .ec-col-head { padding: .4rem .2rem; text-align: center; font-size: .7rem; letter-spacing: 0; }
+  .calendar .ec-month-view .ec-day-head { justify-content: center; padding: .2rem 0 0; }
+  .calendar .ec-month-view .ec-day-head time { min-width: 1.5rem; height: 1.5rem; font-size: .85rem; }
+  .calendar .ec-month-view .ec-event { margin: 0 .1rem .15rem; padding: 0 .15rem; }
+}
 /* Une période sans rendez-vous le dit au milieu de la grille, qui reste visible. */
 .calendar-frame { position: relative; }
-.calendar-empty { position: absolute; left: 50%; top: 55%; transform: translate(-50%, -50%); max-width: calc(100% - 2rem); margin: 0; padding: .6rem 1rem; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 10px rgb(0 0 0 / .08); color: var(--muted); pointer-events: none; }
+.calendar-empty { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); max-width: calc(100% - 2rem); margin: 0; padding: .7rem 1.25rem; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; box-shadow: 0 4px 18px rgb(0 0 0 / .08); color: var(--muted); pointer-events: none; }
 .calendar-empty[hidden] { display: none; }
 .is-placing .calendar .ec-body { cursor: crosshair; }
 
@@ -489,8 +544,10 @@ a.badge { text-decoration: none; }
   .presence-day .presence-list { display: grid; gap: .25rem; }
   .presence-day .empty { margin: 0; }
 }
-.poll-list { padding-left: 1.1rem; }
-.poll-list li { margin-bottom: .35rem; }
+.poll-list { list-style: none; padding: 0; display: grid; gap: .5rem; }
+.poll-list li { padding: .65rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.poll-list li > a:first-child { font-weight: 700; }
+.poll-list li.empty-state { background: none; }
 .field-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .poll-table { min-width: 36rem; }
 .poll-table th, .poll-table td { text-align: center; }
@@ -502,7 +559,7 @@ a.badge { text-decoration: none; }
 .form .answer-slot { margin: 0; padding: .6rem .75rem; }
 .answer-slot div { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
 .answer-slot label { display: flex; gap: .3rem; align-items: center; font-weight: 400; }
-.home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; margin: 1rem 0; }
+.home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; margin: 1rem 0 2rem; }
 .home-card { display: grid; gap: .2rem; padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--text); }
 .home-card strong { color: var(--accent); }
 .home-card span { color: var(--muted); font-size: .92rem; }
@@ -544,7 +601,7 @@ a.badge { text-decoration: none; }
 @media (max-width: 640px) {
   .public-week .ec-day-grid .ec-event { font-size: .7rem; padding: 0 .15rem; }
   .public-week .ec-day-grid .ec-day-head { font-size: .8rem; }
-  .calendar-empty { position: static; transform: none; max-width: none; margin-top: .5rem; box-shadow: none; }
+  .calendar-empty { position: static; transform: none; max-width: none; margin-top: .5rem; box-shadow: none; border-radius: var(--radius); }
 }
 
 /* Pages d'aide */
@@ -554,11 +611,24 @@ a.badge { text-decoration: none; }
 /* Page publique */
 .presentation { font-size: 1.05rem; max-width: 46rem; }
 .public-home { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 2rem; margin: 1.5rem 0; }
+/* Accueil public : un titre de section et son lien « Tout l'agenda → » sur la même ligne. */
+.home-section { margin: 1.75rem 0; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.section-head h2 { margin-bottom: .6rem; }
+.section-head a { font-size: .95rem; white-space: nowrap; }
+.event-list--grid { grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.news-card { padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.news-card h3 { margin: .1rem 0 .3rem; font-size: 1.1rem; }
+.news-card h3 a { text-decoration: none; }
+.news-card h3 a:hover, .news-card h3 a:focus-visible { text-decoration: underline; }
+.news-card .meta, .news-card p:last-child { margin: 0; }
+.callout--actions .actions { margin-bottom: 0; }
 .news-list { list-style: none; padding: 0; display: grid; gap: 1.25rem; }
 .news-list h2, .news-list h3 { margin: .1rem 0 .3rem; font-size: 1.15rem; }
 .news-list .meta { margin: 0; }
-.permanence-list { list-style: none; padding: 0; display: grid; gap: .75rem; }
-.permanence-list ul { margin: .2rem 0 0; padding-left: 1.25rem; }
+.permanence-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .75rem; }
+.permanence-list > li { padding: .65rem 1rem; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); }
+.permanence-list ul { list-style: none; margin: .25rem 0 0; padding: 0; color: var(--muted); }
 
 /* Bouton clair / sombre / enragé, une icône au bout de l'en-tête */
 /* Lien d'en-tête sur téléphone (« Espace membres ») ; sur ordinateur, il est dans les onglets. */

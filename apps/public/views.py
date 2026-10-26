@@ -30,8 +30,8 @@ def home(request):
         request,
         "public/home.html",
         {
-            "events": ical.public_events().filter(end__gte=now)[:5],
-            "news": NewsPost.objects.public()[:3],
+            "events": ical.public_events().filter(end__gte=now)[:4],
+            "news": NewsPost.objects.public()[:1],
             "permanences": presences_services.public_permanences(),
             "ideas": Idea.objects.public()
             .filter(status__in=[Idea.Status.NEW, Idea.Status.PREPARING, Idea.Status.PLANNED])

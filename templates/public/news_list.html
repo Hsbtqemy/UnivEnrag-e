@@ -18,6 +18,6 @@
   {% endfor %}
 </ul>
 {% else %}
-<p class="empty">Pas encore d'actualité.</p>
+<div class="empty-state"><p>Pas encore d'actualité.</p><p>Pour être prévenu·e des prochaines, <a href="{% url 'public:news_feed' %}">abonnez-vous au flux RSS</a>.</p></div>
 {% endif %}
 {% endblock %}
