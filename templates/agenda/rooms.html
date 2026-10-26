@@ -2,7 +2,7 @@
 {% block title %}Salles — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <h1>Salles du collectif</h1>
-<p class="lead">Réserver une salle, c'est créer un événement dans l'agenda en la choisissant. Pour une salle de l'université réservée par ailleurs, indiquez-la comme « autre lieu ».</p>
+{% if can_edit_agenda %}<p class="lead">Réserver une salle, c'est créer un événement dans l'agenda en la choisissant. Pour une salle de l'université réservée par ailleurs, indiquez-la comme « autre lieu ».</p>{% else %}<p class="lead">Les salles où le collectif se réunit, leurs horaires et leur accès. Pour en demander une, <a href="{% url 'ideas:new' %}">proposez votre événement</a> en indiquant la salle souhaitée : les gestionnaires de l'agenda la réservent.</p>{% endif %}
 <ul class="room-list">
   {% for room in rooms %}
   <li class="room-card" style="--room-color: {{ room.color }}">

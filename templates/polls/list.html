@@ -13,7 +13,7 @@
   {% for poll in open_polls %}
   <li><a href="{% url 'polls:detail' poll.pk %}">{{ poll.title }}</a> <span class="meta">· proposé par {{ poll.owner.display_name }} · {{ poll.slots.all|length }} créneaux</span></li>
   {% empty %}
-  <li class="empty">Aucun sondage en cours.</li>
+  <li class="empty-state"><p>Aucun sondage en cours.</p><p><a class="button button--secondary button--small" href="{% url 'polls:new' %}">+ Nouveau sondage</a></p></li>
   {% endfor %}
 </ul>
 

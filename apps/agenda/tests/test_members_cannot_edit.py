@@ -137,3 +137,13 @@ def test_other_manager_cannot_edit(client, members_cannot_edit, make_manager):
     """Un droit d'un autre domaine ne suffit pas (ACC-5)."""
     login_verified(client, make_manager("moderate"))
     assert client.get(reverse("agenda:new")).status_code == 302
+
+
+def test_texts_do_not_promise_editing(named):
+    """Salles et aide ne décrivent pas des gestes que le réglage ferme (décision 22)."""
+    rooms = named.get(reverse("agenda:rooms")).content.decode()
+    assert "Réserver une salle, c'est créer un événement" not in rooms
+    help_page = named.get(reverse("core:help")).content.decode()
+    assert 'href="#modifier"' not in help_page
+    assert "Un événement que vous créez directement" not in help_page
+    assert "Proposer un événement" in help_page

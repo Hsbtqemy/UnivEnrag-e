@@ -7,8 +7,8 @@
 <nav class="help-toc" aria-label="Sommaire de l'aide">
   <ul>
     <li><a href="#nom">Votre nom</a></li>
-    <li><a href="#evenement">Ajouter un événement</a></li>
-    <li><a href="#modifier">Modifier, déplacer, dupliquer, annuler</a></li>
+    <li><a href="#evenement">{% if can_edit_agenda %}Ajouter{% else %}Proposer{% endif %} un événement</a></li>
+    {% if can_edit_agenda %}<li><a href="#modifier">Modifier, déplacer, dupliquer, annuler</a></li>{% endif %}
     <li><a href="#provisoire">Provisoire ou confirmé ?</a></li>
     <li><a href="#idees">Les idées</a></li>
     <li><a href="#programmation">La programmation par salle</a></li>
@@ -24,7 +24,7 @@
   <h2 id="nom">Votre nom</h2>
   <p>À votre première action, le site vous demande un nom ou un pseudo. Il s'affiche avec ce que vous faites et votre navigateur le retient : en haut de page, « Vous : … · changer ». Le même nom saisi sur votre téléphone et votre ordinateur désigne la même personne ; si quelqu'un porte déjà votre prénom, ajoutez une initiale.</p>
 
-  <h2 id="evenement">Ajouter un événement</h2>
+  <h2 id="evenement">{% if can_edit_agenda %}Ajouter{% else %}Proposer{% endif %} un événement</h2>
   {% if not can_edit_agenda %}
   <p>Les gestionnaires de l'agenda placent et confirment les événements. Pour en proposer un, <strong>« + Proposer un événement ou une idée »</strong> depuis l'accueil (ou Idées → « + Déposer une idée »). Avec une date et une heure précises, votre idée apparaît tout de suite en provisoire dans l'agenda ; sinon, elle attend dans « À placer ».</p>
   {% else %}
@@ -47,7 +47,7 @@
   {% endif %}
 
   <h2 id="provisoire">Provisoire ou confirmé ?</h2>
-  <p>Un événement que vous créez directement est confirmé, si sa salle est libre. Un événement issu d'une idée commence <strong>provisoire</strong> (hachuré) : un gestionnaire de l'agenda le confirme une fois le créneau arrêté.</p>
+  <p>{% if can_edit_agenda %}Un événement que vous créez directement est confirmé, si sa salle est libre. {% endif %}Un événement issu d'une idée commence <strong>provisoire</strong> (hachuré) : un gestionnaire de l'agenda le confirme une fois le créneau arrêté.</p>
 
   <h2 id="idees">Les idées</h2>
   <p><strong>Idées → « + Déposer une idée »</strong> : un titre et un type (idée d'événement, projet, envie) suffisent, chacun peut compléter ensuite. Une idée ne passe jamais par un vote.</p>
@@ -66,7 +66,7 @@
   <p><strong>« Indiquer ma présence »</strong> : cochez les demi-journées où vous serez là cette semaine ; les heures (« de 14:00 à 17:00 ») et le lieu sont facultatifs. « Reprendre ma semaine précédente » recoche tout en un clic. Le tableau « Qui est là ? » montre qui sera où. Cochez « Permanence publique » pour qu'un jour de présence soit annoncé sur la page publique (« Où nous trouver »)  : le jour, le moment, les heures et le lieu indiqués, jamais votre nom. Ces présences sont effacées après 60 jours.</p>
 
   <h2 id="sondages">Trouver une date</h2>
-  <p><strong>Sondages → « + Nouveau sondage »</strong> : proposez de 2 à 8 créneaux, partagez l'adresse, chacun répond « Oui » ou « Si besoin » sous son nom. Le meilleur créneau est mis en évidence ; {% if can_edit_agenda %}« Fixer ce créneau » crée l'événement et clôt le sondage.{% else %}Un gestionnaire de l'agenda fixe ensuite le créneau retenu, ce qui crée l'événement et clôt le sondage.{% endif %}</p>
+  <p><strong>Sondages → « + Nouveau sondage »</strong> : proposez de 2 à 8 créneaux, partagez l'adresse, chacun répond « Oui » ou « Si besoin » sous son nom. Le meilleur créneau est mis en évidence ; {% if can_edit_agenda %}« Fixer ce créneau » crée l'événement et clôt le sondage.{% else %}un gestionnaire de l'agenda fixe ensuite le créneau retenu, ce qui crée l'événement et clôt le sondage.{% endif %}</p>
 
   <h2 id="abonnement">L'agenda dans votre téléphone</h2>
   <p><strong>Agenda → « S'abonner »</strong> donne une adresse à ajouter dans votre application d'agenda (téléphone, Thunderbird, Outlook…) : tout l'agenda, un espace ou une salle, mis à jour automatiquement. Cette adresse ouvre l'agenda interne : ne la diffusez pas.</p>

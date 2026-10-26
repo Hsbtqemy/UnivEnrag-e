@@ -39,7 +39,7 @@
     </ul>
   </section>
   {% empty %}
-  <p class="empty">Aucun événement à venir pour l'instant. Pour être prévenu·e des prochains, <a href="{% url 'agenda:public_ics' %}">abonnez-vous à l'agenda</a>.</p>
+  <div class="empty-state"><p>Aucun événement à venir pour l'instant.</p><p>Pour être prévenu·e des prochains, <a href="{% url 'agenda:public_ics' %}">abonnez-vous à l'agenda</a>.</p></div>
   {% endfor %}
 </section>
 
