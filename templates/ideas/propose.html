@@ -27,28 +27,43 @@
 
   <div id="si-evenement">
     <fieldset>
-      <legend>Pour un événement : durée et créneaux possibles <span class="optional">(facultatif)</span></legend>
+      <legend>Pour un événement : quand ? <span class="optional">(facultatif)</span></legend>
       {% include "includes/field.html" with field=form.duration_minutes %}
-      <p class="field__help">Jusqu'à trois créneaux, du préféré au moins souhaité. Une date avec une heure, ou une période plus large.</p>
-      {% for slot in form.slot_groups %}
+      <p class="field__help">Une date avec une heure, ou une période plus large.</p>
+      {% for slot in form.slot_groups %}{% if slot.number == 1 %}
       <div class="slot">
-        <p class="slot__title">Créneau {{ slot.number }}</p>
+        <p class="slot__title">Créneau souhaité</p>
         <div class="slot__fields">
           {% include "includes/field.html" with field=slot.date %}
           {% include "includes/field.html" with field=slot.time %}
           {% include "includes/field.html" with field=slot.period %}
         </div>
       </div>
-      {% endfor %}
-      {% include "includes/field.html" with field=form.wanted_room %}
+      {% endif %}{% endfor %}
+      <details class="more"{% if form.show_more_slots %} open{% endif %}>
+        <summary>D'autres créneaux possibles, une salle <span class="optional">(facultatif)</span></summary>
+        {% for slot in form.slot_groups %}{% if slot.number > 1 %}
+        <div class="slot">
+          <p class="slot__title">Créneau {{ slot.number }}</p>
+          <div class="slot__fields">
+            {% include "includes/field.html" with field=slot.date %}
+            {% include "includes/field.html" with field=slot.time %}
+            {% include "includes/field.html" with field=slot.period %}
+          </div>
+        </div>
+        {% endif %}{% endfor %}
+        {% include "includes/field.html" with field=form.wanted_room %}
+      </details>
     </fieldset>
   </div>
 
-  <fieldset>
-    <legend>Précisions <span class="optional">(facultatif)</span></legend>
-    {% include "includes/field.html" with field=form.audience %}
-    {% include "includes/field.html" with field=form.expected_count %}
-  </fieldset>
+  <details class="more"{% if form.show_details %} open{% endif %}>
+    <summary>Plus de précisions <span class="optional">(public visé, nombre de personnes)</span></summary>
+    <fieldset>
+      {% include "includes/field.html" with field=form.audience %}
+      {% include "includes/field.html" with field=form.expected_count %}
+    </fieldset>
+  </details>
 
   <div class="trap" aria-hidden="true">
     <label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>

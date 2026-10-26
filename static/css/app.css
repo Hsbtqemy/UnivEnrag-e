@@ -310,6 +310,7 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 
 .live { min-height: 1.5em; margin: .5rem 0; font-weight: 600; }
 .live--error { color: var(--danger); }
+.tracking-actions + .live:empty { display: none; }
 
 .programming { display: grid; grid-template-columns: 16rem minmax(0, 1fr); gap: var(--gap); align-items: start; }
 .programming:has(.details:not([hidden])) { grid-template-columns: 16rem minmax(0, 1fr) 19rem; }

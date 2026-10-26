@@ -103,3 +103,25 @@ def test_moderation_requires_staff(client):
     response = client.get(reverse("ideas:moderation"))
     assert response.status_code == 302
     assert "/gestion/admin/login/" in response["Location"]
+
+
+def test_extra_slots_and_details_are_folded_on_a_fresh_form(client, site):
+    body = client.get(reverse("ideas:propose")).content.decode()
+    assert '<details class="more">' in body
+    assert "<details class=\"more\" open>" not in body
+    assert "Créneau souhaité" in body
+
+
+def test_folded_sections_reopen_when_already_filled(client, old_enough_token, at):
+    """Après une erreur, ce que la personne avait déplié et rempli reste visible."""
+    data = form_data(old_enough_token, at, title="", audience="Étudiants")
+    body = client.post(reverse("ideas:propose"), data).content.decode()
+    assert body.count('<details class="more" open>') == 2
+    assert 'value="Un jeudi après-midi"' in body
+
+
+def test_tracking_page_offers_to_copy_the_link(client, old_enough_token, at):
+    response = client.post(reverse("ideas:propose"), form_data(old_enough_token, at))
+    page = client.get(response["Location"]).content.decode()
+    assert 'id="copier-lien"' in page
+    assert "js/tracking" in page

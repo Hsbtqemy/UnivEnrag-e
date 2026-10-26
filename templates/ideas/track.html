@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Suivi de votre proposition — {{ site.collective_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
@@ -8,7 +9,13 @@
   <p><strong>Gardez le lien de cette page</strong> : c'est le seul moyen de suivre votre proposition, aucun message ne vous sera envoyé.</p>
   <p class="tracking-link"><label for="lien-suivi">Votre lien de suivi</label>
     <input id="lien-suivi" type="text" readonly value="{{ tracking_url }}"></p>
-  <p>Vous pouvez aussi l'ajouter à vos favoris.</p>
+  {# Les boutons n'apparaissent qu'avec JavaScript ; sans lui, le lien se copie à la main. #}
+  <p class="actions tracking-actions">
+    <button type="button" class="button" id="copier-lien" hidden>Copier le lien</button>
+    <button type="button" class="button button--secondary" id="partager-lien" hidden>Me l'envoyer…</button>
+  </p>
+  <p id="lien-copie" class="live" role="status" aria-live="polite"></p>
+  <p>Collez-le dans une note, envoyez-le-vous par message, ou ajoutez cette page à vos favoris.</p>
 </div>
 {% else %}
 <h1>Suivi de votre proposition</h1>
@@ -62,3 +69,4 @@
 </section>
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/tracking.js' %}"></script>{% endblock %}
