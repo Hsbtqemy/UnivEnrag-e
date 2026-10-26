@@ -193,6 +193,8 @@ class Idea(models.Model):
     @property
     def tracking_status_label(self) -> str:
         """Ce que la personne extérieure lit sur son lien de suivi."""
+        if self.status == self.Status.PENDING:
+            return "Reçue, en cours de lecture"
         if self.status in (self.Status.NEW, self.Status.PREPARING):
             return "Acceptée"
         return self.get_status_display()

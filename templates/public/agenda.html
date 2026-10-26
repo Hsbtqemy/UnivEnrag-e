@@ -1,18 +1,25 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% load static %}
 {% block title %}Agenda — {{ site.collective_name }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.css' %}">{% endblock %}
 {% block main_class %}page page--wide{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Agenda</h1>
+  <div>
+    <h1>Agenda</h1>
+    <p class="lead">Les rendez-vous publics du collectif, ouverts à toutes et à tous.</p>
+  </div>
   <p class="actions"><a class="button button--secondary" href="{% url 'agenda:public_print' %}">Imprimer</a> <a class="button button--secondary" href="{% url 'agenda:public_download' %}">Télécharger (.ics)</a> <a class="button button--secondary" href="{% url 'agenda:public_ics' %}">S'abonner</a></p>
 </div>
 
-{# La grille de la semaine, sur grand écran ; sur téléphone, la liste suffit (CDC §3). #}
-<section class="public-week" aria-labelledby="semaine">
-  <h2 id="semaine" class="visually-hidden">Semaine en calendrier</h2>
-  <div id="calendrier" class="calendar"></div>
+{# Le mois en calendrier, même vide : on doit voir tout de suite qu'on est sur l'agenda. #}
+<section class="public-week" aria-labelledby="calendrier-titre">
+  <h2 id="calendrier-titre" class="visually-hidden">Calendrier</h2>
+  <div class="calendar-frame">
+    <div id="calendrier" class="calendar"></div>
+    <p id="agenda-vide" class="calendar-empty" role="status" hidden></p>
+  </div>
   <p class="hint">Cliquez sur un événement pour l'ouvrir. Tous les événements à venir sont aussi listés ci-dessous.</p>
 </section>
 
@@ -20,7 +27,7 @@
   <h2 id="prochains">Prochains événements</h2>
   {% for day, events in days %}
   <section class="day" aria-labelledby="jour-{{ forloop.counter }}">
-    <h3 id="jour-{{ forloop.counter }}" class="day__title">{{ day|date:"l j F Y"|capfirst }}</h3>
+    <h3 id="jour-{{ forloop.counter }}" class="day__title">{{ day|date_fr:"l j F Y"|capfirst }}</h3>
     <ul class="event-list">
       {% for event in events %}
       <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
@@ -32,7 +39,7 @@
     </ul>
   </section>
   {% empty %}
-  <p class="empty">Aucun événement à venir pour l'instant.</p>
+  <p class="empty">Aucun événement à venir pour l'instant. Pour être prévenu·e des prochains, <a href="{% url 'agenda:public_ics' %}">abonnez-vous à l'agenda</a>.</p>
   {% endfor %}
 </section>
 

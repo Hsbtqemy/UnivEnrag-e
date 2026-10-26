@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_safe
 
 from apps.core.access import public_view
 from apps.core.models import SiteSettings
@@ -149,7 +149,7 @@ def _ics_download(request, events, *, filename: str, name: str, public: bool) ->
     return response
 
 
-@require_GET
+@require_safe
 def export(request):
     """Agenda des membres : choisir une période, puis imprimer ou télécharger."""
     form = ExportForm(request.GET or None, initial=ExportForm.defaults())
@@ -173,7 +173,7 @@ def export(request):
     return render(request, "agenda/export.html", {"form": form})
 
 
-@require_GET
+@require_safe
 @public_view
 def public_print(request):
     """Agenda public imprimable : les événements publics à venir."""
@@ -186,7 +186,7 @@ def public_print(request):
     )
 
 
-@require_GET
+@require_safe
 @public_view
 def public_download(request):
     """Les événements publics à venir, en fichier .ics à importer (et non en abonnement)."""

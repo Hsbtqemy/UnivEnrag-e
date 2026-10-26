@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from django.contrib import messages
 from django.shortcuts import redirect, render
@@ -31,6 +31,8 @@ def board(request):
         "presences/board.html",
         {
             "rows": services.board(monday),
+            "day_list": services.days_list(monday),
+            "today": timezone.localdate(),
             "days": services.week_days(monday),
             "people_count": services.count_people(monday),
             **_week_nav(monday),
@@ -38,25 +40,47 @@ def board(request):
     )
 
 
+def _time(value: str | None):
+    try:
+        return time.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
 def _selections_from_post(post, monday: date) -> dict:
     selections = {}
     for day in services.week_days(monday):
-        place = post.get(f"lieu-{day.isoformat()}", "")
+        key = day.isoformat()
+        place = post.get(f"lieu-{key}", "")
         for period in Presence.Period.values:
-            if post.get(f"p-{day.isoformat()}-{period}"):
-                selections[(day, period)] = place
+            if post.get(f"p-{key}-{period}"):
+                selections[(day, period)] = services.Declared(
+                    place,
+                    _time(post.get(f"de-{key}-{period}")),
+                    _time(post.get(f"a-{key}-{period}")),
+                )
     return selections
 
 
+def _open_days_from_post(post, monday: date) -> set[date]:
+    return {day for day in services.week_days(monday) if post.get(f"ouvert-{day.isoformat()}")}
+
+
 def my_week(request):
-    """Je coche les demi-journées où je serai là, avec un lieu par jour."""
+    """Je coche les demi-journées où je serai là, avec un lieu par jour, et je dis si c'est
+    une permanence ouverte au public (décision 23)."""
     monday = services.parse_week(request.GET.get("semaine") or request.POST.get("semaine"))
     name_form = NameForm(request.POST or None, actor_name=request.actor_name)
     if request.method == "POST":
         selections = _selections_from_post(request.POST, monday)
+        open_days = _open_days_from_post(request.POST, monday)
         if name_form.is_valid():
             actor = get_or_create_for_name(name_form.cleaned_data["author_name"])
-            count = services.save_week(actor, monday, selections)
+            try:
+                count = services.save_week(actor, monday, selections, open_days)
+            except services.PresenceError as error:
+                messages.error(request, str(error))
+                return _render_week(request, monday, selections, open_days, name_form)
             messages.success(
                 request,
                 f"Votre semaine est enregistrée ({count} demi-journée{'s' if count > 1 else ''}).",
@@ -67,15 +91,20 @@ def my_week(request):
     else:
         if request.GET.get("reprendre"):
             selections = services.previous_week_selections(request.actor, monday)
+            open_days = services.previous_open_days(request.actor, monday)
             if not selections:
                 messages.info(request, "Rien de déclaré la semaine précédente.")
         else:
             selections = services.selections_for(request.actor, monday)
+            open_days = services.open_days_for(request.actor, monday)
+    return _render_week(request, monday, selections, open_days, name_form)
 
+
+def _render_week(request, monday, selections, open_days, name_form):
     days = []
     for day in services.week_days(monday):
-        checked = {period for (d, period) in selections if d == day}
-        place = next((p for (d, _), p in selections.items() if d == day and p), "")
+        mine = {period: d for (on, period), d in selections.items() if on == day}
+        place = next((d.place for d in mine.values() if d.place), "")
         days.append(
             {
                 "date": day,
@@ -84,11 +113,14 @@ def my_week(request):
                     {
                         "value": period.value,
                         "label": period.label,
-                        "checked": period.value in checked,
+                        "checked": period.value in mine,
+                        "start": mine[period.value].start if period.value in mine else None,
+                        "end": mine[period.value].end if period.value in mine else None,
                     }
                     for period in Presence.Period
                 ],
                 "place": place,
+                "is_open": day in open_days,
             }
         )
     return render(

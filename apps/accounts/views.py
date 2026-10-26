@@ -14,7 +14,7 @@ from django_otp import login as otp_login
 from apps.audit import audit
 from apps.core import backup, ratelimit
 
-from . import two_factor
+from . import pending, two_factor
 from .capabilities import CAPABILITY_LABELS, capabilities_of, is_manager, require_superuser
 
 HOME = "/gestion/"
@@ -105,7 +105,11 @@ def gestion_home(request):
     labels = [
         label for code, label in CAPABILITY_LABELS.items() if code in capabilities_of(request.user)
     ]
-    return render(request, "accounts/gestion_home.html", {"capability_labels": labels})
+    return render(
+        request,
+        "accounts/gestion_home.html",
+        {"capability_labels": labels, "pending": pending.for_user(request.user)},
+    )
 
 
 @require_superuser

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}{{ idea.title }} — Idées — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <article class="event-detail">
@@ -8,7 +9,7 @@
     <span class="badge">{{ idea.get_kind_display }}</span>
     <span class="idea-status idea-status--{{ idea.status }}">{{ idea.get_status_display }}</span>
   </p>
-  <p class="meta">{% if idea.public_owner_name %}Proposée par {{ idea.public_owner_name }} · {% endif %}{{ idea.created_at|date:"j F Y" }}</p>
+  <p class="meta">{% if idea.public_owner_name %}Proposée par {{ idea.public_owner_name }} · {% endif %}{{ idea.created_at|date_fr:"j F Y" }}</p>
   {% if idea.description %}<div class="prose">{{ idea.description|linebreaks }}</div>{% endif %}
   <dl class="facts">
     {% if idea.space %}<div><dt>Espace</dt><dd>{{ idea.space.name }}</dd></div>{% endif %}
@@ -22,7 +23,7 @@
     <ul class="event-list">
       {% for event in events %}
       <li class="event-card">
-        <p class="event-card__time">{{ event.start|date:"l j F Y"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+        <p class="event-card__time">{{ event.start|date_fr:"l j F Y"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
         <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
         <p class="event-card__meta">{{ event.place_label }}</p>
       </li>

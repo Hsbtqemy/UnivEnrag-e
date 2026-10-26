@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import require_capability
 from apps.actors.resolvers import remember_name
@@ -37,6 +37,17 @@ def _done(response, form):
     return response
 
 
+EDITING_CLOSED = (
+    "Les gestionnaires de l'agenda placent les événements : proposez le vôtre en déposant une idée."
+)
+
+
+def _editing_closed(request):
+    """Édition réservée aux habilités (décision 22) : on renvoie vers le dépôt d'une idée."""
+    messages.info(request, EDITING_CLOSED)
+    return redirect("ideas:new")
+
+
 def _calendar_url(event_or_date) -> str:
     day = (
         timezone.localtime(event_or_date.start).date()
@@ -49,15 +60,17 @@ def _calendar_url(event_or_date) -> str:
 # --- Agenda ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 def calendar(request):
     rooms = list(Room.objects.filter(is_active=True))
     spaces = list(Space.objects.open())
+    editing = services.can_edit(request.user)
     config = {
         "eventsUrl": reverse("agenda:events_json"),
         "moveUrl": reverse("agenda:move", args=[0]),
         "newUrl": reverse("agenda:new"),
-        "canEdit": bool(request.actor_name),
+        "canCreate": editing,
+        "canEdit": editing and (bool(request.actor_name) or services.can_manage(request.user)),
         "date": request.GET.get("date", ""),
     }
     return render(
@@ -73,14 +86,14 @@ def calendar(request):
     )
 
 
-@require_GET
+@require_safe
 def events_json(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
     events = Event.objects.select_related("owner", "room", "space")
     if start and end:
         events = events.overlapping(start, end)
     manager = services.can_manage(request.user)
-    can_edit = bool(request.actor_name) or manager
+    can_edit = services.can_edit(request.user) and (bool(request.actor_name) or manager)
     return JsonResponse(
         [
             serializers.member_event(e, editable=can_edit and (manager or not e.is_locked))
@@ -90,7 +103,7 @@ def events_json(request):
     )
 
 
-@require_GET
+@require_safe
 def check_slot(request):
     """Vérification en direct, avant l'enregistrement (CLAUDE.md AGE-7)."""
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
@@ -205,6 +218,8 @@ def _initial_for_new(request) -> dict:
 
 
 def new(request):
+    if not services.can_edit(request.user):
+        return _editing_closed(request)
     can_publish = services.can_publish(request.user)
     form = EventForm(
         request.POST or None,
@@ -271,7 +286,8 @@ def detail(request, pk):
             "can_manage": services.can_manage(request.user),
             "can_validate_room": services.can_override(request.user),
             "can_publish": services.can_publish(request.user),
-            "can_edit": event.status != Event.Status.CANCELLED
+            "can_edit": services.can_edit(request.user)
+            and event.status != Event.Status.CANCELLED
             and (not event.is_locked or services.can_manage(request.user)),
         },
     )
@@ -279,6 +295,9 @@ def detail(request, pk):
 
 def edit(request, pk):
     event = get_object_or_404(Event.objects.select_related("room"), pk=pk)
+    if not services.can_edit(request.user):
+        messages.error(request, EDITING_CLOSED)
+        return redirect("agenda:detail", pk=pk)
     if event.status == Event.Status.CANCELLED:
         messages.error(request, "Un événement annulé ne se modifie plus.")
         return redirect("agenda:detail", pk=pk)
@@ -317,6 +336,9 @@ def edit(request, pk):
 @require_POST
 def cancel(request, pk):
     event = get_object_or_404(Event, pk=pk)
+    if not services.can_edit(request.user):
+        messages.error(request, EDITING_CLOSED)
+        return redirect("agenda:detail", pk=pk)
     form = ActionForm(request.POST, actor_name=request.actor_name)
     if not form.is_valid():
         messages.error(request, "Indiquez votre nom pour annuler l'événement.")
@@ -339,6 +361,8 @@ def cancel(request, pk):
 def move(request, pk):
     """Glisser-déposer dans l'agenda des membres et dans la programmation."""
     event = get_object_or_404(Event, pk=pk)
+    if not services.can_edit(request.user):
+        return JsonResponse({"ok": False, "error": EDITING_CLOSED}, status=403)
     if not request.actor_name and not services.can_manage(request.user):
         return JsonResponse(
             {"ok": False, "error": "Indiquez d'abord votre nom pour modifier l'agenda."},
@@ -432,19 +456,14 @@ def public_requests(request):
     """File des demandes de publication (CLAUDE.md, décision 11)."""
     if not services.can_publish(request.user):
         raise PermissionDenied("Droit « Agenda » ou « Page publique » nécessaire.")
-    events = (
-        Event.objects.filter(public_requested=True, is_public=False)
-        .exclude(status=Event.Status.CANCELLED)
-        .select_related("owner", "room")
-        .order_by("start")
-    )
+    events = Event.objects.awaiting_publication().select_related("owner", "room").order_by("start")
     return render(request, "gestion/public_requests.html", {"events": events})
 
 
 # --- Salles ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 def rooms(request):
     """Les salles du collectif : capacité, mode de réservation, horaires, accès (CDC §6)."""
     rooms = Room.objects.filter(is_active=True).prefetch_related("opening_hours")
@@ -473,12 +492,7 @@ def room_requests(request):
         if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
             target = reverse("agenda:room_requests")
         return redirect(target)
-    pending = (
-        Event.objects.filter(room_status=Event.RoomStatus.PENDING, status=Event.Status.CONFIRMED)
-        .exclude(room=None)
-        .select_related("owner", "room")
-        .order_by("start")
-    )
+    pending = Event.objects.awaiting_room().select_related("owner", "room").order_by("start")
     for event in pending:
         event.warnings = services.warnings_for(event)
     return render(request, "gestion/room_requests.html", {"events": pending})

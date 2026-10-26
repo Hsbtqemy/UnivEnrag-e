@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% load static %}
 {% block title %}Agenda à imprimer — {{ site.collective_name }}{% endblock %}
 {% block content %}
@@ -11,7 +12,7 @@
 
 {% for day, events in days %}
 <section class="print-day" aria-labelledby="jour-{{ forloop.counter }}">
-  <h2 id="jour-{{ forloop.counter }}">{{ day|date:"l j F Y"|capfirst }}</h2>
+  <h2 id="jour-{{ forloop.counter }}">{{ day|date_fr:"l j F Y"|capfirst }}</h2>
   <table class="table print-table">
     <thead>
       <tr><th scope="col">Horaire</th><th scope="col">Événement</th><th scope="col">Lieu</th><th scope="col">Porté par</th></tr>

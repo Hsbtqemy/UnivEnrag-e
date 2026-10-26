@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Sondages de dates — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -20,7 +21,7 @@
 <h2>Clos récemment</h2>
 <ul class="poll-list">
   {% for poll in closed_polls %}
-  <li><a href="{% url 'polls:detail' poll.pk %}">{{ poll.title }}</a>{% if poll.event %} <span class="meta">→ <a href="{% url 'agenda:detail' poll.event.pk %}">{{ poll.event.start|date:"l j F, H:i" }}</a></span>{% endif %}</li>
+  <li><a href="{% url 'polls:detail' poll.pk %}">{{ poll.title }}</a>{% if poll.event %} <span class="meta">→ <a href="{% url 'agenda:detail' poll.event.pk %}">{{ poll.event.start|date_fr:"l j F, H:i" }}</a></span>{% endif %}</li>
   {% endfor %}
 </ul>
 {% endif %}

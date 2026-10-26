@@ -16,6 +16,8 @@ class NavItem:
     matches: tuple = ()
     primary: bool = False
     cta: bool = False
+    # Aussi dans l'en-tête sur téléphone, où la barre du bas n'a pas de place pour lui.
+    header: bool = False
     short: str = ""
     url: str = field(init=False, default="")
     current: bool = field(init=False, default=False)
@@ -87,7 +89,7 @@ def _visitor_items(is_manager: bool) -> list[NavItem]:
     if is_manager:
         items.append(NavItem("Gestion", "accounts:gestion_home", "sliders"))
     else:
-        items.append(NavItem("Espace membres", "core:access", "key"))
+        items.append(NavItem("Espace membres", "core:access", "key", header=True, short="Membres"))
     return items
 
 
@@ -107,5 +109,6 @@ def build(request, *, has_access: bool, is_manager: bool) -> dict:
     return {
         "items": items,
         "more": more,
+        "header": [item for item in items if item.header],
         "more_current": any(item.current for item in more),
     }

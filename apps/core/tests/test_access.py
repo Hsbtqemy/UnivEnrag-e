@@ -123,3 +123,9 @@ def test_purge_ip_data_command(db):
     RateLimitHit.objects.create(bucket="access_code", key_hash="y")
     call_command("purge_ip_data", stdout=io.StringIO())
     assert list(RateLimitHit.objects.values_list("key_hash", flat=True)) == ["y"]
+
+
+@pytest.mark.parametrize("url", ["/sante/", "/p/", "/p/agenda/", "/p/agenda.ics", "/robots.txt"])
+def test_head_requests_are_answered(client, site, url):
+    """Les sondes de disponibilité et les aperçus de liens utilisent HEAD : pas de 405."""
+    assert client.head(url).status_code == 200

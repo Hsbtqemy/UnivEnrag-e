@@ -1,18 +1,19 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Demandes de publication — {{ site.collective_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <h1>Demandes de publication <span class="count">{{ events|length }}</span></h1>
 <p class="lead">Des membres ont coché « public » sur ces événements. Un événement publié n'apparaît sur l'agenda public qu'une fois confirmé.</p>
 {% if events %}
-<table class="table">
+<table class="table table--stack">
   <thead><tr><th scope="col">Événement</th><th scope="col">Quand</th><th scope="col">Porté par</th><th scope="col">Décision</th></tr></thead>
   <tbody>
     {% for event in events %}
     <tr>
       <td><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a>{% if event.status == "provisional" %} <span class="badge">provisoire</span>{% endif %}</td>
-      <td>{{ event.start|date:"D j F" }}, {{ event.start|time:"H:i" }}</td>
-      <td>{{ event.owner.display_name }}</td>
+      <td data-label="Quand">{{ event.start|date_fr:"D j F" }}, {{ event.start|time:"H:i" }}</td>
+      <td data-label="Porté par">{{ event.owner.display_name }}</td>
       <td class="actions">
         <form method="post" action="{% url 'agenda:publish' event.pk %}">{% csrf_token %}<input type="hidden" name="public" value="1"><input type="hidden" name="next" value="{{ request.path }}"><button class="button button--small">Publier</button></form>
         <form method="post" action="{% url 'agenda:publish' event.pk %}">{% csrf_token %}<input type="hidden" name="public" value="0"><input type="hidden" name="next" value="{{ request.path }}"><button class="button button--small button--secondary">Ne pas publier</button></form>

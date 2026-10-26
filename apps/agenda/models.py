@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class EventQuerySet(models.QuerySet):
@@ -9,6 +10,22 @@ class EventQuerySet(models.QuerySet):
 
     def active(self):
         return self.exclude(status=Event.Status.CANCELLED)
+
+    def awaiting_publication(self):
+        """Demandes de publication d'un membre, pas encore tranchées (décision 11)."""
+        return self.filter(public_requested=True, is_public=False).exclude(
+            status=Event.Status.CANCELLED
+        )
+
+    def awaiting_room(self):
+        """Réservations en attente dans une salle soumise à validation (SAL-4)."""
+        return self.filter(
+            room_status=Event.RoomStatus.PENDING, status=Event.Status.CONFIRMED
+        ).exclude(room=None)
+
+    def to_confirm(self):
+        """Provisoires à venir : la confirmation revient à un habilité « agenda » (AGE-3)."""
+        return self.filter(status=Event.Status.PROVISIONAL, end__gte=timezone.now())
 
     def overlapping(self, start, end):
         # Chevauchement strict : deux événements bout à bout ne se chevauchent pas.

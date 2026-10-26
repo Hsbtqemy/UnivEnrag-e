@@ -6,7 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import is_manager, require_capability
 from apps.actors.services import get_or_create_for_name
@@ -26,7 +26,7 @@ from .models import Event
 # --- Public ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 @public_view
 def public_agenda(request):
     """Agenda public : la semaine en calendrier, puis la liste des prochains événements."""
@@ -40,21 +40,21 @@ def public_agenda(request):
     return render(request, "public/agenda.html", {"days": days, "calendar_config": config})
 
 
-@require_GET
+@require_safe
 @public_view
 def public_week(request):
     """Ancienne adresse de la vue semaine, peut-être déjà partagée : tout est sur une page."""
     return redirect("agenda:public_list", permanent=True)
 
 
-@require_GET
+@require_safe
 @public_view
 def public_detail(request, pk):
     event = get_object_or_404(ical.public_events(), pk=pk)
     return render(request, "public/event_detail.html", {"event": event})
 
 
-@require_GET
+@require_safe
 @public_view
 def public_events_json(request):
     events = ical.public_events()
@@ -64,7 +64,7 @@ def public_events_json(request):
     return JsonResponse([serializers.public_event(e) for e in events], safe=False)
 
 
-@require_GET
+@require_safe
 @public_view
 def public_ics(request):
     body = ical.public_calendar(
@@ -80,7 +80,7 @@ def public_ics(request):
 # --- Interne ------------------------------------------------------------------------------
 
 
-@require_GET
+@require_safe
 def home(request):
     """Accueil des membres : prochains événements, provisoires compris (marqués comme tels)."""
     now = timezone.now()
@@ -107,11 +107,12 @@ def home(request):
 
 
 # --- Programmation (CDC §3) --------------------------------------------------------------
-# Ouverte à tous les participants : chacun place et déplace, sous son nom. Confirmer et
-# publier restent réservés (CLAUDE.md AGE-3, décision 11).
+# Consultable par tous les participants. Placer et déplacer, sous son nom, seulement si le
+# réglage du site l'ouvre (décision 22). Confirmer et publier restent réservés
+# (CLAUDE.md AGE-3, décision 11).
 
 
-@require_GET
+@require_safe
 def programming(request):
     rooms = list(Room.objects.filter(is_active=True))
     resources = [{"id": str(r.pk), "title": r.name} for r in rooms]
@@ -124,7 +125,7 @@ def programming(request):
         "placeUrl": reverse("agenda:place_idea", args=[0]),
         "confirmUrl": reverse("agenda:gestion_confirm") if can_confirm else "",
         "publicUrl": reverse("agenda:gestion_public", args=[0]) if can_publish else "",
-        "canEdit": bool(request.actor_name) or can_confirm,
+        "canEdit": services.can_edit(request.user) and (bool(request.actor_name) or can_confirm),
         "resources": resources,
         "freePlaceResource": serializers.FREE_PLACE_RESOURCE,
     }
@@ -148,7 +149,7 @@ def programming(request):
     )
 
 
-@require_GET
+@require_safe
 def programming_events(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
     base = Event.objects.active().select_related("owner", "room", "space", "idea")
@@ -165,7 +166,7 @@ def programming_events(request):
             .prefetch_related("idea__slots")
         )
     manager = services.can_manage(request.user)
-    can_edit = bool(request.actor_name) or manager
+    can_edit = services.can_edit(request.user) and (bool(request.actor_name) or manager)
 
     payload = [
         serializers.programming_event(
@@ -200,6 +201,8 @@ def _error(message: str, status: int = 400, **extra) -> JsonResponse:
 def place_idea(request, pk):
     """Une idée de « À placer » posée sur un créneau, en provisoire, sous le nom retenu."""
     idea = get_object_or_404(Idea.objects.visible(), pk=pk)
+    if not services.can_edit(request.user):
+        return _error("Les gestionnaires de l'agenda placent les idées.", status=403)
     if not request.actor_name and not services.can_manage(request.user):
         return _error("Indiquez d'abord votre nom pour placer une idée.")
     data = _json_body(request)

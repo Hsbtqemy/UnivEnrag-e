@@ -41,7 +41,7 @@ def test_previous_week_is_shifted():
     services.save_week(marie, MONDAY, {(MONDAY, "evening"): "Local"})
     next_monday = MONDAY + timedelta(days=7)
     assert services.previous_week_selections(marie, next_monday) == {
-        (next_monday, "evening"): "Local"
+        (next_monday, "evening"): services.Declared("Local")
     }
 
 
@@ -50,7 +50,10 @@ def test_board_lists_people_by_half_day():
     services.save_week(get_or_create_for_name("Paul"), MONDAY, {(MONDAY, "morning"): ""})
     rows = services.board(MONDAY)
     morning_monday = rows[0][0]
-    assert morning_monday.people == [("Marie", "Bât. A"), ("Paul", "")]
+    assert [(p.actor.display_name, p.place) for p in morning_monday.people] == [
+        ("Marie", "Bât. A"),
+        ("Paul", ""),
+    ]
     assert services.count_people(MONDAY) == 2
 
 
@@ -93,3 +96,23 @@ def test_resume_previous_week_prefills_checkboxes(member_client):
 
 def test_presences_are_internal(client, site):
     assert client.get(reverse("presences:board")).status_code == 302
+
+
+def test_day_list_starts_today_in_the_current_week():
+    today = date.today()
+    monday = services.week_start(today)
+    services.save_week(get_or_create_for_name("Nora"), monday, {(today, "afternoon"): "Bât. A"})
+    days = services.days_list(monday)
+    assert days[0].day == today
+    assert days[0].label == "Aujourd'hui"
+    assert days[0].is_today
+    assert [(moment, p.actor.display_name) for moment, p in days[0].entries] == [
+        ("Après-midi", "Nora")
+    ]
+    if len(days) > 1:
+        assert days[1].label == "Demain"
+
+
+def test_day_list_of_a_future_week_has_seven_days():
+    monday = services.week_start(date.today()) + timedelta(days=14)
+    assert len(services.days_list(monday)) == 7

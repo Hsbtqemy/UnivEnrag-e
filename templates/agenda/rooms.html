@@ -14,7 +14,7 @@
       <div><dt>Ouverture</dt><dd>{{ room.opening_summary }}</dd></div>
       {% if room.access_notes %}<div><dt>Accès</dt><dd>{{ room.access_notes|linebreaksbr }}</dd></div>{% endif %}
     </dl>
-    <p class="actions"><a class="button button--secondary button--small" href="{% url 'agenda:calendar' %}?salle={{ room.pk }}">Planning de la salle</a> <a class="button button--small" href="{% url 'agenda:new' %}?salle={{ room.pk }}">Réserver</a></p>
+    <p class="actions"><a class="button button--secondary button--small" href="{% url 'agenda:calendar' %}?salle={{ room.pk }}">Planning de la salle</a> {% if can_edit_agenda %}<a class="button button--small" href="{% url 'agenda:new' %}?salle={{ room.pk }}">Réserver</a>{% endif %}</p>
   </li>
   {% empty %}
   <li class="empty">Aucune salle n'est encore enregistrée.</li>

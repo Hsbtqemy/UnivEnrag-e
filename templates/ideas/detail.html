@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}{{ idea.title }} — Idées — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <p class="back"><a href="{% url 'ideas:list' %}">← Idées</a></p>
@@ -9,7 +10,7 @@
   {% if idea.is_external %}<span class="badge">Proposition extérieure</span>{% endif %}
   {% if idea.is_shown_publicly %}<a class="badge badge--public" href="{% url 'ideas:public_detail' idea.pk %}">Sur la page publique{% if idea.owner_hidden %}, sans nom{% endif %}</a>{% endif %}
 </p>
-<p class="meta">Portée par {{ idea.owner.display_name }}{% if show_email %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a>{% endif %} · déposée le {{ idea.created_at|date:"j F Y" }}{% if idea.updated_by %} · complétée par {{ idea.updated_by.display_name }}{% endif %}</p>
+<p class="meta">Portée par {{ idea.owner.display_name }}{% if show_email %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a>{% endif %} · déposée le {{ idea.created_at|date_fr:"j F Y" }}{% if idea.updated_by %} · complétée par {{ idea.updated_by.display_name }}{% endif %}</p>
 
 {% if idea.description %}<div class="prose">{{ idea.description|linebreaks }}</div>{% endif %}
 
@@ -24,7 +25,7 @@
   {% if idea.needs %}<div><dt>Besoins</dt><dd>{{ idea.needs }}</dd></div>{% endif %}
   {% if idea.constraints %}<div><dt>Contraintes</dt><dd>{{ idea.constraints }}</dd></div>{% endif %}
   <div><dt>Créneaux envisagés</dt><dd>
-    {% for slot in slots %}{% if slot.is_precise %}{{ slot.start|date:"l j F"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun pour l'instant{% endfor %}
+    {% for slot in slots %}{% if slot.is_precise %}{{ slot.start|date_fr:"l j F"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun pour l'instant{% endfor %}
   </dd></div>
 </dl>
 
@@ -34,7 +35,7 @@
   <ul class="event-list">
     {% for event in events %}
     <li class="event-card event-card--{{ event.status }}">
-      <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }} · <span class="badge badge--{{ event.status }}">{{ event.get_status_display|lower }}</span></p>
+      <p class="event-card__time">{{ event.start|date_fr:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }} · <span class="badge badge--{{ event.status }}">{{ event.get_status_display|lower }}</span></p>
       <h3 class="event-card__title"><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a></h3>
       <p class="event-card__meta">{{ event.place_label }}</p>
     </li>
@@ -44,7 +45,7 @@
   <p class="empty">{% if idea.kind == "event" and idea.status == "new" or idea.kind == "event" and idea.status == "preparing" %}Pas encore placée : elle attend dans « À placer ».{% else %}Aucun événement.{% endif %}</p>
   {% endif %}
   <p class="actions">
-    {% if can_create_event %}<a class="button button--secondary" href="{% url 'agenda:new' %}?idee={{ idea.pk }}">Créer un événement depuis cette idée</a>{% endif %}
+    {% if can_create_event and can_edit_agenda %}<a class="button button--secondary" href="{% url 'agenda:new' %}?idee={{ idea.pk }}">Créer un événement depuis cette idée</a>{% endif %}
     <a class="button button--secondary" href="{% url 'agenda:programming' %}">Ouvrir la programmation</a>
   </p>
 </section>

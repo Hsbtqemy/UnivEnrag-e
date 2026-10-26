@@ -47,6 +47,17 @@ class SiteSettings(models.Model):
         blank=True,
         help_text="Affiché sur la page « Données personnelles » : une adresse, un nom, un lieu.",
     )
+    # DÉCISION 22 : quelques admins font le travail, les autres consultent et proposent.
+    # Décoché, seuls les habilités « agenda » écrivent dans l'agenda (CLAUDE.md AGE-3).
+    members_edit_agenda = models.BooleanField(
+        "les membres modifient l'agenda directement",
+        default=False,
+        help_text=(
+            "Coché : toute personne qui a le code d'accès crée, modifie, déplace et annule "
+            "des événements, et place les idées dans la programmation. Décoché : elle "
+            "consulte et dépose des idées ; les gestionnaires de l'agenda les placent."
+        ),
+    )
     access_code_hash = models.CharField(max_length=128, blank=True)
     # Empreinte posée dans le cookie des navigateurs : la changer invalide tous les cookies
     # d'un coup (CLAUDE.md ACC-1), sans jamais y mettre le code lui-même.

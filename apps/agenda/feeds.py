@@ -10,7 +10,7 @@ import secrets
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_safe
 
 from apps.core.access import public_view
 from apps.core.models import SiteSettings
@@ -40,14 +40,14 @@ def _ics(request, events, name: str) -> HttpResponse:
     return response
 
 
-@require_GET
+@require_safe
 @public_view
 def feed_all(request, token):
     site = _check_token(token)
     return _ics(request, ical.member_events(), site.collective_name)
 
 
-@require_GET
+@require_safe
 @public_view
 def feed_space(request, token, slug):
     site = _check_token(token)
@@ -57,7 +57,7 @@ def feed_space(request, token, slug):
     )
 
 
-@require_GET
+@require_safe
 @public_view
 def feed_room(request, token, pk):
     site = _check_token(token)
@@ -69,7 +69,7 @@ def feed_room(request, token, pk):
     )
 
 
-@require_GET
+@require_safe
 def subscriptions(request):
     """Page « S'abonner » des membres : les adresses à coller dans son agenda."""
     token = SiteSettings.get().feeds_token

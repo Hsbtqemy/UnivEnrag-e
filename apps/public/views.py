@@ -6,7 +6,7 @@ from django.contrib.syndication.views import Feed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_safe
 
 from apps.accounts.capabilities import require_capability
 from apps.agenda import ical
@@ -15,13 +15,14 @@ from apps.core.access import public_view
 from apps.core.markdown import render as render_markdown
 from apps.core.models import SiteSettings
 from apps.ideas.models import Idea
+from apps.presences import services as presences_services
 
 from . import services
 from .forms import ContactForm, PresentationForm
 from .models import NewsPost
 
 
-@require_GET
+@require_safe
 @public_view
 def home(request):
     now = timezone.now()
@@ -31,6 +32,7 @@ def home(request):
         {
             "events": ical.public_events().filter(end__gte=now)[:5],
             "news": NewsPost.objects.public()[:3],
+            "permanences": presences_services.public_permanences(),
             "ideas": Idea.objects.public()
             .filter(status__in=[Idea.Status.NEW, Idea.Status.PREPARING, Idea.Status.PLANNED])
             .order_by("-created_at")[:3],
@@ -38,13 +40,13 @@ def home(request):
     )
 
 
-@require_GET
+@require_safe
 @public_view
 def news_list(request):
     return render(request, "public/news_list.html", {"news": NewsPost.objects.public()})
 
 
-@require_GET
+@require_safe
 @public_view
 def news_detail(request, slug):
     post = get_object_or_404(NewsPost.objects.public(), slug=slug)

@@ -56,7 +56,7 @@
     datesAboveResources: true,
     eventSources: [{ url: config.eventsUrl }],
     editable: config.canEdit,
-    selectable: true,
+    selectable: config.canEdit,
     pointer: true,
     snapDuration: "00:15:00",
     eventFilter(info) {
@@ -200,7 +200,8 @@
   }
 
   list.addEventListener("click", (e) => {
-    const button = e.target.closest(".to-place__item");
+    // Sans droit d'écriture, les idées à placer sont de simples fiches, pas des boutons.
+    const button = e.target.closest("button.to-place__item");
     if (button) choose(button);
   });
 

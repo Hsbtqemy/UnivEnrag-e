@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load dates_fr %}
+{% load static %}
 {% block title %}Suivi de votre proposition — {{ site.collective_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
@@ -8,7 +10,13 @@
   <p><strong>Gardez le lien de cette page</strong> : c'est le seul moyen de suivre votre proposition, aucun message ne vous sera envoyé.</p>
   <p class="tracking-link"><label for="lien-suivi">Votre lien de suivi</label>
     <input id="lien-suivi" type="text" readonly value="{{ tracking_url }}"></p>
-  <p>Vous pouvez aussi l'ajouter à vos favoris.</p>
+  {# Les boutons n'apparaissent qu'avec JavaScript ; sans lui, le lien se copie à la main. #}
+  <p class="actions tracking-actions">
+    <button type="button" class="button" id="copier-lien" hidden>Copier le lien</button>
+    <button type="button" class="button button--secondary" id="partager-lien" hidden>Me l'envoyer…</button>
+  </p>
+  <p id="lien-copie" class="live" role="status" aria-live="polite"></p>
+  <p>Collez-le dans une note, envoyez-le-vous par message, ou ajoutez cette page à vos favoris.</p>
 </div>
 {% else %}
 <h1>Suivi de votre proposition</h1>
@@ -23,7 +31,7 @@
   {% elif idea.status == "planned" or idea.status == "done" %}{% if event %}
   <p>{% if idea.status == "done" %}Votre événement a eu lieu :{% else %}Votre événement est programmé :{% endif %}</p>
   <dl class="facts">
-    <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
+    <div><dt>Quand</dt><dd>{{ event.start|date_fr:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
     <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
   </dl>
   {% if event.is_public %}<p><a href="{% url 'agenda:public_detail' event.pk %}">Voir la page publique de l'événement</a></p>{% endif %}{% endif %}
@@ -45,7 +53,7 @@
     {% if idea.kind == "event" %}<div><dt>Durée souhaitée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
     {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
     <div><dt>Créneaux envisagés</dt><dd>
-      {% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"l j F Y"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun, à fixer avec le collectif{% endfor %}
+      {% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date_fr:"l j F Y"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun, à fixer avec le collectif{% endfor %}
     </dd></div>{% endif %}
   </dl>
 </section>
@@ -62,3 +70,4 @@
 </section>
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/tracking.js' %}"></script>{% endblock %}

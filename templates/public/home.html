@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% load markdown %}
 {% block title %}{{ site.collective_name }}{% endblock %}
 {% block content %}
@@ -14,7 +15,7 @@
     <ul class="event-list">
       {% for event in events %}
       <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
-        <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
+        <p class="event-card__time">{{ event.start|date_fr:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
         <h3 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h3>
         <p class="event-card__meta">{{ event.place_label }}</p>
       </li>
@@ -32,7 +33,7 @@
     <ul class="news-list">
       {% for post in news %}
       <li>
-        <p class="meta">{{ post.published_at|date:"j F Y" }}</p>
+        <p class="meta">{{ post.published_at|date_fr:"j F Y" }}</p>
         <h3><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h3>
         {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
       </li>
@@ -44,6 +45,23 @@
     {% endif %}
   </section>
 </div>
+
+{% if permanences %}
+<section aria-labelledby="permanences">
+  <h2 id="permanences">Où nous trouver</h2>
+  <p class="hint">Quelqu'un du collectif sera là, passez nous voir.</p>
+  <ul class="permanence-list">
+    {% for day in permanences %}
+    <li>
+      <strong>{{ day.day|date_fr:"l j F"|capfirst }}</strong>
+      <ul>
+        {% for label, texts in day.slots %}<li>{{ label }}{% if texts %} : {{ texts|join:" ; " }}{% endif %}</li>{% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 
 {% if ideas %}
 <section aria-labelledby="idees">

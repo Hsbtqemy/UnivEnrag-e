@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Qui est là ? — {{ site.collective_name }}{% endblock %}
 {% block main_class %}page page--wide{% endblock %}
 {% block content %}
@@ -8,17 +9,35 @@
 </div>
 <nav class="week-nav" aria-label="Changer de semaine">
   <a href="?semaine={{ previous }}">← Semaine précédente</a>
-  <strong>Du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}{% if is_current %} (cette semaine){% endif %}</strong>
+  <strong>Du {{ monday|date_fr:"j F" }} au {{ sunday|date_fr:"j F Y" }}{% if is_current %} (cette semaine){% endif %}</strong>
   <a href="?semaine={{ next }}">Semaine suivante →</a>
 </nav>
-<p class="hint">Présences annoncées par {{ people_count }} personne{{ people_count|pluralize }}.</p>
+<p class="hint">Présences annoncées par {{ people_count }} personne{{ people_count|pluralize }}. Les « permanences » sont annoncées sur la page publique, sans le nom.</p>
 
-<div class="table-scroll">
+{# Sur téléphone : la semaine en liste, à partir d'aujourd'hui. #}
+<div class="presence-days">
+  {% for d in day_list %}
+  <section class="presence-day{% if d.is_today %} presence-day--today{% endif %}" aria-labelledby="jour-{{ d.day|date:'Y-m-d' }}">
+    <h2 id="jour-{{ d.day|date:'Y-m-d' }}">{{ d.label }}{% if d.label == "Aujourd'hui" or d.label == "Demain" %} <span class="meta">{{ d.day|date_fr:"l j F" }}</span>{% endif %}</h2>
+    {% if d.entries %}
+    <ul class="presence-list">
+      {% for moment, p in d.entries %}<li><strong>{{ p.actor.display_name }}</strong> · {{ moment|lower }}{% if p.hours %} {{ p.hours }}{% endif %}{% if p.place %} <span class="presence-place">· {{ p.place }}</span>{% endif %}{% if p.is_open %} <span class="badge">permanence</span>{% endif %}</li>{% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">Personne n'a annoncé sa présence.</p>
+    {% endif %}
+  </section>
+  {% empty %}
+  <p class="empty">Cette semaine est passée.</p>
+  {% endfor %}
+</div>
+
+<div class="table-scroll presence-week">
 <table class="table presence-table">
   <caption class="visually-hidden">Présences annoncées, par demi-journée</caption>
   <thead>
     <tr><th scope="col"><span class="visually-hidden">Moment</span></th>
-      {% for day in days %}<th scope="col"{% if day.weekday >= 5 %} class="weekend"{% endif %}>{{ day|date:"D j"|capfirst }}</th>{% endfor %}
+      {% for day in days %}<th scope="col" class="{% if day.weekday >= 5 %}weekend{% endif %}{% if day == today %} today{% endif %}"{% if day == today %} aria-current="date"{% endif %}>{{ day|date:"D j"|capfirst }}{% if day == today %} <span class="visually-hidden">(aujourd'hui)</span>{% endif %}</th>{% endfor %}
     </tr>
   </thead>
   <tbody>
@@ -26,11 +45,11 @@
     <tr>
       <th scope="row">{{ row.0.label }}</th>
       {% for cell in row %}
-      <td{% if cell.day.weekday >= 5 %} class="weekend"{% endif %}>
+      <td class="{% if cell.day.weekday >= 5 %}weekend{% endif %}{% if cell.day == today %} today{% endif %}">
         {% if cell.people %}
         <p class="presence-count">{{ cell.people|length }}</p>
         <ul class="presence-list">
-          {% for name, place in cell.people %}<li>{{ name }}{% if place %} <span class="presence-place">· {{ place }}</span>{% endif %}</li>{% endfor %}
+          {% for p in cell.people %}<li>{{ p.actor.display_name }}{% if p.hours %} <span class="presence-place">· {{ p.hours }}</span>{% endif %}{% if p.place %} <span class="presence-place">· {{ p.place }}</span>{% endif %}{% if p.is_open %} <span class="badge">permanence</span>{% endif %}</li>{% endfor %}
         </ul>
         {% endif %}
       </td>

@@ -167,7 +167,7 @@ class Command(BaseCommand):
             room=big,
             space=seminar,
         )
-        # Présences annoncées cette semaine et la suivante.
+        # Présences annoncées cette semaine et la suivante, dont une permanence.
         this_monday = presences_services.week_start(today)
         for name, plan in {
             "Nora Diallo": [
@@ -175,7 +175,14 @@ class Command(BaseCommand):
                 (0, "afternoon", "Bât. A"),
                 (2, "morning", ""),
             ],
-            "Hugo Petit": [(1, "afternoon", "Local du collectif"), (3, "morning", "Bât. C")],
+            "Hugo Petit": [
+                (
+                    1,
+                    "afternoon",
+                    presences_services.Declared("Local du collectif", time(14), time(17)),
+                ),
+                (3, "morning", "Bât. C"),
+            ],
             "Inès Garnier": [(0, "afternoon", "Local du collectif"), (3, "evening", "")],
         }.items():
             actor = get_or_create_for_name(name)
@@ -184,6 +191,8 @@ class Command(BaseCommand):
                     actor,
                     monday,
                     {(monday + timedelta(days=d), p): place for d, p, place in plan},
+                    # Le mardi de Hugo au local est une permanence ouverte au public.
+                    open_days={monday + timedelta(days=1)} if name == "Hugo Petit" else (),
                 )
 
         # Un sondage de dates en cours.

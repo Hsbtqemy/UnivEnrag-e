@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Accueil — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <h1>{% if request.actor_name %}Bonjour {{ request.actor_name }}{% else %}Bienvenue{% endif %}</h1>
@@ -6,7 +7,7 @@
 <p class="notice">Pour participer, <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">indiquez votre nom ou un pseudo</a>. Pas de compte ni de mot de passe : votre navigateur le retient. Première visite ? <a href="{% url 'core:help' %}">Comment ça marche</a>.</p>
 {% endif %}
 
-<p class="actions"><a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a> <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
+<p class="actions">{% if can_edit_agenda %}<a class="button" href="{% url 'agenda:new' %}">+ Nouvel événement</a> <a class="button" href="{% url 'ideas:new' %}">+ Déposer une idée</a>{% else %}<a class="button" href="{% url 'ideas:new' %}">+ Proposer un événement ou une idée</a>{% endif %} <a class="button button--secondary" href="{% url 'agenda:calendar' %}">Ouvrir l'agenda</a></p>
 
 <div class="home-cards">
   <a class="home-card" href="{% url 'ideas:list' %}"><strong>Idées et projets</strong><span>{{ idea_count }} en cours{% if to_place %}, {{ to_place }} à placer dans l'agenda{% endif %}</span></a>
@@ -26,7 +27,7 @@
   <ul class="event-list">
     {% for event in events %}
     <li class="event-card event-card--{{ event.status }}" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
-      <p class="event-card__time">{{ event.start|date:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.status == "provisional" %} · <span class="badge">provisoire</span>{% endif %}</p>
+      <p class="event-card__time">{{ event.start|date_fr:"l j F"|capfirst }} · {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.status == "provisional" %} · <span class="badge">provisoire</span>{% endif %}</p>
       <h3 class="event-card__title"><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a></h3>
       <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
     </li>

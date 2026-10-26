@@ -155,6 +155,17 @@ class ProposeForm(IdeaFieldsMixin, SlotFieldsMixin, AntiSpamFormMixin):
         label="Nombre de personnes attendues", min_value=1, max_value=10000, required=False
     )
 
+    def _filled(self, names) -> bool:
+        return any(self[n].value() not in (None, "") or n in self.errors for n in names)
+
+    def show_more_slots(self) -> bool:
+        """Les créneaux 2 et 3 et la salle restent repliés, sauf s'ils ont déjà servi."""
+        names = [f"slot{i}_{p}" for i in (2, 3) for p in ("date", "time", "period")]
+        return self._filled([*names, "wanted_room"])
+
+    def show_details(self) -> bool:
+        return self._filled(["audience", "expected_count"])
+
     field_order = [
         "kind",
         "owner_name",
