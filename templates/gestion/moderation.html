@@ -58,15 +58,16 @@
 {% if recent %}
 <section aria-labelledby="recentes">
   <h2 id="recentes">Décisions récentes</h2>
-  <table class="table">
+  <p class="hint">Les propositions venues de la page publique, une fois acceptées ou écartées.</p>
+  <table class="table table--stack">
     <thead><tr><th scope="col">Proposition</th><th scope="col">Porteur</th><th scope="col">État</th><th scope="col">Le</th></tr></thead>
     <tbody>
       {% for idea in recent %}
       <tr>
         <td>{{ idea.title }}</td>
-        <td>{{ idea.owner.display_name }} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a></td>
-        <td>{{ idea.get_status_display }}{% if idea.refusal_reason %} — {{ idea.refusal_reason }}{% endif %}</td>
-        <td>{{ idea.moderated_at|date:"j F H:i" }}</td>
+        <td data-label="Porteur">{{ idea.owner.display_name }}{% if idea.owner_email %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a>{% endif %}</td>
+        <td data-label="État">{{ idea.get_status_display }}{% if idea.refusal_reason %} — {{ idea.refusal_reason }}{% endif %}</td>
+        <td data-label="Le">{{ idea.moderated_at|date:"j F H:i" }}</td>
       </tr>
       {% endfor %}
     </tbody>

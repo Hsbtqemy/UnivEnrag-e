@@ -4,14 +4,22 @@
 {% block content %}
 <h1>Gestion</h1>
 <p class="lead">{% if user.is_superuser %}Administrateur principal : vous avez tous les droits.{% else %}Vos droits : {{ capability_labels|join:", "|default:"aucun pour l'instant" }}.{% endif %}</p>
+{% if pending %}
+<section class="todo" aria-labelledby="a-traiter">
+  <h2 id="a-traiter">À traiter</h2>
+  <ul>{% for waiting in pending.values %}<li><a href="{{ waiting.url }}">{{ waiting.label }}</a></li>{% endfor %}</ul>
+</section>
+{% else %}
+<p class="todo todo--empty">Rien en attente pour l'instant.</p>
+{% endif %}
 <ul class="tool-list">
-  {% if "moderate" in capabilities %}<li><a href="{% url 'ideas:moderation' %}">Modération des propositions</a><span>Accepter ou écarter les propositions reçues de l'extérieur.</span></li>{% endif %}
-  {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a><span>Placer les idées et confirmer les événements, salle par salle.</span></li>{% endif %}
-  {% if "manage_rooms" in capabilities %}<li><a href="{% url 'agenda:room_requests' %}">Réservations de salles à valider</a><span>Les demandes dans les salles soumises à validation.</span></li>{% endif %}
+  {% if "moderate" in capabilities %}<li><a href="{% url 'ideas:moderation' %}">Modération des propositions</a>{% if pending.moderation %} <strong class="pending-badge">{{ pending.moderation }}</strong>{% endif %}<span>Accepter ou écarter les propositions reçues de l'extérieur.</span></li>{% endif %}
+  {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a>{% if pending.to_place %} <strong class="pending-badge">{{ pending.to_place }}</strong>{% endif %}{% if pending.to_confirm %} <strong class="pending-badge">{{ pending.to_confirm }}</strong>{% endif %}<span>Placer les idées et confirmer les événements, salle par salle.</span></li>{% endif %}
+  {% if "manage_rooms" in capabilities %}<li><a href="{% url 'agenda:room_requests' %}">Réservations de salles à valider</a>{% if pending.rooms %} <strong class="pending-badge">{{ pending.rooms }}</strong>{% endif %}<span>Les demandes dans les salles soumises à validation.</span></li>{% endif %}
   {% if "manage_public" in capabilities %}<li><a href="{% url 'public:presentation' %}">Présentation du collectif</a><span>Le texte qui ouvre la page publique.</span></li>
   <li><a href="{% url 'admin:public_newspost_changelist' %}">Actualités</a><span>Écrire, publier ou dépublier les actualités de la page publique.</span></li>
-  <li><a href="{% url 'admin:public_contactmessage_changelist' %}?handled_at__isempty=1">Messages de contact à traiter</a><span>Les messages reçus par le formulaire public.</span></li>{% endif %}
-  {% if "manage_agenda" in capabilities or "manage_public" in capabilities %}<li><a href="{% url 'agenda:public_requests' %}">Demandes de publication</a><span>Les événements que des membres souhaitent voir sur l'agenda public.</span></li>{% endif %}
+  <li><a href="{% url 'admin:public_contactmessage_changelist' %}?handled_at__isempty=1">Messages de contact à traiter</a>{% if pending.contact %} <strong class="pending-badge">{{ pending.contact }}</strong>{% endif %}<span>Les messages reçus par le formulaire public.</span></li>{% endif %}
+  {% if "manage_agenda" in capabilities or "manage_public" in capabilities %}<li><a href="{% url 'agenda:public_requests' %}">Demandes de publication</a>{% if pending.publication %} <strong class="pending-badge">{{ pending.publication }}</strong>{% endif %}<span>Les événements que des membres souhaitent voir sur l'agenda public.</span></li>{% endif %}
   {% if user.is_superuser %}<li><a href="{% url 'accounts:backup' %}">Sauvegarde complète</a><span>Télécharger toute la base, comptes de gestion compris.</span></li>{% endif %}
   <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>
 </ul>

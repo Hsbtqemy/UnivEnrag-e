@@ -385,7 +385,13 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .tool-list { list-style: none; padding: 0; display: grid; gap: .75rem; }
 .tool-list li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; display: grid; gap: .2rem; }
 .tool-list a { font-weight: 700; font-size: 1.05rem; }
-.tool-list span { color: var(--muted); }
+.tool-list span { color: var(--muted); flex-basis: 100%; }
+.tool-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem; }
+.pending-badge { font-size: .85rem; font-weight: 600; padding: .05rem .5rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.todo { background: var(--surface); border: 1px solid var(--accent); border-left-width: 4px; border-radius: var(--radius); padding: .75rem 1rem; margin-bottom: 1rem; }
+.todo h2 { font-size: 1.1rem; margin: 0 0 .3rem; }
+.todo ul { margin: 0; padding-left: 1.25rem; }
+.todo--empty { border-color: var(--border); color: var(--muted); }
 
 /* --- Lot B : agenda des membres ---------------------------------------------------- */
 
@@ -507,13 +513,16 @@ a.badge { text-decoration: none; }
 .reaction-list li { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
 .reaction-names { color: var(--muted); font-size: .9rem; }
 .idea-table th a { white-space: nowrap; }
-/* Sur téléphone, chaque idée devient une fiche : intitulé devant chaque valeur. */
+/* Sur téléphone, chaque ligne d'un tableau `table--stack` devient une fiche : l'intitulé
+   devant chaque valeur (`data-label`), la première cellule en titre. */
 @media (max-width: 640px) {
-  .idea-table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .idea-table--stack, .idea-table--stack tbody, .idea-table--stack tr, .idea-table--stack th, .idea-table--stack td { display: block; width: 100%; }
-  .idea-table--stack tr { border-bottom: 1px solid var(--border); padding: .5rem 0; }
-  .idea-table--stack th, .idea-table--stack td { border: 0; padding: .15rem .25rem; }
-  .idea-table--stack td[data-label]::before { content: attr(data-label) " : "; color: var(--muted); }
+  .table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table--stack, .table--stack tbody, .table--stack tr, .table--stack th, .table--stack td { display: block; width: 100%; }
+  .table--stack tr { border-bottom: 1px solid var(--border); padding: .5rem 0; }
+  .table--stack th, .table--stack td { border: 0; padding: .15rem .25rem; }
+  .table--stack td[data-label]::before { content: attr(data-label) " : "; color: var(--muted); }
+  .table--stack td:first-child:not([data-label]) { font-weight: 700; }
+  .table--stack td.actions { display: flex; gap: .5rem; padding-top: .4rem; }
 }
 
 /* Agenda public : le mois en grille, sur tous les écrans. Sur téléphone, les cases sont

@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import pytest
 from django.core.management import call_command
+from django.urls import reverse
 
 from apps.actors.services import get_or_create_for_name
 from apps.agenda import services as agenda_services
@@ -253,3 +254,12 @@ def test_precise_slot_end_follows_wanted_duration(marie, at):
     idea = services.create(actor=marie, title="Idée", slots=[{"start": at(1, 10)}])
     slot = idea.slots.get()
     assert slot.end - slot.start == timedelta(minutes=idea.duration_minutes)
+
+
+def test_recent_moderation_lists_only_external_proposals(admin_client, make_idea, admin_user):
+    """Les idées des membres ne passent pas par la modération : pas dans ses décisions."""
+    services.accept(make_idea("Venue de l'extérieur"), user=admin_user)
+    services.create(actor=get_or_create_for_name("Inès"), title="Idée de membre", kind="event")
+    body = admin_client.get(reverse("ideas:moderation")).content.decode()
+    assert "Venue de l&#x27;extérieur" in body
+    assert "Idée de membre" not in body

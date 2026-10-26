@@ -456,12 +456,7 @@ def public_requests(request):
     """File des demandes de publication (CLAUDE.md, décision 11)."""
     if not services.can_publish(request.user):
         raise PermissionDenied("Droit « Agenda » ou « Page publique » nécessaire.")
-    events = (
-        Event.objects.filter(public_requested=True, is_public=False)
-        .exclude(status=Event.Status.CANCELLED)
-        .select_related("owner", "room")
-        .order_by("start")
-    )
+    events = Event.objects.awaiting_publication().select_related("owner", "room").order_by("start")
     return render(request, "gestion/public_requests.html", {"events": events})
 
 
@@ -497,12 +492,7 @@ def room_requests(request):
         if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
             target = reverse("agenda:room_requests")
         return redirect(target)
-    pending = (
-        Event.objects.filter(room_status=Event.RoomStatus.PENDING, status=Event.Status.CONFIRMED)
-        .exclude(room=None)
-        .select_related("owner", "room")
-        .order_by("start")
-    )
+    pending = Event.objects.awaiting_room().select_related("owner", "room").order_by("start")
     for event in pending:
         event.warnings = services.warnings_for(event)
     return render(request, "gestion/room_requests.html", {"events": pending})

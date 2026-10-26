@@ -175,7 +175,10 @@ def moderation(request):
         "gestion/moderation.html",
         {
             "pending": base.filter(status=Idea.Status.PENDING).order_by("created_at"),
-            "recent": base.exclude(status=Idea.Status.PENDING).order_by("-moderated_at")[:20],
+            # Seulement ce qui a été modéré : les idées des membres n'y passent pas.
+            "recent": base.exclude(status=Idea.Status.PENDING)
+            .filter(moderated_at__isnull=False)
+            .order_by("-moderated_at")[:20],
             "refuse_form": RefuseForm(),
         },
     )
