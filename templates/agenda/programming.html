@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% load static %}
 {% block title %}Programmation — {{ site.collective_name }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="{% static 'vendor/event-calendar-5.3.0/event-calendar.min.css' %}">{% endblock %}
@@ -61,7 +62,7 @@
                 data-room="{{ idea.wanted_room_id|default:'' }}" data-title="{{ idea.title }}">{% else %}<div class="to-place__item">{% endif %}
           <span class="to-place__title">{{ idea.title }}</span>
           <span class="to-place__meta">{{ idea.owner.display_name }} · {{ idea.get_duration_minutes_display }}{% if idea.wanted_room %} · {{ idea.wanted_room.name }}{% endif %}</span>
-          {% for slot in idea.slots.all %}<span class="to-place__period">{% if slot.is_precise %}{{ slot.start|date:"D j F, H:i" }}{% else %}{{ slot.period_text }}{% endif %}</span>{% endfor %}
+          {% for slot in idea.slots.all %}<span class="to-place__period">{% if slot.is_precise %}{{ slot.start|date_fr:"D j F, H:i" }}{% else %}{{ slot.period_text }}{% endif %}</span>{% endfor %}
         {% if can_edit_agenda %}</button>{% else %}</div>{% endif %}
         <a class="to-place__link" href="{% url 'ideas:detail' idea.pk %}">Voir l'idée<span class="visually-hidden"> « {{ idea.title }} »</span></a>
       </li>

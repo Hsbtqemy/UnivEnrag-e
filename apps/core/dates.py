@@ -4,10 +4,12 @@ La bibliothèque travaille en heure murale, sans fuseau : on lui envoie et on re
 chaînes « AAAA-MM-JJTHH:MM:SS » en heure de Paris, converties ici en dates conscientes.
 """
 
+import re
 from datetime import date, datetime, time
 
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.formats import date_format
 
 
 def to_wall_clock(dt: datetime) -> str:
@@ -40,3 +42,14 @@ def from_wall_clock(value: str) -> datetime | None:
 
 def combine(day: date, hour: time) -> datetime:
     return timezone.make_aware(datetime.combine(day, hour))
+
+
+def format_fr(value, fmt: str) -> str:
+    """Comme le filtre `date`, avec « 1er » pour le premier du mois (« dimanche 1er novembre »).
+
+    Une date et heure doit déjà être en heure locale (le filtre `date_fr` s'en charge)."""
+    if value in (None, ""):
+        return ""
+    if getattr(value, "day", None) == 1:
+        fmt = re.sub(r"(?<!\\)j", r"j\\e\\r", fmt)
+    return date_format(value, fmt)

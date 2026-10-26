@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Actualités — {{ site.collective_name }}{% endblock %}
 {% block head %}<link rel="alternate" type="application/rss+xml" title="Actualités" href="{% url 'public:news_feed' %}">{% endblock %}
 {% block content %}
@@ -10,7 +11,7 @@
 <ul class="news-list">
   {% for post in news %}
   <li>
-    <p class="meta">{{ post.published_at|date:"j F Y" }}</p>
+    <p class="meta">{{ post.published_at|date_fr:"j F Y" }}</p>
     <h2><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h2>
     {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
   </li>

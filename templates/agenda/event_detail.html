@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <p class="back"><a href="{% url 'agenda:calendar' %}?date={{ event.start|date:'Y-m-d' }}">← Agenda</a></p>
@@ -10,7 +11,7 @@
     {% if event.is_locked %}<span class="badge badge--locked">verrouillé</span>{% endif %}
   </p>
   <dl class="facts">
-    <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
+    <div><dt>Quand</dt><dd>{{ event.start|date_fr:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
     <div><dt>Où</dt><dd>{{ event.place_label }}{% if event.room_pending %} <span class="badge badge--locked">réservation en attente de validation</span>{% endif %}</dd></div>
     {% if event.space %}<div><dt>Espace</dt><dd><span class="space-dot" style="--space-color: {{ event.space.color }}"></span>{{ event.space.name }}</dd></div>{% endif %}
     <div><dt>Porté par</dt><dd>{{ event.owner.display_name }}</dd></div>
@@ -80,7 +81,7 @@
   <ol class="history">
     {% for change in changes %}
     <li>
-      <p class="history__head"><strong>{{ change.get_action_display }}</strong> par {{ change.author_label }}, le {{ change.created_at|date:"j F Y à H:i" }}</p>
+      <p class="history__head"><strong>{{ change.get_action_display }}</strong> par {{ change.author_label }}, le {{ change.created_at|date_fr:"j F Y à H:i" }}</p>
       {% if change.lines %}<ul class="history__lines">{% for line in change.lines %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
       {% if can_manage and not forloop.first %}
       <form method="post" action="{% url 'agenda:restore' event.pk change.pk %}">{% csrf_token %}<button class="link-button">Revenir à cette version</button></form>

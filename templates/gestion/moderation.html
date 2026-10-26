@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Modération — {{ site.collective_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
@@ -22,11 +23,11 @@
     </div>
     <div class="moderation-card__body">
       <h2>{{ idea.title }} <span class="badge">{{ idea.get_kind_display }}</span></h2>
-      <p class="meta">Porté par <strong>{{ idea.owner.display_name }}</strong>{% if idea.owner_hidden %} (souhaite que son nom ne soit pas affiché publiquement){% endif %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a> · reçue le {{ idea.created_at|date:"j F à H:i" }}</p>
+      <p class="meta">Porté par <strong>{{ idea.owner.display_name }}</strong>{% if idea.owner_hidden %} (souhaite que son nom ne soit pas affiché publiquement){% endif %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a> · reçue le {{ idea.created_at|date_fr:"j F à H:i" }}</p>
       <div class="prose">{{ idea.description|linebreaks }}</div>
       <dl class="facts facts--compact">
         {% if idea.kind == "event" %}<div><dt>Durée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
-        <div><dt>Créneaux</dt><dd>{% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"D j F" }} {{ slot.start|time:"H:i" }}–{{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}aucun{% endfor %}</dd></div>{% endif %}
+        <div><dt>Créneaux</dt><dd>{% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date_fr:"D j F" }} {{ slot.start|time:"H:i" }}–{{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}aucun{% endfor %}</dd></div>{% endif %}
         {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
         {% if idea.audience %}<div><dt>Public</dt><dd>{{ idea.audience }}</dd></div>{% endif %}
         {% if idea.expected_count %}<div><dt>Personnes attendues</dt><dd>{{ idea.expected_count }}</dd></div>{% endif %}
@@ -67,7 +68,7 @@
         <td>{{ idea.title }}</td>
         <td data-label="Porteur">{{ idea.owner.display_name }}{% if idea.owner_email %} · <a href="mailto:{{ idea.owner_email }}">{{ idea.owner_email }}</a>{% endif %}</td>
         <td data-label="État">{{ idea.get_status_display }}{% if idea.refusal_reason %} — {{ idea.refusal_reason }}{% endif %}</td>
-        <td data-label="Le">{{ idea.moderated_at|date:"j F H:i" }}</td>
+        <td data-label="Le">{{ idea.moderated_at|date_fr:"j F H:i" }}</td>
       </tr>
       {% endfor %}
     </tbody>

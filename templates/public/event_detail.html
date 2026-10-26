@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <article class="event-detail" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
   <p class="back"><a href="{% url 'agenda:public_list' %}">← Tous les événements</a></p>
   <h1>{{ event.title }}</h1>
   <dl class="facts">
-    <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
+    <div><dt>Quand</dt><dd>{{ event.start|date_fr:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
     <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
     <div><dt>Porté par</dt><dd>{{ event.owner.display_name }}</dd></div>
     {% if event.speakers and event.speakers_public %}<div><dt>Intervenants</dt><dd>{{ event.speakers }}</dd></div>{% endif %}

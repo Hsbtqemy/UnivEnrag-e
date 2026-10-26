@@ -476,6 +476,19 @@ a.badge { text-decoration: none; }
 .presence-count { margin: 0 0 .2rem; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
 .presence-list { list-style: none; padding: 0; margin: 0; font-size: .9rem; }
 .presence-place { color: var(--muted); }
+.presence-table .today { background: var(--accent-soft); }
+.presence-table th.today { color: var(--accent); }
+/* Sur téléphone, la liste par jour remplace le tableau de la semaine. */
+.presence-days { display: none; }
+@media (max-width: 640px) {
+  .presence-week { display: none; }
+  .presence-days { display: grid; gap: .75rem; }
+  .presence-day { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .6rem .9rem; }
+  .presence-day--today { border-color: var(--accent); border-left-width: 4px; }
+  .presence-day h2 { font-size: 1.05rem; margin: 0 0 .3rem; }
+  .presence-day .presence-list { display: grid; gap: .25rem; }
+  .presence-day .empty { margin: 0; }
+}
 .poll-list { padding-left: 1.1rem; }
 .poll-list li { margin-bottom: .35rem; }
 .field-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

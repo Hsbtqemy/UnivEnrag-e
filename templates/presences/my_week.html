@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Ma semaine — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <p class="back"><a href="{% url 'presences:board' %}?semaine={{ monday|date:'Y-m-d' }}">← Qui est là ?</a></p>
 <h1>Ma semaine</h1>
 <nav class="week-nav" aria-label="Changer de semaine">
   <a href="?semaine={{ previous }}">← Semaine précédente</a>
-  <strong>Du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}</strong>
+  <strong>Du {{ monday|date_fr:"j F" }} au {{ sunday|date_fr:"j F Y" }}</strong>
   <a href="?semaine={{ next }}">Semaine suivante →</a>
 </nav>
 <p class="lead">Cochez les demi-journées où vous serez là. Les heures et le lieu sont facultatifs. Les autres membres le verront dans « Qui est là ? ».</p>

@@ -31,6 +31,8 @@ def board(request):
         "presences/board.html",
         {
             "rows": services.board(monday),
+            "day_list": services.days_list(monday),
+            "today": timezone.localdate(),
             "days": services.week_days(monday),
             "people_count": services.count_people(monday),
             **_week_nav(monday),

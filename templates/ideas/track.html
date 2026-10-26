@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% load static %}
 {% block title %}Suivi de votre proposition — {{ site.collective_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
@@ -30,7 +31,7 @@
   {% elif idea.status == "planned" or idea.status == "done" %}{% if event %}
   <p>{% if idea.status == "done" %}Votre événement a eu lieu :{% else %}Votre événement est programmé :{% endif %}</p>
   <dl class="facts">
-    <div><dt>Quand</dt><dd>{{ event.start|date:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
+    <div><dt>Quand</dt><dd>{{ event.start|date_fr:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</dd></div>
     <div><dt>Où</dt><dd>{{ event.place_label }}</dd></div>
   </dl>
   {% if event.is_public %}<p><a href="{% url 'agenda:public_detail' event.pk %}">Voir la page publique de l'événement</a></p>{% endif %}{% endif %}
@@ -52,7 +53,7 @@
     {% if idea.kind == "event" %}<div><dt>Durée souhaitée</dt><dd>{{ idea.get_duration_minutes_display }}</dd></div>
     {% if idea.wanted_room %}<div><dt>Salle souhaitée</dt><dd>{{ idea.wanted_room.label }}</dd></div>{% endif %}
     <div><dt>Créneaux envisagés</dt><dd>
-      {% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date:"l j F Y"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun, à fixer avec le collectif{% endfor %}
+      {% for slot in idea.slots.all %}{% if slot.is_precise %}{{ slot.start|date_fr:"l j F Y"|capfirst }}, {{ slot.start|time:"H:i" }} – {{ slot.end|time:"H:i" }}{% else %}{{ slot.period_text }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}Aucun, à fixer avec le collectif{% endfor %}
     </dd></div>{% endif %}
   </dl>
 </section>

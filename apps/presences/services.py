@@ -4,6 +4,7 @@ from datetime import date, time, timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from apps.core.dates import format_fr
 from apps.rooms.models import Room
 
 from .models import Presence, hours_label
@@ -137,6 +138,34 @@ def board(monday: date) -> list[list[Cell]]:
         ]
         for period in PERIODS
     ]
+
+
+@dataclass
+class Day:
+    day: date
+    label: str  # « Aujourd'hui », « Demain » ou « Mercredi 28 octobre »
+    entries: list  # paires (moment, Presence), dans l'ordre de la journée
+    is_today: bool = False
+
+
+def days_list(monday: date) -> list[Day]:
+    """La semaine en liste, pour un téléphone : à partir d'aujourd'hui si c'est la semaine
+    en cours (les jours passés n'aident plus à se coordonner)."""
+    today = timezone.localdate()
+    rows = board(monday)
+    result = []
+    for index, day in enumerate(week_days(monday)):
+        if day < today and monday <= today:
+            continue
+        entries = [(row[index].label, p) for row in rows for p in row[index].people]
+        if day == today:
+            label = "Aujourd'hui"
+        elif day == today + timedelta(days=1):
+            label = "Demain"
+        else:
+            label = format_fr(day, "l j F").capitalize()
+        result.append(Day(day, label, entries, is_today=day == today))
+    return result
 
 
 @dataclass

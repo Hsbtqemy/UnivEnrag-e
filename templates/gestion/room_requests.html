@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load dates_fr %}
 {% block title %}Réservations à valider — {{ site.collective_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
@@ -12,7 +13,7 @@
     <tr>
       <td><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a>{% for w in event.warnings %}<br><small class="warning-text">{{ w }}</small>{% endfor %}</td>
       <td data-label="Salle">{{ event.room.name }}</td>
-      <td data-label="Quand">{{ event.start|date:"D j F" }}, {{ event.start|time:"H:i" }}–{{ event.end|time:"H:i" }}</td>
+      <td data-label="Quand">{{ event.start|date_fr:"D j F" }}, {{ event.start|time:"H:i" }}–{{ event.end|time:"H:i" }}</td>
       <td data-label="Porté par">{{ event.owner.display_name }}</td>
       <td class="actions">
         <form method="post">{% csrf_token %}<input type="hidden" name="event" value="{{ event.pk }}"><input type="hidden" name="decision" value="approve"><button class="button button--small">Valider</button></form>
