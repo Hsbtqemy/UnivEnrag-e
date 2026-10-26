@@ -8,8 +8,8 @@
   <strong>Du {{ monday|date:"j F" }} au {{ sunday|date:"j F Y" }}</strong>
   <a href="?semaine={{ next }}">Semaine suivante →</a>
 </nav>
-<p class="lead">Cochez les demi-journées où vous serez présent·e, et indiquez où si vous le souhaitez. Les autres membres le verront dans « Qui est là ? ».</p>
-<p class="hint">« Permanence publique » : la page publique annoncera qu'une personne du collectif est là ce jour-là, à ce lieu, sans jamais dire qui.</p>
+<p class="lead">Cochez les demi-journées où vous serez là. Les heures et le lieu sont facultatifs. Les autres membres le verront dans « Qui est là ? ».</p>
+<p class="hint">« Permanence publique » : la page publique annoncera qu'une personne du collectif est là ce jour-là (avec les heures et le lieu s'ils sont indiqués), sans jamais dire qui.</p>
 <p><a class="button button--secondary button--small" href="?semaine={{ monday|date:'Y-m-d' }}&amp;reprendre=1">Reprendre ma semaine précédente</a></p>
 
 <form method="post" class="form">
@@ -21,7 +21,15 @@
     <fieldset class="week-day{% if day.date.weekday >= 5 %} week-day--weekend{% endif %}">
       <legend>{{ day.date|date:"l j"|capfirst }}</legend>
       {% for period in day.periods %}
-      <label class="checkbox"><input type="checkbox" name="p-{{ day.key }}-{{ period.value }}"{% if period.checked %} checked{% endif %}> {{ period.label }}</label>
+      <div class="week-period">
+        <label class="checkbox"><input type="checkbox" name="p-{{ day.key }}-{{ period.value }}"{% if period.checked %} checked{% endif %}> {{ period.label }}</label>
+        <span class="week-period__hours">
+          <label for="de-{{ day.key }}-{{ period.value }}">de<span class="visually-hidden"> ({{ period.label|lower }}, {{ day.date|date:"l j" }})</span></label>
+          <input type="time" id="de-{{ day.key }}-{{ period.value }}" name="de-{{ day.key }}-{{ period.value }}" value="{{ period.start|time:'H:i' }}">
+          <label for="a-{{ day.key }}-{{ period.value }}">à<span class="visually-hidden"> ({{ period.label|lower }}, {{ day.date|date:"l j" }})</span></label>
+          <input type="time" id="a-{{ day.key }}-{{ period.value }}" name="a-{{ day.key }}-{{ period.value }}" value="{{ period.end|time:'H:i' }}">
+        </span>
+      </div>
       {% endfor %}
       <label class="week-day__place" for="lieu-{{ day.key }}">Lieu</label>
       <input id="lieu-{{ day.key }}" name="lieu-{{ day.key }}" value="{{ day.place }}" list="lieux" maxlength="80" placeholder="Bât. A, local…">

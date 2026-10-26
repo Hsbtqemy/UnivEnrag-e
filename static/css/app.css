@@ -447,9 +447,12 @@ a.badge { text-decoration: none; }
 /* --- Lot D : présences et sondages ----------------------------------------------- */
 
 .week-nav { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; margin: .5rem 0 1rem; }
-.week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+.week-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
 .form .week-day { margin: 0; padding: .6rem .75rem; display: grid; gap: .3rem; align-content: start; }
 .week-day--weekend { opacity: .85; }
+.week-period { display: grid; grid-template-columns: 7.5rem 1fr; align-items: center; gap: .5rem; }
+.week-period__hours { display: flex; align-items: center; gap: .3rem; min-width: 0; font-size: .85rem; color: var(--muted); }
+.week-period__hours input { flex: 1; min-width: 0; font: inherit; padding: .2rem .3rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); }
 .week-day__place { font-size: .85rem; color: var(--muted); margin-top: .3rem; }
 .week-day input[list] { width: 100%; font: inherit; padding: .35rem .45rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); }
 /* position: relative : les légendes cachées (.visually-hidden, en absolu) restent dans le

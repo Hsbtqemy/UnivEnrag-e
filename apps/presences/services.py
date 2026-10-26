@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from django.db import transaction
 from django.utils import timezone
 
 from apps.rooms.models import Room
 
-from .models import Presence
+from .models import Presence, hours_label
 
 PERIODS = list(Presence.Period)
 # Une présence dit où l'on sera : au-delà de deux mois passés, elle ne sert plus à rien
@@ -35,11 +35,27 @@ def _week_of(actor, monday: date):
     )
 
 
+@dataclass(frozen=True)
+class Declared:
+    """Ce qu'une personne déclare pour une demi-journée : un lieu et des heures, facultatifs."""
+
+    place: str = ""
+    start: time | None = None
+    end: time | None = None
+
+
+def _as_declared(value) -> Declared:
+    return value if isinstance(value, Declared) else Declared(place=value or "")
+
+
 def selections_for(actor, monday: date) -> dict:
-    """{(jour, moment): lieu} des présences déclarées par `actor` cette semaine-là."""
+    """{(jour, moment): Declared} des présences déclarées par `actor` cette semaine-là."""
     if actor is None:
         return {}
-    return {(p.day, p.period): p.place for p in _week_of(actor, monday)}
+    return {
+        (p.day, p.period): Declared(p.place, p.start_time, p.end_time)
+        for p in _week_of(actor, monday)
+    }
 
 
 def open_days_for(actor, monday: date) -> set[date]:
@@ -52,7 +68,7 @@ def open_days_for(actor, monday: date) -> set[date]:
 def previous_week_selections(actor, monday: date) -> dict:
     """La semaine précédente, décalée d'une semaine : pour « reprendre ma semaine »."""
     previous = selections_for(actor, monday - timedelta(days=7))
-    return {(day + timedelta(days=7), period): place for (day, period), place in previous.items()}
+    return {(day + timedelta(days=7), period): d for (day, period), d in previous.items()}
 
 
 def previous_open_days(actor, monday: date) -> set[date]:
@@ -65,18 +81,18 @@ class PresenceError(ValueError):
 
 @transaction.atomic
 def save_week(actor, monday: date, selections: dict, open_days=()) -> int:
-    """Remplace les présences de la semaine par `selections` ({(jour, moment): lieu}).
+    """Remplace les présences de la semaine par `selections`.
 
-    Les jours de `open_days` deviennent des permanences ouvertes au public : elles
-    exigent un lieu, puisque c'est tout ce que la page publique en montrera.
+    `selections` vaut {(jour, moment): Declared} (ou un simple lieu). Les jours de
+    `open_days` deviennent des permanences ouvertes au public (décision 23).
     """
     days = set(week_days(monday))
     open_days = set(open_days) & days
-    for (day, _period), place in selections.items():
-        if day in open_days and not place.strip():
+    declared = {key: _as_declared(value) for key, value in selections.items()}
+    for (day, _period), d in declared.items():
+        if d.start and d.end and d.end <= d.start:
             raise PresenceError(
-                f"Indiquez un lieu pour la permanence du {day:%d/%m} : "
-                "c'est ce que verra le public."
+                f"Le {day:%d/%m}, l'heure de fin doit venir après l'heure de début."
             )
     Presence.objects.filter(actor=actor, day__in=days).delete()
     created = [
@@ -84,10 +100,12 @@ def save_week(actor, monday: date, selections: dict, open_days=()) -> int:
             actor=actor,
             day=day,
             period=period,
-            place=place.strip()[:80],
+            place=d.place.strip()[:80],
+            start_time=d.start,
+            end_time=d.end,
             is_open=day in open_days,
         )
-        for (day, period), place in selections.items()
+        for (day, period), d in declared.items()
         if day in days and period in Presence.Period.values
     ]
     Presence.objects.bulk_create(created)
@@ -99,7 +117,7 @@ class Cell:
     day: date
     period: str
     label: str
-    people: list = field(default_factory=list)  # triplets (nom, lieu, permanence)
+    people: list = field(default_factory=list)  # objets Presence, acteur compris
 
 
 def board(monday: date) -> list[list[Cell]]:
@@ -111,7 +129,7 @@ def board(monday: date) -> list[list[Cell]]:
     )
     by_key = {}
     for p in presences:
-        by_key.setdefault((p.day, p.period), []).append((p.actor.display_name, p.place, p.is_open))
+        by_key.setdefault((p.day, p.period), []).append(p)
     return [
         [
             Cell(day, period.value, period.label, by_key.get((day, period.value), []))
@@ -124,22 +142,30 @@ def board(monday: date) -> list[list[Cell]]:
 @dataclass
 class PublicDay:
     day: date
-    slots: list  # paires (moment, [lieux])
+    slots: list  # paires (moment, [« 14:00 – 17:00, Local »…])
+
+
+def _public_text(start, end, place) -> str:
+    return ", ".join(part for part in (hours_label(start, end), place) if part)
 
 
 def public_permanences(days: int = 14) -> list[PublicDay]:
     """Les permanences des `days` prochains jours, regroupées par jour et par moment, avec
-    leurs lieux seulement : aucun nom, aucun nombre de personnes (PUB-1, décision 23)."""
+    leurs heures et leurs lieux seulement : aucun nom, aucun nombre de personnes (PUB-1,
+    décision 23)."""
     until = timezone.localdate() + timedelta(days=days - 1)
     rows = (
         Presence.objects.public()
         .filter(day__lte=until)
-        .values_list("day", "period", "place")
+        .values_list("day", "period", "start_time", "end_time", "place")
         .distinct()
     )
     by_day: dict[date, dict[str, set]] = {}
-    for day, period, place in rows:
-        by_day.setdefault(day, {}).setdefault(period, set()).add(place)
+    for day, period, start, end, place in rows:
+        texts = by_day.setdefault(day, {}).setdefault(period, set())
+        text = _public_text(start, end, place)
+        if text:
+            texts.add(text)
     return [
         PublicDay(
             day,

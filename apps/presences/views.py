@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from django.contrib import messages
 from django.shortcuts import redirect, render
@@ -38,13 +38,25 @@ def board(request):
     )
 
 
+def _time(value: str | None):
+    try:
+        return time.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
 def _selections_from_post(post, monday: date) -> dict:
     selections = {}
     for day in services.week_days(monday):
-        place = post.get(f"lieu-{day.isoformat()}", "")
+        key = day.isoformat()
+        place = post.get(f"lieu-{key}", "")
         for period in Presence.Period.values:
-            if post.get(f"p-{day.isoformat()}-{period}"):
-                selections[(day, period)] = place
+            if post.get(f"p-{key}-{period}"):
+                selections[(day, period)] = services.Declared(
+                    place,
+                    _time(post.get(f"de-{key}-{period}")),
+                    _time(post.get(f"a-{key}-{period}")),
+                )
     return selections
 
 
@@ -89,8 +101,8 @@ def my_week(request):
 def _render_week(request, monday, selections, open_days, name_form):
     days = []
     for day in services.week_days(monday):
-        checked = {period for (d, period) in selections if d == day}
-        place = next((p for (d, _), p in selections.items() if d == day and p), "")
+        mine = {period: d for (on, period), d in selections.items() if on == day}
+        place = next((d.place for d in mine.values() if d.place), "")
         days.append(
             {
                 "date": day,
@@ -99,7 +111,9 @@ def _render_week(request, monday, selections, open_days, name_form):
                     {
                         "value": period.value,
                         "label": period.label,
-                        "checked": period.value in checked,
+                        "checked": period.value in mine,
+                        "start": mine[period.value].start if period.value in mine else None,
+                        "end": mine[period.value].end if period.value in mine else None,
                     }
                     for period in Presence.Period
                 ],

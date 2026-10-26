@@ -54,7 +54,7 @@
     <li>
       <strong>{{ day.day|date:"l j F"|capfirst }}</strong>
       <ul>
-        {% for label, places in day.slots %}<li>{{ label }} : {{ places|join:", " }}</li>{% endfor %}
+        {% for label, texts in day.slots %}<li>{{ label }}{% if texts %} : {{ texts|join:" ; " }}{% endif %}</li>{% endfor %}
       </ul>
     </li>
     {% endfor %}

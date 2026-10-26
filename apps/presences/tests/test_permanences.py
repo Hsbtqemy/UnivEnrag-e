@@ -1,6 +1,6 @@
 """Permanences ouvertes au public : jour, moment et lieu, jamais de nom (PUB-1, décision 23)."""
 
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 import pytest
 from django.urls import reverse
@@ -35,10 +35,29 @@ def test_open_day_becomes_public_permanence():
     assert [(d.day, d.slots) for d in days] == [(tuesday, [("Après-midi", ["Local du collectif"])])]
 
 
-def test_open_day_needs_a_place():
+def test_permanence_without_place_or_hours_shows_the_moment():
+    marie = get_or_create_for_name("Marie Curie")
+    services.save_week(marie, MONDAY, {(MONDAY, "morning"): ""}, open_days={MONDAY})
+    assert services.public_permanences()[0].slots == [("Matin", [])]
+
+
+def test_permanence_with_hours():
+    marie = get_or_create_for_name("Marie Curie")
+    services.save_week(
+        marie,
+        MONDAY,
+        {(MONDAY, "afternoon"): services.Declared("Local", time(14), time(17))},
+        open_days={MONDAY},
+    )
+    assert services.public_permanences()[0].slots == [("Après-midi", ["14:00 – 17:00, Local"])]
+
+
+def test_end_must_follow_start():
     marie = get_or_create_for_name("Marie Curie")
     with pytest.raises(services.PresenceError):
-        services.save_week(marie, MONDAY, {(MONDAY, "morning"): ""}, open_days={MONDAY})
+        services.save_week(
+            marie, MONDAY, {(MONDAY, "afternoon"): services.Declared("", time(17), time(14))}
+        )
     assert not Presence.objects.exists()
 
 
@@ -87,17 +106,37 @@ def test_member_marks_a_day_as_permanence(member_client):
     assert "permanence" in board
 
 
-def test_member_form_refuses_permanence_without_place(member_client):
+def test_member_form_saves_hours_without_place(member_client):
+    day = MONDAY.isoformat()
+    member_client.post(
+        reverse("presences:my_week"),
+        {
+            "semaine": day,
+            f"p-{day}-afternoon": "on",
+            f"de-{day}-afternoon": "14:00",
+            f"a-{day}-afternoon": "17:30",
+            f"ouvert-{day}": "on",
+            "author_name": "Marie Curie",
+        },
+    )
+    presence = Presence.objects.get()
+    assert (presence.start_time, presence.end_time, presence.place) == (time(14), time(17, 30), "")
+    page = member_client.get(f"{reverse('presences:my_week')}?semaine={day}").content.decode()
+    assert 'value="14:00"' in page
+
+
+def test_member_form_refuses_end_before_start(member_client):
     day = MONDAY.isoformat()
     response = member_client.post(
         reverse("presences:my_week"),
         {
             "semaine": day,
             f"p-{day}-morning": "on",
-            f"ouvert-{day}": "on",
+            f"de-{day}-morning": "11:00",
+            f"a-{day}-morning": "09:00",
             "author_name": "Marie Curie",
         },
     )
     assert response.status_code == 200
-    assert "Indiquez un lieu" in response.content.decode()
+    assert "heure de fin" in response.content.decode()
     assert not Presence.objects.exists()
