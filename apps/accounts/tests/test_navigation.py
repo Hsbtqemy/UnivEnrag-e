@@ -34,6 +34,37 @@ def test_visitor_home_is_under_more_on_phone(client, site):
     assert "nav__more--current" in html
 
 
+@pytest.mark.parametrize(
+    "url_name", ["public:home", "public:news_list", "agenda:public_list", "ideas:public_list"]
+)
+def test_member_gets_public_navigation_on_public_pages(member_client, url_name):
+    html = member_client.get(reverse(url_name)).content.decode()
+    assert reverse("ideas:propose") in html and "Actualités" in html
+    assert reverse("presences:board") not in html
+    assert f'class="nav__link" href="{reverse("agenda:home")}"' in html  # « Espace membres »
+    assert html.count('<span class="nav__label">Espace membres</span>') == 1
+    assert reverse("core:access") not in html
+    assert "site-header__tools" not in html
+    assert f'class="site-name" href="{reverse("public:home")}"' in html
+
+
+def test_visitor_members_link_goes_to_access_code_page(client, site):
+    html = Client().get(reverse("public:home")).content.decode()
+    assert f'class="nav__link" href="{reverse("core:access")}"' in html
+
+
+def test_member_keeps_internal_navigation_inside(member_client):
+    html = member_client.get(reverse("agenda:home")).content.decode()
+    assert reverse("presences:board") in html and "site-header__tools" in html
+
+
+def test_manager_sees_management_tab_on_public_pages(member_client, admin_user):
+    login_verified(member_client, admin_user)
+    html = member_client.get(reverse("public:home")).content.decode()
+    assert reverse("accounts:gestion_home") in html
+    assert f'class="nav__link" href="{reverse("agenda:home")}"' in html
+
+
 def test_manager_sees_management_tab(member_client, admin_user):
     login_verified(member_client, admin_user)
     html = member_client.get(reverse("agenda:home")).content.decode()

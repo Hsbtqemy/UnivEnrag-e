@@ -19,7 +19,7 @@
   <header class="site-header">
     <div class="site-header__bar">
       <div class="site-header__inner">
-        <a class="site-name" href="/">{{ site.collective_name }}</a>
+        <a class="site-name" href="{% if nav.public %}{% url 'public:home' %}{% else %}/{% endif %}">{{ site.collective_name }}</a>
         <nav class="nav-tabs" aria-label="Navigation principale">
           <ul class="nav">
             {% for item in nav.items %}
@@ -49,7 +49,7 @@
         </button>
       </div>
     </div>
-    {% if has_access %}
+    {% if not nav.public %}
     <div class="site-header__tools">
       <p class="whoami">
         {% if request.actor_name or request.actor %}Vous : <strong>{% if request.actor_name %}{{ request.actor_name }}{% else %}{{ request.actor.display_name }}{% endif %}</strong> · <a href="{% url 'actors:name' %}?next={{ request.get_full_path|urlencode }}">changer</a>

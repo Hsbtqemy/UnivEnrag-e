@@ -1,10 +1,15 @@
 """La barre de navigation, décrite une seule fois : le gabarit l'affiche en onglets sur
 ordinateur et en barre d'onglets en bas de l'écran sur téléphone (les liens `primary`,
-les autres sous « Plus »)."""
+les autres sous « Plus »).
+
+Sous `/p/`, tout le monde a la navigation publique, membres compris : ils voient le site
+comme le public, et « Espace membres » les ramène à l'interne."""
 
 from dataclasses import dataclass, field
 
 from django.urls import reverse
+
+PUBLIC_PREFIX = "/p/"
 
 
 @dataclass
@@ -58,9 +63,9 @@ def _member_items(is_manager: bool) -> list[NavItem]:
     return items
 
 
-def _visitor_items(is_manager: bool) -> list[NavItem]:
+def _public_items(*, has_access: bool, is_manager: bool) -> list[NavItem]:
     # Sur téléphone, la barre du bas sert ce qu'on vient consulter : l'agenda, puis les
-    # nouvelles. « Le collectif » reste la page d'arrivée (`/`, le nom du site y ramène) et
+    # nouvelles. « Le collectif » reste la page d'arrivée (le nom du site y ramène) et
     # passe sous « Plus » ; sur ordinateur, tout est en onglets, dans cet ordre.
     items = [
         NavItem("Le collectif", "public:home", "home"),
@@ -97,17 +102,23 @@ def _visitor_items(is_manager: bool) -> list[NavItem]:
             short="Proposer",
         ),
     ]
+    # Un membre passe par son accueil ; un visiteur, par la saisie du code d'accès.
+    members_home = "agenda:home" if has_access else "core:access"
+    if has_access or not is_manager:
+        items.append(NavItem("Espace membres", members_home, "key", header=True, short="Membres"))
     if is_manager:
         items.append(NavItem("Gestion", "accounts:gestion_home", "sliders"))
-    else:
-        items.append(NavItem("Espace membres", "core:access", "key", header=True, short="Membres"))
     return items
 
 
 def build(request, *, has_access: bool, is_manager: bool) -> dict:
     match = getattr(request, "resolver_match", None)
     view_name = match.view_name if match else ""
-    items = _member_items(is_manager) if has_access else _visitor_items(is_manager)
+    public = request.path.startswith(PUBLIC_PREFIX) or not has_access
+    if public:
+        items = _public_items(has_access=has_access, is_manager=is_manager)
+    else:
+        items = _member_items(is_manager)
     for item in items:
         item.url = reverse(item.url_name)
         item.short = item.short or item.label
@@ -122,4 +133,5 @@ def build(request, *, has_access: bool, is_manager: bool) -> dict:
         "more": more,
         "header": [item for item in items if item.header],
         "more_current": any(item.current for item in more),
+        "public": public,
     }
