@@ -7,6 +7,8 @@ from apps.core.dates import combine
 from apps.rooms.models import Room
 from apps.spaces.models import Space
 
+from .models import Event
+
 
 class RoomChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, room):
@@ -35,6 +37,13 @@ class EventForm(ActorNameFormMixin, forms.Form):
         queryset=Space.objects.open(),
         required=False,
         empty_label="Aucun",
+    )
+    color = forms.ChoiceField(
+        label="Couleur dans l'agenda",
+        choices=[("", "Automatique")] + Event.Color.choices,
+        required=False,
+        widget=forms.RadioSelect,
+        help_text="Automatique : la couleur de l'espace, sinon celle de la salle.",
     )
     room = RoomChoiceField(
         label="Salle du collectif",
@@ -72,6 +81,7 @@ class EventForm(ActorNameFormMixin, forms.Form):
     ESSENTIAL = ["title", "day", "start_time", "end_time"]
     DETAILS = [
         "space",
+        "color",
         "room",
         "place_text",
         "description",
@@ -122,6 +132,7 @@ class EventForm(ActorNameFormMixin, forms.Form):
             "end": data["end"],
             "room": data["room"],
             "space": data["space"],
+            "color": data["color"],
             "override": data.get("override", False),
             "place_text": data["place_text"],
             "description": data["description"],
@@ -141,6 +152,7 @@ class EventForm(ActorNameFormMixin, forms.Form):
             "end_time": end.time().replace(second=0, microsecond=0),
             "room": event.room,
             "space": event.space,
+            "color": event.color,
             "place_text": event.place_text,
             "description": event.description,
             "visio_link": event.visio_link,

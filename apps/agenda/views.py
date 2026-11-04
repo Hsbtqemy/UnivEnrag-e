@@ -87,7 +87,7 @@ def home(request):
     events = (
         Event.objects.active()
         .filter(end__gte=now, start__lte=now + timedelta(days=60))
-        .select_related("owner", "room")
+        .select_related("owner", "room", "space")
         .order_by("start")[:20]
     )
     monday = presences_services.week_start(timezone.localdate())

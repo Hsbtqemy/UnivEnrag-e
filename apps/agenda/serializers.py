@@ -35,7 +35,7 @@ def public_event(event: Event) -> dict:
         "title": event.title,
         "start": to_wall_clock(event.start),
         "end": to_wall_clock(event.end),
-        "color": event.room.color if event.room_id else None,
+        "color": event.public_color or None,
         "extendedProps": {
             "url": reverse("agenda:public_detail", args=[event.pk]),
             "place": event.place_label,

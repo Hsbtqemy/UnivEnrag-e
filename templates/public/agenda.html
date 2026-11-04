@@ -30,7 +30,7 @@
     <h3 id="jour-{{ forloop.counter }}" class="day__title">{{ day|date_fr:"l j F Y"|capfirst }}</h3>
     <ul class="event-list">
       {% for event in events %}
-      <li class="event-card" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+      <li class="event-card" {% if event.public_color %}style="--room-color: {{ event.public_color }}"{% endif %}>
         <p class="event-card__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}</p>
         <h4 class="event-card__title"><a href="{% url 'agenda:public_detail' event.pk %}">{{ event.title }}</a></h4>
         <p class="event-card__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>

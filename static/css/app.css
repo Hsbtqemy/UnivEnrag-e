@@ -467,6 +467,16 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 
 .field-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 1rem; }
 @media (max-width: 520px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row .field:first-child { grid-column: 1 / -1; } }
+/* Couleur d'un événement : pastilles ; le bouton radio reste là pour le clavier et les
+   lecteurs d'écran, seule sa pastille se voit. */
+.field fieldset > .color-choice__options { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+.field .color-option { position: relative; min-height: 2rem; gap: .45rem; }
+.field .color-option input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.color-option__dot { width: 1.5rem; height: 1.5rem; border-radius: 50%; flex: none; background: var(--option-color); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); }
+.color-option--auto .color-option__dot { background: repeating-linear-gradient(135deg, var(--muted) 0 3px, transparent 3px 6px); }
+.color-option input:checked + .color-option__dot { box-shadow: 0 0 0 2px var(--text); }
+.color-option input:checked ~ .color-option__label { font-weight: 600; }
+.color-option input:focus-visible + .color-option__dot { outline: 3px solid var(--focus); outline-offset: 2px; }
 .field--checkbox { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .field--checkbox input { width: 1.2rem; height: 1.2rem; flex: none; }
 .field--checkbox label { flex: 1; min-width: 0; margin: 0; }

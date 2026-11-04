@@ -251,6 +251,7 @@ def create(
     end,
     room=None,
     space=None,
+    color="",
     place_text="",
     description="",
     visio_link="",
@@ -277,6 +278,7 @@ def create(
         end=end,
         room=room,
         space=space,
+        color=color,
         place_text=place_text,
         description=description,
         visio_link=visio_link,
@@ -336,6 +338,7 @@ def update(
     end,
     room=None,
     space=None,
+    color="",
     place_text="",
     description="",
     visio_link="",
@@ -357,7 +360,7 @@ def update(
     before = history.snapshot(event)
     event.room_status = _room_status_for(event, room, start, end, user)
     event.title, event.start, event.end, event.room = title, start, end, room
-    event.space = space
+    event.space, event.color = space, color
     event.place_text, event.description, event.visio_link = place_text, description, visio_link
     event.speakers, event.speakers_public = speakers, speakers_public
     if wants_public is not None:

@@ -2,7 +2,7 @@
 {% load dates_fr %}
 {% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
 {% block content %}
-<article class="event-detail" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+<article class="event-detail" {% if event.public_color %}style="--room-color: {{ event.public_color }}"{% endif %}>
   <p class="back"><a href="{% url 'agenda:public_list' %}">← Tous les événements</a></p>
   <h1>{{ event.title }}</h1>
   <dl class="facts">

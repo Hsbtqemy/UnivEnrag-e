@@ -35,6 +35,20 @@ class EventQuerySet(models.QuerySet):
 class Event(models.Model):
     """Un événement de l'agenda collectif ; la salle est un attribut, pas un calendrier."""
 
+    class Color(models.TextChoices):
+        # Palette fixe : le texte d'un événement confirmé est blanc, chaque teinte garde un
+        # contraste d'au moins 6:1 avec lui (WCAG AA).
+        RED = "#b3261e", "Rouge"
+        ORANGE = "#a84300", "Orange"
+        OCHRE = "#7a5300", "Ocre"
+        GREEN = "#2e6b34", "Vert"
+        TEAL = "#00695c", "Sarcelle"
+        BLUE = "#2f5d8c", "Bleu"
+        INDIGO = "#3f3fa8", "Indigo"
+        VIOLET = "#6a3d9a", "Violet"
+        PLUM = "#8e2463", "Prune"
+        SLATE = "#4a5560", "Ardoise"
+
     class Status(models.TextChoices):
         PROVISIONAL = "provisional", "Provisoire"
         CONFIRMED = "confirmed", "Confirmé"
@@ -86,6 +100,8 @@ class Event(models.Model):
         verbose_name="espace",
     )
     place_text = models.CharField("lieu libre", max_length=200, blank=True)
+    # Vide : la couleur de l'espace, sinon de la salle (`display_color`).
+    color = models.CharField("couleur", max_length=7, choices=Color.choices, blank=True)
     # Noms libres, séparés par des virgules. Sur l'agenda public seulement si
     # `speakers_public` (CLAUDE.md PUB-1) ; à corriger à la main lors d'une anonymisation.
     speakers = models.CharField("intervenants", max_length=300, blank=True)
@@ -140,12 +156,20 @@ class Event(models.Model):
 
     @property
     def display_color(self) -> str:
-        """Couleur dans l'agenda des membres : celle de l'espace, sinon de la salle (CDC §3)."""
+        """Couleur dans l'agenda des membres : celle choisie pour l'événement, sinon celle de
+        l'espace, sinon de la salle (CDC §3)."""
+        if self.color:
+            return self.color
         if self.space_id:
             return self.space.color
         if self.room_id:
             return self.room.color
         return "#6b7280"
+
+    @property
+    def public_color(self) -> str:
+        """Sur la page publique, où les espaces ne figurent pas : choisie, sinon la salle."""
+        return self.color or (self.room.color if self.room_id else "")
 
 
 class EventChange(models.Model):

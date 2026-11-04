@@ -3,7 +3,7 @@
 {% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
 {% block content %}
 <p class="back"><a href="{% url 'agenda:calendar' %}?date={{ event.start|date:'Y-m-d' }}">← Agenda</a></p>
-<article class="event-detail event-detail--{{ event.status }}" {% if event.room %}style="--room-color: {{ event.room.color }}"{% endif %}>
+<article class="event-detail event-detail--{{ event.status }}" style="--room-color: {{ event.display_color }}">
   <h1>{{ event.title }}</h1>
   <p class="badges">
     <span class="badge badge--{{ event.status }}">{{ event.get_status_display }}</span>

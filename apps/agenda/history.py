@@ -17,6 +17,7 @@ FIELD_LABELS = {
     "room": "salle",
     "room_status": "réservation de salle",
     "space": "espace",
+    "color": "couleur",
     "place_text": "lieu libre",
     "speakers": "intervenants",
     "speakers_public": "intervenants publics",
@@ -38,6 +39,7 @@ RESTORABLE_FIELDS = [
     "end",
     "room",
     "space",
+    "color",
     "place_text",
     "speakers",
     "description",
@@ -103,6 +105,8 @@ def _display(name: str, value) -> str:
         return Event.Status(value).label
     if name == "room_status":
         return Event.RoomStatus(value).label
+    if name == "color":
+        return Event.Color(value).label if value in Event.Color.values else value
     if isinstance(value, bool):
         return "oui" if value else "non"
     text = str(value)

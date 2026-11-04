@@ -26,9 +26,20 @@
   </fieldset>
 
   <details class="more"{% if event or form.errors %} open{% endif %}>
-    <summary>Plus de détails <span class="optional">(espace, salle, lieu, description, intervenants, visio, publication)</span></summary>
+    <summary>Plus de détails <span class="optional">(espace, couleur, salle, lieu, description, intervenants, visio, publication)</span></summary>
     <fieldset>
       {% include "includes/field.html" with field=form.space %}
+      <div class="field{% if form.color.errors %} field--error{% endif %}">
+        <fieldset class="color-choice" aria-describedby="{{ form.color.auto_id }}_aide">
+          <legend>{{ form.color.label }}</legend>
+          <p class="field__help" id="{{ form.color.auto_id }}_aide">{{ form.color.help_text }}</p>
+          <div class="color-choice__options">
+            {% for radio in form.color %}
+            <label class="color-option{% if not radio.data.value %} color-option--auto{% endif %}"{% if radio.data.value %} style="--option-color: {{ radio.data.value }}"{% endif %}>{{ radio.tag }}<span class="color-option__dot" aria-hidden="true"></span><span class="color-option__label">{{ radio.choice_label }}</span></label>
+            {% endfor %}
+          </div>
+        </fieldset>
+      </div>
       {% include "includes/field.html" with field=form.room %}
       <div id="verification-salle" class="room-check" role="status" aria-live="polite"></div>
       {% if form.override %}
