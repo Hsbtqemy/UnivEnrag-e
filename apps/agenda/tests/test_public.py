@@ -3,9 +3,13 @@
 CLAUDE.md PUB-1 et PUB-2.
 """
 
+from datetime import timedelta
+
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
+from apps.actors.services import get_or_create_for_name
 from apps.agenda import services
 from apps.ideas import services as ideas_services
 
@@ -96,3 +100,29 @@ def test_ics_is_valid_calendar(client, events):
     calendar = Calendar.from_ical(client.get(reverse("agenda:public_ics")).content)
     summaries = [str(c["summary"]) for c in calendar.walk("VEVENT")]
     assert summaries == ["Visible"]
+
+
+def _initial_view(client):
+    return client.get(reverse("agenda:public_list")).context["calendar_config"]["initialView"]
+
+
+def test_public_agenda_opens_on_month_when_this_week_is_empty(client, events):
+    # Les rendez-vous de la fixture sont la semaine prochaine.
+    assert _initial_view(client) == "month"
+
+
+def test_public_agenda_opens_on_week_when_this_week_has_events(client, admin_user):
+    noon = timezone.localtime().replace(hour=12, minute=0, second=0, microsecond=0)
+    event = services.create(
+        actor=get_or_create_for_name("Marie"),
+        user=admin_user,
+        title="Cette semaine",
+        start=noon,
+        end=noon + timedelta(hours=1),
+        wants_public=True,
+    )
+    assert event.is_public and event.status == "confirmed"
+    assert _initial_view(client) == "week"
+    # Un événement privé de la même semaine ne compte pas (PUB-1).
+    services.set_public(event, is_public=False, user=admin_user)
+    assert _initial_view(client) == "month"

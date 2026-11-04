@@ -35,7 +35,9 @@ def public_event(event: Event) -> dict:
         "title": event.title,
         "start": to_wall_clock(event.start),
         "end": to_wall_clock(event.end),
-        "color": event.public_color or None,
+        # Sans couleur ni salle, le bleu du site plutôt que le bleu clair du calendrier,
+        # trop pâle sous un texte blanc.
+        "color": event.public_color or Event.Color.BLUE.value,
         "extendedProps": {
             "url": reverse("agenda:public_detail", args=[event.pk]),
             "place": event.place_label,

@@ -29,14 +29,23 @@ from .models import Event
 @require_safe
 @public_view
 def public_agenda(request):
-    """Agenda public : la semaine en calendrier, puis la liste des prochains événements."""
+    """Agenda public : le calendrier, puis la liste des prochains événements.
+
+    À l'ouverture, la semaine en cours si elle a des rendez-vous publics, sinon le mois ;
+    on change ensuite librement de vue.
+    """
     today = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
     events = list(ical.public_events().filter(end__gte=today))
     days = [
         (day, list(items))
         for day, items in groupby(events, key=lambda e: timezone.localtime(e.start).date())
     ]
-    config = {"eventsUrl": reverse("agenda:public_events_json")}
+    monday = today - timedelta(days=today.weekday())
+    busy_week = ical.public_events().overlapping(monday, monday + timedelta(days=7)).exists()
+    config = {
+        "eventsUrl": reverse("agenda:public_events_json"),
+        "initialView": "week" if busy_week else "month",
+    }
     return render(request, "public/agenda.html", {"days": days, "calendar_config": config})
 
 
