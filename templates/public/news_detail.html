@@ -5,9 +5,17 @@
 {% block content %}
 <article class="news-detail">
   <p class="back"><a href="{% url 'public:news_list' %}">← Toutes les actualités</a></p>
+  <p class="news-kicker"><time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date_fr:"l j F Y"|capfirst }}</time>{% if post.is_new %} <span class="badge badge--new">Nouveau</span>{% endif %}</p>
   <h1>{{ post.title }}</h1>
-  <p class="meta">{{ post.published_at|date_fr:"j F Y" }}</p>
-  {% if post.summary %}<p class="lead">{{ post.summary }}</p>{% endif %}
+  {% if post.summary %}<p class="news-detail__summary">{{ post.summary }}</p>{% endif %}
   <div class="prose">{{ post.body|markdown }}</div>
 </article>
+
+{% if newer or older %}
+<nav class="news-nav" aria-label="Autres actualités">
+  {% if newer %}<a class="news-nav__link" href="{% url 'public:news_detail' newer.slug %}"><span class="meta">← Plus récente</span><span>{{ newer.title }}</span></a>{% else %}<span></span>{% endif %}
+  {% if older %}<a class="news-nav__link news-nav__link--older" href="{% url 'public:news_detail' older.slug %}"><span class="meta">Plus ancienne →</span><span>{{ older.title }}</span></a>{% endif %}
+</nav>
+{% endif %}
+<p class="news-footer"><a href="{% url 'public:news_list' %}">Toutes les actualités</a> · <a href="{% url 'public:news_feed' %}">S'abonner (RSS)</a></p>
 {% endblock %}

@@ -1,8 +1,11 @@
 """Page publique (CDC §7) : présentation, actualités, contact. Aucun code d'accès."""
 
+from itertools import groupby
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.syndication.views import Feed
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,6 +23,8 @@ from apps.presences import services as presences_services
 from . import services
 from .forms import ContactForm, NewsForm, PresentationForm
 from .models import NewsPost
+
+NEWS_PER_PAGE = 12
 
 
 @require_safe
@@ -43,14 +48,39 @@ def home(request):
 @require_safe
 @public_view
 def news_list(request):
-    return render(request, "public/news_list.html", {"news": NewsPost.objects.public()})
+    """La plus récente « à la une », puis les autres en cartes, rangées par mois."""
+    page = Paginator(NewsPost.objects.public(), NEWS_PER_PAGE).get_page(request.GET.get("page"))
+    posts = list(page.object_list)
+    featured = posts.pop(0) if page.number == 1 and posts else None
+    months = [
+        (month, list(items))
+        for month, items in groupby(
+            posts, key=lambda post: timezone.localtime(post.published_at).date().replace(day=1)
+        )
+    ]
+    return render(
+        request,
+        "public/news_list.html",
+        {"page": page, "featured": featured, "months": months},
+    )
 
 
 @require_safe
 @public_view
 def news_detail(request, slug):
     post = get_object_or_404(NewsPost.objects.public(), slug=slug)
-    return render(request, "public/news_detail.html", {"post": post})
+    others = NewsPost.objects.public()
+    return render(
+        request,
+        "public/news_detail.html",
+        {
+            "post": post,
+            "newer": others.filter(published_at__gt=post.published_at)
+            .order_by("published_at")
+            .first(),
+            "older": others.filter(published_at__lt=post.published_at).first(),
+        },
+    )
 
 
 class NewsFeed(Feed):

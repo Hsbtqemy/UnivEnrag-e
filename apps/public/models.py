@@ -1,8 +1,19 @@
 """Page publique (CDC §7) : actualités et messages de contact."""
 
+import html
+import re
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.html import strip_tags
+from django.utils.text import Truncator
+
+from apps.core.markdown import render as render_markdown
+
+# Une actualité porte la mention « Nouveau » pendant sa première semaine.
+NEW_FOR = timedelta(days=7)
 
 
 class NewsPostQuerySet(models.QuerySet):
@@ -51,6 +62,18 @@ class NewsPost(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+    @property
+    def excerpt(self) -> str:
+        """Le début du texte, sans mise en forme : pour la liste, quand le chapô manque."""
+        # Les éléments d'une liste, collés une fois les balises ôtées, restent séparés.
+        rendered = re.sub(r"</li>\s*", " · ", render_markdown(self.body))
+        text = " ".join(html.unescape(strip_tags(rendered)).split()).rstrip(" ·")
+        return Truncator(text).chars(220)
+
+    @property
+    def is_new(self) -> bool:
+        return timezone.now() - self.published_at < NEW_FOR
 
 
 class ContactMessage(models.Model):

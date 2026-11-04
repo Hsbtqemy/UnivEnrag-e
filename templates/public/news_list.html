@@ -1,23 +1,48 @@
 {% extends "base.html" %}
 {% load dates_fr %}
-{% block title %}Actualités — {{ site.collective_name }}{% endblock %}
+{% block title %}Actualités{% if page.number > 1 %} (page {{ page.number }}){% endif %} — {{ site.collective_name }}{% endblock %}
 {% block head %}<link rel="alternate" type="application/rss+xml" title="Actualités" href="{% url 'public:news_feed' %}">{% endblock %}
 {% block content %}
 <div class="page-head">
   <h1>Actualités</h1>
   <p><a href="{% url 'public:news_feed' %}">S'abonner (RSS)</a></p>
 </div>
-{% if news %}
-<ul class="news-list">
-  {% for post in news %}
-  <li>
-    <p class="meta">{{ post.published_at|date_fr:"j F Y" }}</p>
-    <h2><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h2>
-    {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
-  </li>
-  {% endfor %}
-</ul>
-{% else %}
+
+{% if featured %}
+<article class="news-featured" aria-labelledby="une-titre">
+  <p class="news-kicker"><span>À la une</span> · <time datetime="{{ featured.published_at|date:'c' }}">{{ featured.published_at|date_fr:"j F Y" }}</time>{% if featured.is_new %} <span class="badge badge--new">Nouveau</span>{% endif %}</p>
+  <h2 id="une-titre"><a href="{% url 'public:news_detail' featured.slug %}">{{ featured.title }}</a></h2>
+  {% if featured.summary %}<p class="news-featured__summary">{{ featured.summary }}</p>{% endif %}
+  <p class="news-featured__excerpt">{{ featured.excerpt }}</p>
+  <p class="news-more"><a href="{% url 'public:news_detail' featured.slug %}" aria-label="Lire la suite : {{ featured.title }}">Lire la suite →</a></p>
+</article>
+{% endif %}
+
+{% for month, posts in months %}
+<section aria-labelledby="mois-{{ forloop.counter }}">
+  <h2 id="mois-{{ forloop.counter }}" class="news-month">{{ month|date_fr:"F Y"|capfirst }}</h2>
+  <ul class="news-grid">
+    {% for post in posts %}
+    <li class="news-tile">
+      <p class="meta"><time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date_fr:"j F" }}</time>{% if post.is_new %} <span class="badge badge--new">Nouveau</span>{% endif %}</p>
+      <h3><a href="{% url 'public:news_detail' post.slug %}">{{ post.title }}</a></h3>
+      <p>{% if post.summary %}{{ post.summary }}{% else %}{{ post.excerpt|truncatechars:160 }}{% endif %}</p>
+      <p class="news-more" aria-hidden="true">Lire →</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+
+{% if page.has_other_pages %}
+<nav class="pager" aria-label="Pages des actualités">
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">← Plus récentes</a>{% else %}<span></span>{% endif %}
+  <span class="meta">Page {{ page.number }} sur {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Plus anciennes →</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+
+{% if not featured and not months %}
 <div class="empty-state"><p>Pas encore d'actualité.</p><p>Pour être prévenu·e des prochaines, <a href="{% url 'public:news_feed' %}">abonnez-vous au flux RSS</a>.</p></div>
 {% endif %}
 {% endblock %}
