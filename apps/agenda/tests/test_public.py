@@ -126,3 +126,9 @@ def test_public_agenda_opens_on_week_when_this_week_has_events(client, admin_use
     # Un événement privé de la même semaine ne compte pas (PUB-1).
     services.set_public(event, is_public=False, user=admin_user)
     assert _initial_view(client) == "month"
+
+
+def test_public_calendar_receives_the_place(client, events, room):
+    data = client.get(reverse("agenda:public_events_json")).json()
+    visible = next(e for e in data if e["title"] == events["visible"].title)
+    assert visible["extendedProps"]["place"] == room.label

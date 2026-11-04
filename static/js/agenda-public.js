@@ -68,19 +68,31 @@
     },
     pointer: true,
   };
-  // Sur téléphone, la case d'un jour du mois ne tient que l'heure ; la liste de la
-  // semaine, elle, a la place pour le titre.
-  if (narrow) {
-    options.eventContent = (info) => ({
+  // Ce qu'affiche un événement : la semaine a la place pour l'heure, le titre et le lieu ;
+  // la case d'un jour du mois tient l'heure et le titre (l'heure seule sur téléphone), le
+  // lieu passant dans l'infobulle. La liste « Prochains événements » reprend tout.
+  const span = (className, text) => {
+    const node = document.createElement("span");
+    node.className = className;
+    node.textContent = text;
+    return node;
+  };
+  options.eventContent = (info) => {
+    const time = span("ev-time", info.timeText);
+    if (info.view.type === "dayGridMonth") {
+      return { domNodes: narrow ? [time] : [time, span("ev-title", info.event.title)] };
+    }
+    return {
       domNodes: [
-        document.createTextNode(
-          info.view.type === "dayGridMonth"
-            ? info.timeText
-            : `${info.timeText} · ${info.event.title}`
-        ),
+        time,
+        span("ev-title", info.event.title),
+        span("ev-meta", info.event.extendedProps.place),
       ],
-    });
-  }
+    };
+  };
+  options.eventDidMount = (info) => {
+    info.el.title = `${info.event.title} — ${info.event.extendedProps.place}`;
+  };
   const calendarOptions = baseOptions(options);
   if (narrow) {
     // La liste ne montre ici que la semaine : son bouton le dit.
