@@ -693,3 +693,12 @@ a.badge { text-decoration: none; }
   .print-table tr { break-inside: avoid; }
   .print-table th, .print-table td { border-color: #bbb; }
 }
+
+/* Actualités, côté gestion */
+.news-manage { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+.news-manage__item { display: flex; flex-wrap: wrap; gap: .75rem 1rem; justify-content: space-between; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; }
+.news-manage__body { flex: 1 1 20rem; min-width: 0; }
+.news-manage__body h2 { margin: .15rem 0 .3rem; font-size: 1.15rem; }
+.news-manage__body p { margin: 0; }
+.news-manage .actions form { margin: 0; }
+.h1-like { font-size: 1.5rem; font-weight: 700; line-height: 1.25; margin: 0 0 .5rem; }

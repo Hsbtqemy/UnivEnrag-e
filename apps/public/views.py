@@ -6,7 +6,7 @@ from django.contrib.syndication.views import Feed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_safe
+from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import require_capability
 from apps.agenda import ical
@@ -18,7 +18,7 @@ from apps.ideas.models import Idea
 from apps.presences import services as presences_services
 
 from . import services
-from .forms import ContactForm, PresentationForm
+from .forms import ContactForm, NewsForm, PresentationForm
 from .models import NewsPost
 
 
@@ -118,3 +118,63 @@ def presentation(request):
             messages.success(request, "Présentation enregistrée.")
             return redirect("public:presentation")
     return render(request, "public/presentation_form.html", {"form": form, "preview": preview})
+
+
+# --- Actualités, côté gestion : sans passer par l'administration Django -----------------
+
+
+@require_capability("manage_public")
+def news_manage(request):
+    now = timezone.now()
+    posts = NewsPost.objects.order_by("-published_at")
+    return render(request, "public/news_manage.html", {"posts": posts, "now": now})
+
+
+def _news_form_page(request, post=None):
+    initial = NewsForm.initial_from(post) if post else None
+    form = NewsForm(request.POST or None, initial=initial)
+    preview = None
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        if "apercu" in request.POST:
+            preview = data
+        elif post is None:
+            post = services.create_news(user=request.user, **data)
+            messages.success(request, _news_saved_message(post))
+            return redirect("public:news_manage")
+        else:
+            services.update_news(post, user=request.user, **data)
+            messages.success(request, _news_saved_message(post))
+            return redirect("public:news_manage")
+    return render(
+        request, "public/news_form.html", {"form": form, "post": post, "preview": preview}
+    )
+
+
+def _news_saved_message(post) -> str:
+    if not post.is_published:
+        return f"« {post.title} » est enregistrée comme brouillon."
+    if post.published_at > timezone.now():
+        when = timezone.localtime(post.published_at)
+        return f"« {post.title} » paraîtra le {when:%d/%m/%Y à %H:%M}."
+    return f"« {post.title} » est publiée."
+
+
+@require_capability("manage_public")
+def news_new(request):
+    return _news_form_page(request)
+
+
+@require_capability("manage_public")
+def news_edit(request, pk):
+    return _news_form_page(request, get_object_or_404(NewsPost, pk=pk))
+
+
+@require_capability("manage_public")
+@require_POST
+def news_publish(request, pk):
+    post = get_object_or_404(NewsPost, pk=pk)
+    published = request.POST.get("publier") == "1"
+    services.set_news_published(post, user=request.user, published=published)
+    messages.success(request, _news_saved_message(post))
+    return redirect("public:news_manage")

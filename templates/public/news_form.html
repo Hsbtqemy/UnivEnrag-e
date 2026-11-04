@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load dates_fr %}
+{% load markdown %}
+{% block title %}{% if post %}Modifier « {{ post.title }} »{% else %}Nouvelle actualité{% endif %} — Gestion — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'public:news_manage' %}">← Actualités</a></p>
+<h1>{% if post %}Modifier l'actualité{% else %}Écrire une actualité{% endif %}</h1>
+{% if post and post.is_published %}<p class="lead">Publiée à l'adresse <a href="{% url 'public:news_detail' post.slug %}">{% url 'public:news_detail' post.slug %}</a>, qui ne change pas si vous modifiez le titre.</p>{% endif %}
+
+{% if preview %}
+<section class="callout" aria-labelledby="apercu">
+  <h2 id="apercu">Aperçu (pas encore enregistré)</h2>
+  <article class="news-detail">
+    <p class="h1-like">{{ preview.title }}</p>
+    {% if preview.summary %}<p class="lead">{{ preview.summary }}</p>{% endif %}
+    <div class="prose">{{ preview.body|markdown }}</div>
+  </article>
+</section>
+{% endif %}
+
+<form method="post" class="form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="message message--error" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  {% include "includes/field.html" with field=form.title %}
+  {% include "includes/field.html" with field=form.summary %}
+  {% include "includes/field.html" with field=form.body %}
+  {% include "includes/field.html" with field=form.published_at %}
+  {% include "includes/checkbox.html" with field=form.is_published %}
+  <p class="actions">
+    <button type="submit" name="apercu" value="1" class="button button--secondary">Aperçu</button>
+    <button type="submit" class="button">Enregistrer</button>
+  </p>
+</form>
+{% endblock %}

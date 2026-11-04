@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load dates_fr %}
+{% block title %}Actualités — Gestion — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'accounts:gestion_home' %}">← Gestion</a></p>
+<div class="page-head">
+  <h1>Actualités</h1>
+  <p class="actions"><a class="button" href="{% url 'public:news_new' %}">+ Écrire une actualité</a></p>
+</div>
+<p class="lead">Les courts articles de la <a href="{% url 'public:news_list' %}">page publique</a>, aussi diffusés par le flux RSS. Une actualité ne se supprime pas : on la dépublie.</p>
+
+{% if posts %}
+<ul class="news-manage">
+  {% for post in posts %}
+  <li class="news-manage__item">
+    <div class="news-manage__body">
+      <p class="meta">
+        {% if not post.is_published %}<span class="badge">Brouillon</span>
+        {% elif post.published_at > now %}<span class="badge badge--locked">Programmée</span> pour le {{ post.published_at|date_fr:"j F Y" }} à {{ post.published_at|time:"H:i" }}
+        {% else %}<span class="badge badge--confirmed">Publiée</span> le {{ post.published_at|date_fr:"j F Y" }}{% endif %}
+      </p>
+      <h2><a href="{% url 'public:news_edit' post.pk %}">{{ post.title }}</a></h2>
+      {% if post.summary %}<p>{{ post.summary }}</p>{% endif %}
+    </div>
+    <div class="actions">
+      <a class="button button--secondary button--small" href="{% url 'public:news_edit' post.pk %}">Modifier</a>
+      {% if post.is_published and post.published_at <= now %}<a class="button button--secondary button--small" href="{% url 'public:news_detail' post.slug %}">Voir</a>{% endif %}
+      <form method="post" action="{% url 'public:news_publish' post.pk %}">
+        {% csrf_token %}
+        {% if post.is_published %}<input type="hidden" name="publier" value="0"><button type="submit" class="button button--secondary button--small">Dépublier</button>
+        {% else %}<input type="hidden" name="publier" value="1"><button type="submit" class="button button--small">Publier</button>{% endif %}
+      </form>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Aucune actualité pour l'instant.</p>
+{% endif %}
+{% endblock %}
