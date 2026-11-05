@@ -1,11 +1,15 @@
+import io
 import json
 from datetime import timedelta
 from itertools import groupby
 
+import segno
+from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST, require_safe
 
 from apps.accounts.capabilities import is_manager, require_capability
@@ -71,6 +75,70 @@ def public_events_json(request):
     if start and end:
         events = events.overlapping(start, end)
     return JsonResponse([serializers.public_event(e) for e in events], safe=False)
+
+
+BOARD_UPCOMING = 8
+BOARD_THEMES = {"clair": "light", "sombre": "dark", "enrage": "enrage"}
+
+
+def _board_context() -> dict:
+    """Ce que montre le grand écran, calculé à chaque appel : le jour change tout seul.
+
+    Aujourd'hui (rendez-vous en cours et à venir, permanences du jour), puis les prochains
+    rendez-vous. Rien d'autre que ce que montre déjà l'agenda public (PUB-1).
+    """
+    now = timezone.localtime()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow = today + timedelta(days=1)
+    events = ical.public_events()
+    today_events = list(events.overlapping(today, tomorrow))
+    current = [event for event in today_events if event.end > now]
+    upcoming = list(events.filter(start__gte=tomorrow)[:BOARD_UPCOMING])
+    permanences = presences_services.public_permanences(days=1)
+    return {
+        "now": now,
+        "today_events": current,
+        "finished_count": len(today_events) - len(current),
+        "permanences": permanences[0].slots if permanences else [],
+        "upcoming_days": [
+            (day, list(items))
+            for day, items in groupby(upcoming, key=lambda e: timezone.localtime(e.start).date())
+        ],
+    }
+
+
+@require_safe
+@never_cache
+@public_view
+def public_board(request):
+    """Agenda pour un grand écran (panneau d'affichage) : sans navigation, lisible de loin.
+
+    Le script redemande le contenu chaque minute (`?fragment=1`) : un événement ajouté
+    apparaît, un événement fini disparaît, et le jour change à minuit sans intervention.
+    """
+    context = _board_context()
+    if request.GET.get("fragment"):
+        return render(request, "public/_board.html", context)
+    context["forced_theme"] = BOARD_THEMES.get(request.GET.get("theme", ""), "")
+    context["config"] = {
+        "fragmentUrl": f"{reverse('agenda:public_board')}?fragment=1",
+        "timeZone": settings.TIME_ZONE,
+    }
+    return render(request, "public/board.html", context)
+
+
+@require_safe
+@public_view
+def public_board_qr(request):
+    """QR code vers l'agenda public, produit ici en SVG (aucun service tiers)."""
+    buffer = io.BytesIO()
+    url = request.build_absolute_uri(reverse("agenda:public_list"))
+    segno.make(url, error="m").save(
+        buffer, kind="svg", scale=4, border=2, dark="#111", light="#fff", xmldecl=False
+    )
+    response = HttpResponse(buffer.getvalue(), content_type="image/svg+xml")
+    response["Cache-Control"] = "public, max-age=86400"
+    return response
 
 
 @require_safe

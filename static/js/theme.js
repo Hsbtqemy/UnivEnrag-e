@@ -29,8 +29,9 @@
     }
   }
 
+  // Un thème posé par la page elle-même (grand écran, `?theme=sombre`) l'emporte.
   const saved = read();
-  if (ORDER.includes(saved)) root.dataset.theme = saved;
+  if (ORDER.includes(saved) && !root.dataset.theme) root.dataset.theme = saved;
 
   function current() {
     return root.dataset.theme || (systemDark.matches ? "dark" : "light");

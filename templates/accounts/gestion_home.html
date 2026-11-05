@@ -20,6 +20,7 @@
   <li><a href="{% url 'public:news_manage' %}">Actualités</a><span>Écrire, publier ou dépublier les actualités de la page publique.</span></li>
   <li><a href="{% url 'admin:public_contactmessage_changelist' %}?handled_at__isempty=1">Messages de contact à traiter</a>{% if pending.contact %} <strong class="pending-badge">{{ pending.contact }}</strong>{% endif %}<span>Les messages reçus par le formulaire public.</span></li>{% endif %}
   {% if "manage_agenda" in capabilities or "manage_public" in capabilities %}<li><a href="{% url 'agenda:public_requests' %}">Demandes de publication</a>{% if pending.publication %} <strong class="pending-badge">{{ pending.publication }}</strong>{% endif %}<span>Les événements que des membres souhaitent voir sur l'agenda public.</span></li>{% endif %}
+  <li><a href="{% url 'agenda:public_board' %}">Affichage grand écran</a><span>L'agenda public en grand, pour un écran ou une tablette : il se met à jour et change de jour tout seul.</span></li>
   {% if user.is_superuser %}<li><a href="{% url 'accounts:backup' %}">Sauvegarde complète</a><span>Télécharger toute la base, comptes de gestion compris.</span></li>{% endif %}
   <li><a href="{% url 'admin:index' %}">Administration</a><span>{% if user.is_superuser %}Comptes de gestion, code d'accès, journal d'activité, salles, événements.{% else %}Les fiches de vos domaines.{% endif %}</span></li>
 </ul>

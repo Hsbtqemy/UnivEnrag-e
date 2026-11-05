@@ -1,0 +1,31 @@
+{% load static %}<!doctype html>
+<html lang="fr"{% if forced_theme %} data-theme="{{ forced_theme }}"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Agenda — {{ site.collective_name }}</title>
+  <script src="{% static 'js/theme.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon-32.png' %}">
+  {# Sans JavaScript, la page se recharge elle-même toutes les deux minutes. #}
+  <noscript><meta http-equiv="refresh" content="120"></noscript>
+</head>
+<body class="board">
+  <header class="board__head">
+    <p class="board__name">{{ site.collective_name }}</p>
+    <p class="board__clock" id="horloge" aria-hidden="true">{{ now|time:"H:i" }}</p>
+  </header>
+  <main id="tableau" class="board__main">
+    {% include "public/_board.html" %}
+  </main>
+  <footer class="board__foot">
+    <img class="board__qr" src="{% url 'agenda:public_board_qr' %}" alt="" width="96" height="96">
+    <p class="board__link">Tout l'agenda&nbsp;: <strong>{{ request.get_host }}{% url 'agenda:public_list' %}</strong></p>
+    <p class="board__status" id="etat" role="status"></p>
+    <button type="button" class="button button--secondary button--small board__fullscreen" id="plein-ecran" hidden>Plein écran</button>
+  </footer>
+  {{ config|json_script:"board-config" }}
+  <script src="{% static 'js/board.js' %}"></script>
+</body>
+</html>

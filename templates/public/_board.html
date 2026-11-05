@@ -1,0 +1,40 @@
+{% load dates_fr %}
+<section class="board__today" aria-labelledby="aujourdhui">
+  <h1 id="aujourdhui" class="board__title">{{ now|date_fr:"l j F"|capfirst }}</h1>
+  {% if permanences %}
+  <p class="board__permanence">Permanence aujourd'hui&nbsp;: {% for period, texts in permanences %}{{ period|lower }}{% if texts %} ({{ texts|join:" ; " }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+  {% endif %}
+  {% if today_events %}
+  <ul class="board__events">
+    {% for event in today_events %}
+    <li class="board-event{% if event.start <= now %} board-event--now{% endif %}"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
+      <p class="board-event__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.start <= now %} <span class="board-event__live">En cours</span>{% endif %}</p>
+      <h2 class="board-event__title">{{ event.title }}</h2>
+      <p class="board-event__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif finished_count %}
+  <p class="board__empty">Les rendez-vous du jour sont terminés.</p>
+  {% else %}
+  <p class="board__empty">Pas de rendez-vous public aujourd'hui.</p>
+  {% endif %}
+</section>
+
+<section class="board__next" aria-labelledby="a-venir">
+  <h2 id="a-venir" class="board__subtitle">À venir</h2>
+  {% for day, events in upcoming_days %}
+  <h3 class="board__day">{{ day|date_fr:"l j F"|capfirst }}</h3>
+  <ul class="board__list">
+    {% for event in events %}
+    <li class="board-item"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
+      <span class="board-item__time">{{ event.start|time:"H:i" }}</span>
+      <span class="board-item__title">{{ event.title }}</span>
+      <span class="board-item__meta">{{ event.place_label }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% empty %}
+  <p class="board__empty">Rien de prévu pour l'instant.</p>
+  {% endfor %}
+</section>
