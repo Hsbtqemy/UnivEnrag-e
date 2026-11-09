@@ -12,7 +12,7 @@
 <div class="home-cards">
   <a class="home-card" href="{% url 'ideas:list' %}"><strong>Idées et projets</strong><span>{{ idea_count }} en cours{% if to_place %}, {{ to_place }} à placer dans l'agenda{% endif %}</span></a>
   <a class="home-card" href="{% url 'presences:board' %}"><strong>Qui est là ?</strong><span>{{ presence_count }} personne{{ presence_count|pluralize }} {{ presence_count|pluralize:"a,ont" }} annoncé {{ presence_count|pluralize:"sa,leur" }} présence cette semaine</span></a>
-  <a class="home-card" href="{% url 'polls:list' %}"><strong>Sondages de dates</strong><span>{% if open_polls %}{{ open_polls|length }} en cours{% else %}aucun en cours{% endif %}</span></a>
+  {% if polls_enabled %}<a class="home-card" href="{% url 'polls:list' %}"><strong>Sondages de dates</strong><span>{% if open_polls %}{{ open_polls|length }} en cours{% else %}aucun en cours{% endif %}</span></a>{% endif %}
 </div>
 {% if open_polls %}
 <section aria-labelledby="sondages">

@@ -10,4 +10,5 @@ def site(request):
         # En développement, les fichiers statiques gardent des noms fixes : le service
         # worker les figerait en cache. Il n'est donc enregistré qu'en production.
         "pwa_enabled": not settings.DEBUG,
+        "polls_enabled": settings.POLLS_ENABLED,
     }

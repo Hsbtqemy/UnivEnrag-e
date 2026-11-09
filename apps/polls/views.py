@@ -1,4 +1,8 @@
+from functools import wraps
+
+from django.conf import settings
 from django.contrib import messages
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.actors.resolvers import remember_name
@@ -9,6 +13,19 @@ from .forms import AnswerForm, PollForm
 from .models import Poll
 
 
+def enabled(view):
+    """Sondages désactivés (`POLLS_ENABLED`) : les pages n'existent plus pour personne."""
+
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        if not settings.POLLS_ENABLED:
+            raise Http404("Les sondages ne sont pas ouverts.")
+        return view(request, *args, **kwargs)
+
+    return wrapper
+
+
+@enabled
 def poll_list(request):
     polls = Poll.objects.select_related("owner", "event").prefetch_related("slots")
     return render(
@@ -21,6 +38,7 @@ def poll_list(request):
     )
 
 
+@enabled
 def poll_new(request):
     form = PollForm(request.POST or None, actor_name=request.actor_name)
     if request.method == "POST" and form.is_valid():
@@ -44,6 +62,7 @@ def poll_new(request):
     return render(request, "polls/new.html", {"form": form})
 
 
+@enabled
 def poll_detail(request, pk):
     poll = get_object_or_404(Poll.objects.select_related("owner", "event", "room", "space"), pk=pk)
     slots = list(poll.slots.all())

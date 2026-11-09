@@ -7,6 +7,7 @@ comme le public, et « Espace membres » les ramène à l'interne."""
 
 from dataclasses import dataclass, field
 
+from django.conf import settings
 from django.urls import reverse
 
 PUBLIC_PREFIX = "/p/"
@@ -56,9 +57,10 @@ def _member_items(is_manager: bool) -> list[NavItem]:
         ),
         NavItem("Salles", "agenda:rooms", "door"),
         NavItem("Qui est là ?", "presences:board", "people", matches=("presences:",), primary=True),
-        NavItem("Sondages", "polls:list", "poll", matches=("polls:",)),
         NavItem("Site public", "public:home", "globe"),
     ]
+    if settings.POLLS_ENABLED:
+        items.insert(-1, NavItem("Sondages", "polls:list", "poll", matches=("polls:",)))
     if is_manager:
         items.append(NavItem("Gestion", GESTION, "sliders"))
     return items

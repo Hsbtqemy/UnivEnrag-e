@@ -13,7 +13,7 @@
     <li><a href="#idees">Les idées</a></li>
     <li><a href="#programmation">La programmation par salle</a></li>
     <li><a href="#presences">Qui est là ?</a></li>
-    <li><a href="#sondages">Trouver une date</a></li>
+    {% if polls_enabled %}<li><a href="#sondages">Trouver une date</a></li>{% endif %}
     <li><a href="#abonnement">L'agenda dans votre téléphone</a></li>
     <li><a href="#exporter">Exporter ou imprimer</a></li>
     <li><a href="#code">Le code d'accès</a></li>
@@ -67,8 +67,10 @@
   <h2 id="presences">Qui est là ?</h2>
   <p><strong>« Indiquer ma présence »</strong> : cochez les demi-journées où vous serez là cette semaine ; les heures (« de 14:00 à 17:00 ») et le lieu sont facultatifs. « Reprendre ma semaine précédente » recoche tout en un clic. Le tableau « Qui est là ? » montre qui sera où. Cochez « Permanence publique » pour qu'un jour de présence soit annoncé sur la page publique (« Où nous trouver »)  : le jour, le moment, les heures et le lieu indiqués, jamais votre nom. Ces présences sont effacées après 60 jours.</p>
 
+  {% if polls_enabled %}
   <h2 id="sondages">Trouver une date</h2>
   <p><strong>Sondages → « + Nouveau sondage »</strong> : proposez de 2 à 8 créneaux, partagez l'adresse, chacun répond « Oui » ou « Si besoin » sous son nom. Le meilleur créneau est mis en évidence ; {% if can_edit_agenda %}« Fixer ce créneau » crée l'événement et clôt le sondage.{% else %}un gestionnaire de l'agenda fixe ensuite le créneau retenu, ce qui crée l'événement et clôt le sondage.{% endif %}</p>
+  {% endif %}
 
   <h2 id="abonnement">L'agenda dans votre téléphone</h2>
   <p><strong>Agenda → « S'abonner »</strong> donne une adresse à ajouter dans votre application d'agenda (téléphone, Thunderbird, Outlook…) : tout l'agenda, un espace ou une salle, mis à jour automatiquement. Cette adresse ouvre l'agenda interne : ne la diffusez pas.</p>

@@ -57,12 +57,14 @@ def test_resolver_prefers_manager_actor(db, admin_user):
 
 
 @pytest.mark.parametrize("url", ["/presences/ma-semaine/", "/sondages/", "/agenda/nouveau/"])
-def test_pages_work_without_a_name(member_client, url):
+def test_pages_work_without_a_name(member_client, url, settings):
     """Sans nom retenu, `request.actor` vaut None : les pages s'affichent quand même."""
+    settings.POLLS_ENABLED = True
     assert member_client.get(url).status_code == 200
 
 
-def test_poll_page_works_without_a_name(member_client, at):
+def test_poll_page_works_without_a_name(member_client, at, settings):
+    settings.POLLS_ENABLED = True
     poll = polls_services.create(
         actor=get_or_create_for_name("Marie"),
         title="Réunion",

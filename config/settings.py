@@ -130,6 +130,9 @@ LOGIN_URL = "admin:login"
 # Double authentification des comptes de gestion (CLAUDE.md ACC-3). Obligatoire hors
 # développement ; en local, DJANGO_ADMIN_2FA=1 permet de l'essayer.
 ADMIN_2FA_REQUIRED = os.environ.get("DJANGO_ADMIN_2FA", "1" if ENV != "dev" else "0") == "1"
+# Sondages de dates : le code reste, l'accès est retiré (décision du porteur du projet,
+# 09/11/2026). `DJANGO_POLLS=1` les rouvre : onglet, accueil, pages, « Fixer ce créneau ».
+POLLS_ENABLED = os.environ.get("DJANGO_POLLS", "0") == "1"
 OTP_TOTP_ISSUER = "Université Enragée"  # nom affiché dans l'application d'authentification
 
 ACTOR_RESOLVER = "apps.actors.resolvers.NameCookieResolver"

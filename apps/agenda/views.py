@@ -236,7 +236,11 @@ def home(request):
         "agenda/home.html",
         {
             "events": events,
-            "open_polls": Poll.objects.filter(is_closed=False).select_related("owner")[:5],
+            "open_polls": (
+                Poll.objects.filter(is_closed=False).select_related("owner")[:5]
+                if settings.POLLS_ENABLED
+                else []
+            ),
             "presence_count": presences_services.count_people(monday),
             "idea_count": Idea.objects.filter(
                 status__in=[Idea.Status.NEW, Idea.Status.PREPARING, Idea.Status.PLANNED]

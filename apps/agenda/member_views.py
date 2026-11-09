@@ -3,6 +3,7 @@
 import json
 from datetime import datetime, time, timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
@@ -147,7 +148,7 @@ def check_slot(request):
 def _poll_for(request):
     """Création depuis un sondage de dates encore ouvert (`?sondage=<id>&creneau=<id>`)."""
     poll_id = request.POST.get("sondage") or request.GET.get("sondage")
-    if not poll_id or not str(poll_id).isdigit():
+    if not settings.POLLS_ENABLED or not poll_id or not str(poll_id).isdigit():
         return None
     return Poll.objects.filter(pk=poll_id, is_closed=False).first()
 
