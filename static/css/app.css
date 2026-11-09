@@ -756,8 +756,8 @@ a.badge { text-decoration: none; }
 }
 
 /* Grand écran (/p/affichage/) : tout se règle sur la taille de l'écran, lisible de loin,
-   sans défilement. Paysage : aujourd'hui à gauche, à venir à droite ; portrait : l'un
-   sous l'autre. */
+   sans défilement. Trois vues qui tournent (static/js/board.js) : aujourd'hui (paysage :
+   la journée à gauche, à venir à droite ; portrait : l'un sous l'autre), 7 jours, le mois. */
 body.board {
   --board-unit: clamp(14px, .8vw + .8vh, 40px);
   height: 100vh; height: 100dvh; margin: 0; padding: 1.2em 1.6em;
@@ -768,20 +768,33 @@ body.board.board--idle { cursor: none; }
 .board__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
 .board__name { margin: 0; font-size: 1.15em; font-weight: 700; color: var(--muted); }
 .board__clock { margin: 0; font-size: 2.6em; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-.board__main { display: grid; grid-template-columns: 3fr 2fr; gap: 2em; min-height: 0; overflow: hidden; }
+.board__main { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.board-panel { min-height: 0; overflow: hidden; animation: board-in .5s ease-out; }
+.board-panel[hidden] { display: none; }
+@keyframes board-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .board-panel { animation: none; } }
 .board__title { margin: 0 0 .5em; font-size: 2.2em; line-height: 1.1; }
+.board__pager { font-size: .5em; font-weight: 600; color: var(--muted); vertical-align: middle; }
 .board__subtitle { margin: 0 0 .5em; font-size: 1.5em; color: var(--muted); }
 .board__permanence { margin: 0 0 .8em; padding: .4em .7em; border-radius: var(--radius); background: var(--accent-soft); font-weight: 600; }
 .board__empty { margin: .5em 0; font-size: 1.2em; color: var(--muted); }
-.board__events, .board__list { list-style: none; margin: 0; padding: 0; }
-.board__events { display: grid; gap: .7em; }
-.board-event { padding: .6em .9em; border-left: .35em solid var(--room-color, var(--accent)); border-radius: var(--radius); background: var(--surface); }
+.board__events, .board__list, .board-week, .board-week__events { list-style: none; margin: 0; padding: 0; }
+.board-more { margin: .2em 0 0; color: var(--muted); font-weight: 600; font-size: .85em; }
+.board-more[hidden], .board__group[hidden], .board-chip[hidden], .board-month__event[hidden] { display: none; }
+
+/* Aujourd'hui */
+.board-panel--day { display: grid; grid-template-columns: 3fr 2fr; gap: 2em; }
+.board__today { display: flex; flex-direction: column; min-height: 0; }
+.board__next { min-height: 0; overflow: hidden; }
+.board__events { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: .7em; }
+.board-event { flex: none; padding: .6em .9em; border-left: .35em solid var(--room-color, var(--accent)); border-radius: var(--radius); background: var(--surface); }
+.board-event[hidden] { display: none; }
 .board-event p, .board-event h2 { margin: 0; }
 .board-event__time { font-size: 1.15em; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .board-event .board-event__title { font-size: 1.7em; line-height: 1.15; margin: .1em 0; }
 .board-event__meta { font-size: 1em; color: var(--muted); }
-.board-event--now { outline: 3px solid var(--accent); }
-/* Journée chargée : des cartes plus serrées pour que tout tienne. */
+.board-event--now { outline: 3px solid var(--accent); outline-offset: -3px; }
+/* Journée chargée : des cartes plus serrées ; si cela ne suffit pas, des pages. */
 .board__events:has(> :nth-child(4)) { gap: .45em; }
 .board__events:has(> :nth-child(4)) .board-event { padding: .35em .8em; }
 .board__events:has(> :nth-child(4)) .board-event__title { font-size: 1.3em; }
@@ -792,19 +805,58 @@ body.board.board--idle { cursor: none; }
 .board-item__time { font-weight: 700; font-variant-numeric: tabular-nums; }
 .board-item__title { font-weight: 600; }
 .board-item__meta { grid-column: 2; color: var(--muted); font-size: .9em; }
+
+/* 7 jours : une colonne par jour en paysage, une ligne par jour en portrait. */
+.board-panel--week { display: flex; flex-direction: column; }
+.board-week { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5em; }
+.board-week__day { min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: .5em .6em; border-radius: var(--radius); background: var(--surface); border-top: .3em solid var(--border); }
+.board-week__day.is-today { border-top-color: var(--accent); }
+.board-week__name { margin: 0 0 .5em; font-size: 1.05em; line-height: 1.2; }
+.board-week__name span { display: block; font-size: .85em; font-weight: 500; color: var(--muted); }
+.board-week__day.is-today .board-week__name { color: var(--accent); }
+.board-week__events { display: grid; gap: .5em; }
+.board-week__none { margin: 0; color: var(--muted); }
+.board-chip { display: grid; gap: .05em; padding-left: .45em; border-left: .25em solid var(--room-color, var(--accent)); font-size: .85em; line-height: 1.25; }
+.board-chip__time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.board-chip__title { font-weight: 600; overflow-wrap: anywhere; }
+.board-chip__meta { color: var(--muted); font-size: .9em; }
+
+/* Le mois : cinq semaines à partir de ce lundi, les jours passés estompés. */
+.board-panel--month { display: flex; flex-direction: column; }
+.board-month { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto repeat(5, minmax(0, 1fr)); gap: .3em; }
+.board-month__head { padding: 0 .3em; font-size: .85em; color: var(--muted); font-weight: 600; }
+.board-month__cell { min-height: 0; overflow: hidden; padding: .25em .4em; border-radius: 6px; background: var(--surface); }
+.board-month__cell.is-past { opacity: .45; }
+.board-month__cell.is-today { outline: 3px solid var(--accent); outline-offset: -3px; }
+.board-month__date { display: block; font-weight: 700; font-size: .85em; margin-bottom: .15em; }
+.board-month__cell.is-today .board-month__date { color: var(--accent); }
+.board-month__event { display: block; padding-left: .3em; margin-bottom: .1em; border-left: .2em solid var(--room-color, var(--accent)); font-size: .72em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-month__time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.board-month .board-more { margin: 0; font-size: .7em; }
+.board-month .board-more:not([hidden]) { display: block; }
+
+/* Pied : QR code, adresse, vues qui tournent, état de la connexion. */
 .board__foot { display: flex; align-items: center; gap: 1em; border-top: 1px solid var(--border); padding-top: .5em; font-size: .85em; color: var(--muted); }
 .board__qr { width: 4.5em; height: 4.5em; border-radius: 4px; }
 .board__link { margin: 0; }
 .board__link strong { color: var(--text); }
+.board__views { display: flex; gap: .4em; list-style: none; margin: 0 0 0 auto; padding: 0; }
+.board__views li { white-space: nowrap; padding: .1em .6em; border-radius: 1em; border: 1px solid var(--border); }
+.board__views li.is-current { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
 .board__status { margin: 0 0 0 auto; }
+.board__views:not([hidden]) + .board__status { margin-left: 0; }
 .board__status--lost { color: var(--warning); font-weight: 600; }
 .board__fullscreen { margin-left: auto; }
-.board__status:not(:empty) + .board__fullscreen { margin-left: 0; }
+.board__status:not(:empty) + .board__fullscreen, .board__views:not([hidden]) ~ .board__fullscreen { margin-left: 0; }
 @media (orientation: portrait) {
   body.board { --board-unit: clamp(14px, 2vw + .4vh, 40px); }
-  .board__main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .board-panel--day { grid-template-columns: 1fr; grid-template-rows: minmax(0, auto) minmax(0, 1fr); }
+  .board-week { grid-template-columns: 1fr; grid-auto-rows: minmax(0, 1fr); }
+  .board-week__day { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: .6em; }
+  .board-week__events { grid-template-columns: repeat(auto-fill, minmax(10em, 1fr)); align-content: start; }
 }
 @media (max-width: 40rem) {
   body.board { height: auto; min-height: 100dvh; overflow: auto; padding: 1em; }
-  .board__main { overflow: visible; }
+  .board__main, .board-panel, .board__events, .board__next { overflow: visible; }
+  .board__foot { flex-wrap: wrap; }
 }

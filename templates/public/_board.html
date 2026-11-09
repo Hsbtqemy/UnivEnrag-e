@@ -1,40 +1,89 @@
 {% load dates_fr %}
-<section class="board__today" aria-labelledby="aujourdhui">
-  <h1 id="aujourdhui" class="board__title">{{ now|date_fr:"l j F"|capfirst }}</h1>
-  {% if permanences %}
-  <p class="board__permanence">Permanence aujourd'hui&nbsp;: {% for period, texts in permanences %}{{ period|lower }}{% if texts %} ({{ texts|join:" ; " }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
-  {% endif %}
-  {% if today_events %}
-  <ul class="board__events">
-    {% for event in today_events %}
-    <li class="board-event{% if event.start <= now %} board-event--now{% endif %}"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
-      <p class="board-event__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.start <= now %} <span class="board-event__live">En cours</span>{% endif %}</p>
-      <h2 class="board-event__title">{{ event.title }}</h2>
-      <p class="board-event__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
+{# Trois vues ; sans JavaScript, seule la journée s'affiche. Le script les fait tourner. #}
+<div class="board-panel board-panel--day" data-view="jour">
+  <section class="board__today" aria-labelledby="aujourdhui">
+    <h1 id="aujourdhui" class="board__title">{{ now|date_fr:"l j F"|capfirst }} <span class="board__pager" data-pager></span></h1>
+    {% if permanences %}
+    <p class="board__permanence">Permanence aujourd'hui&nbsp;: {% for period, texts in permanences %}{{ period|lower }}{% if texts %} ({{ texts|join:" ; " }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    {% endif %}
+    {% if today_events %}
+    {# Journée trop chargée pour l'écran : le script la montre page par page. #}
+    <ul class="board__events" data-paginate>
+      {% for event in today_events %}
+      <li class="board-event{% if event.start <= now %} board-event--now{% endif %}"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
+        <p class="board-event__time">{{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }}{% if event.start <= now %} <span class="board-event__live">En cours</span>{% endif %}</p>
+        <h2 class="board-event__title">{{ event.title }}</h2>
+        <p class="board-event__meta">{{ event.place_label }} · Porté par {{ event.owner.display_name }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% elif finished_count %}
+    <p class="board__empty">Les rendez-vous du jour sont terminés.</p>
+    {% else %}
+    <p class="board__empty">Pas de rendez-vous public aujourd'hui.</p>
+    {% endif %}
+  </section>
+
+  <section class="board__next" aria-labelledby="a-venir" data-fit=".board__group">
+    <h2 id="a-venir" class="board__subtitle">À venir</h2>
+    {% for day, events in upcoming_days %}
+    <div class="board__group">
+    <h3 class="board__day">{{ day|date_fr:"l j F"|capfirst }}</h3>
+    <ul class="board__list">
+      {% for event in events %}
+      <li class="board-item"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
+        <span class="board-item__time">{{ event.start|time:"H:i" }}</span>
+        <span class="board-item__title">{{ event.title }}</span>
+        <span class="board-item__meta">{{ event.place_label }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    </div>
+    {% empty %}
+    <p class="board__empty">Rien de prévu pour l'instant.</p>
+    {% endfor %}
+  </section>
+</div>
+
+<section class="board-panel board-panel--week" data-view="semaine"{% if week_empty %} data-empty{% endif %} aria-labelledby="sept-jours" hidden>
+  <h1 id="sept-jours" class="board__title">Les 7 prochains jours</h1>
+  <ol class="board-week">
+    {% for d in week_days %}
+    <li class="board-week__day{% if d.is_today %} is-today{% endif %}" data-fit=".board-chip">
+      <h2 class="board-week__name">{{ d.day|date_fr:"l"|capfirst }} <span>{{ d.day|date_fr:"j F" }}</span></h2>
+      <div class="board-week__body">
+      {% if d.events %}
+      <ul class="board-week__events">
+        {% for event in d.events %}
+        <li class="board-chip"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
+          <span class="board-chip__time">{{ event.start|time:"H:i" }}</span>
+          <span class="board-chip__title">{{ event.title }}</span>
+          <span class="board-chip__meta">{{ event.place_label }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="board-week__none">—</p>
+      {% endif %}
+      <p class="board-more" data-more="{{ d.more }}"{% if not d.more %} hidden{% endif %}>+ {{ d.more }} autre{{ d.more|pluralize }}</p>
+      </div>
     </li>
     {% endfor %}
-  </ul>
-  {% elif finished_count %}
-  <p class="board__empty">Les rendez-vous du jour sont terminés.</p>
-  {% else %}
-  <p class="board__empty">Pas de rendez-vous public aujourd'hui.</p>
-  {% endif %}
+  </ol>
 </section>
 
-<section class="board__next" aria-labelledby="a-venir">
-  <h2 id="a-venir" class="board__subtitle">À venir</h2>
-  {% for day, events in upcoming_days %}
-  <h3 class="board__day">{{ day|date_fr:"l j F"|capfirst }}</h3>
-  <ul class="board__list">
-    {% for event in events %}
-    <li class="board-item"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}>
-      <span class="board-item__time">{{ event.start|time:"H:i" }}</span>
-      <span class="board-item__title">{{ event.title }}</span>
-      <span class="board-item__meta">{{ event.place_label }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-  {% empty %}
-  <p class="board__empty">Rien de prévu pour l'instant.</p>
-  {% endfor %}
+<section class="board-panel board-panel--month" data-view="mois"{% if month_empty %} data-empty{% endif %} aria-labelledby="le-mois" hidden>
+  <h1 id="le-mois" class="board__title">Les prochaines semaines</h1>
+  <div class="board-month">
+    {% for name in weekday_names %}<div class="board-month__head">{{ name }}</div>{% endfor %}
+    {% for week in month_weeks %}{% for d in week %}
+    <div class="board-month__cell{% if d.is_today %} is-today{% elif d.is_past %} is-past{% endif %}" data-fit=".board-month__event">
+      <span class="board-month__date">{% if d.day.day == 1 or forloop.parentloop.first and forloop.first %}{{ d.day|date_fr:"j F" }}{% else %}{{ d.day.day }}{% endif %}</span>
+      {% for event in d.events %}
+      <span class="board-month__event"{% if event.public_color %} style="--room-color: {{ event.public_color }}"{% endif %}><span class="board-month__time">{{ event.start|time:"H:i" }}</span> {{ event.title }}</span>
+      {% endfor %}
+      <span class="board-more" data-more="{{ d.more }}" data-short{% if not d.more %} hidden{% endif %}>+ {{ d.more }}</span>
+    </div>
+    {% endfor %}{% endfor %}
+  </div>
 </section>

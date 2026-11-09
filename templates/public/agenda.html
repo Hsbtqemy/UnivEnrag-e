@@ -10,7 +10,7 @@
     <h1>Agenda</h1>
     <p class="lead">Les rendez-vous publics du collectif, ouverts à toutes et à tous.</p>
   </div>
-  <p class="button-bar"><a class="button button--secondary button--small" href="{% url 'agenda:public_print' %}">Imprimer</a><a class="button button--secondary button--small" href="{% url 'agenda:public_download' %}">Télécharger (.ics)</a><a class="button button--secondary button--small" href="{% url 'agenda:public_ics' %}">S'abonner</a></p>
+  <p class="button-bar"><a class="button button--secondary button--small" href="{% url 'agenda:public_print' %}">Imprimer</a><a class="button button--secondary button--small" href="{% url 'agenda:public_download' %}">Télécharger (.ics)</a><a class="button button--secondary button--small" href="{% url 'agenda:public_ics' %}">S'abonner</a><a class="button button--secondary button--small" href="{% url 'agenda:public_board' %}" title="L'agenda en grand, pour un écran d'affichage : il se met à jour tout seul">Grand écran</a></p>
 </div>
 
 {# Le mois en calendrier, même vide : on doit voir tout de suite qu'on est sur l'agenda. #}

@@ -1,6 +1,7 @@
 import io
 import json
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import date, timedelta
 from itertools import groupby
 
 import segno
@@ -79,13 +80,45 @@ def public_events_json(request):
 
 BOARD_UPCOMING = 8
 BOARD_THEMES = {"clair": "light", "sombre": "dark", "enrage": "enrage"}
+# Les vues du grand écran, dans l'ordre de passage, et leur nom dans l'adresse (`?vues=`).
+BOARD_VIEWS = {"jour": "Aujourd'hui", "semaine": "7 jours", "mois": "Le mois"}
+# Durée d'affichage de chaque vue, en secondes (`?duree=`) : le temps de lire une journée
+# chargée en passant ; un cycle complet dure une minute.
+BOARD_DURATION = 20
+BOARD_DURATION_RANGE = (8, 120)
+BOARD_WEEK_PER_DAY = 6  # au-delà : « + 2 autres » ; le script resserre selon l'écran
+BOARD_MONTH_PER_DAY = 4
+BOARD_MONTH_WEEKS = 5
+
+
+@dataclass
+class BoardDay:
+    day: date
+    events: list
+    more: int
+    is_today: bool
+    is_past: bool
+
+
+def _board_days(events, first: date, count: int, cap: int, today: date) -> list[BoardDay]:
+    """`count` jours à partir de `first`, chacun avec ses `cap` premiers événements."""
+    by_day: dict[date, list] = {}
+    for event in events:
+        by_day.setdefault(timezone.localtime(event.start).date(), []).append(event)
+    days = []
+    for offset in range(count):
+        day = first + timedelta(days=offset)
+        items = by_day.get(day, [])
+        days.append(BoardDay(day, items[:cap], max(0, len(items) - cap), day == today, day < today))
+    return days
 
 
 def _board_context() -> dict:
     """Ce que montre le grand écran, calculé à chaque appel : le jour change tout seul.
 
-    Aujourd'hui (rendez-vous en cours et à venir, permanences du jour), puis les prochains
-    rendez-vous. Rien d'autre que ce que montre déjà l'agenda public (PUB-1).
+    Trois vues : aujourd'hui (rendez-vous en cours et à venir, permanences du jour, puis
+    les prochains rendez-vous), les 7 prochains jours, et cinq semaines à partir du lundi.
+    Rien d'autre que ce que montre déjà l'agenda public (PUB-1).
     """
     now = timezone.localtime()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -95,6 +128,16 @@ def _board_context() -> dict:
     current = [event for event in today_events if event.end > now]
     upcoming = list(events.filter(start__gte=tomorrow)[:BOARD_UPCOMING])
     permanences = presences_services.public_permanences(days=1)
+
+    week_events = events.filter(start__gte=today, start__lt=today + timedelta(days=7))
+    week_days = _board_days(week_events, now.date(), 7, BOARD_WEEK_PER_DAY, now.date())
+
+    monday = today - timedelta(days=today.weekday())
+    month_count = BOARD_MONTH_WEEKS * 7
+    month_events = events.filter(start__gte=monday, start__lt=monday + timedelta(days=month_count))
+    month_days = _board_days(
+        month_events, monday.date(), month_count, BOARD_MONTH_PER_DAY, now.date()
+    )
     return {
         "now": now,
         "today_events": current,
@@ -104,25 +147,45 @@ def _board_context() -> dict:
             (day, list(items))
             for day, items in groupby(upcoming, key=lambda e: timezone.localtime(e.start).date())
         ],
+        "week_days": week_days,
+        "week_empty": not any(day.events for day in week_days),
+        "month_weeks": [month_days[i : i + 7] for i in range(0, month_count, 7)],
+        "month_empty": not any(day.events for day in month_days),
+        "weekday_names": ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."],
     }
+
+
+def _board_settings(request) -> tuple[list[str], int]:
+    """Vues et durée demandées dans l'adresse, sinon les valeurs par défaut."""
+    views = [v for v in request.GET.get("vues", "").split(",") if v in BOARD_VIEWS]
+    raw = request.GET.get("duree", "")
+    low, high = BOARD_DURATION_RANGE
+    duration = min(max(int(raw), low), high) if raw.isdigit() else BOARD_DURATION
+    return list(dict.fromkeys(views)) or list(BOARD_VIEWS), duration
 
 
 @require_safe
 @never_cache
 @public_view
 def public_board(request):
-    """Agenda pour un grand écran (panneau d'affichage) : sans navigation, lisible de loin.
+    """Agenda pour un grand écran (panneau d'affichage) : sans navigation, lisible de loin,
+    sans compte ni code (il ne montre que le public).
 
-    Le script redemande le contenu chaque minute (`?fragment=1`) : un événement ajouté
-    apparaît, un événement fini disparaît, et le jour change à minuit sans intervention.
+    Le script fait tourner les vues (aujourd'hui, 7 jours, le mois) et redemande le contenu
+    chaque minute (`?fragment=1`) : un événement ajouté apparaît, et le jour change à
+    minuit sans intervention.
     """
     context = _board_context()
     if request.GET.get("fragment"):
         return render(request, "public/_board.html", context)
+    views, duration = _board_settings(request)
     context["forced_theme"] = BOARD_THEMES.get(request.GET.get("theme", ""), "")
     context["config"] = {
         "fragmentUrl": f"{reverse('agenda:public_board')}?fragment=1",
         "timeZone": settings.TIME_ZONE,
+        "views": views,
+        "labels": BOARD_VIEWS,
+        "duration": duration,
     }
     return render(request, "public/board.html", context)
 

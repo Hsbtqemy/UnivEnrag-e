@@ -22,6 +22,7 @@
   <footer class="board__foot">
     <img class="board__qr" src="{% url 'agenda:public_board_qr' %}" alt="" width="96" height="96">
     <p class="board__link">Tout l'agenda&nbsp;: <strong>{{ request.get_host }}{% url 'agenda:public_list' %}</strong></p>
+    <ol class="board__views" id="vues" aria-hidden="true" hidden></ol>
     <p class="board__status" id="etat" role="status"></p>
     <button type="button" class="button button--secondary button--small board__fullscreen" id="plein-ecran" hidden>Plein écran</button>
   </footer>

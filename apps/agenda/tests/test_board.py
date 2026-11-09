@@ -68,7 +68,7 @@ def test_today_shows_current_and_later_public_events_only(client, frozen, add):
     add("Projection du soir", NOW + timedelta(hours=4), place=None)
     add("Réunion interne", NOW + timedelta(hours=1), public=False)
     body = client.get(URL).content.decode()
-    assert "Atelier fini" not in body
+    assert "Atelier fini" not in panel(body, "jour")
     assert "Débat en cours" in body
     assert "En cours" in body
     assert "Projection du soir" in body
@@ -85,12 +85,20 @@ def test_upcoming_days_are_listed(client, frozen, add):
     assert "Ciné-débat" in body
 
 
+def panel(body: str, view: str) -> str:
+    """Le HTML d'une des trois vues du grand écran."""
+    start = body.index(f'data-view="{view}"')
+    following = [body.find(f'data-view="{v}"', start + 1) for v in ("semaine", "mois")]
+    ends = [i for i in following if i > start]
+    return body[start : min(ends)] if ends else body[start:]
+
+
 def test_upcoming_is_limited(client, frozen, add):
     for offset in range(1, 12):
         add(f"Rendez-vous {offset:02d}", NOW + timedelta(days=offset))
-    body = client.get(URL).content.decode()
-    assert "Rendez-vous 08" in body
-    assert "Rendez-vous 09" not in body
+    day = panel(client.get(URL).content.decode(), "jour")
+    assert "Rendez-vous 08" in day
+    assert "Rendez-vous 09" not in day
 
 
 def test_fragment_is_only_the_content(client, frozen, add):
@@ -137,3 +145,60 @@ def test_qr_code_points_to_public_agenda(client):
     assert response.status_code == 200
     assert response["Content-Type"] == "image/svg+xml"
     assert response.content.startswith(b"<svg")
+
+
+# --- Vues qui tournent : 7 jours et le mois ------------------------------------------------
+
+
+def test_week_view_lists_the_next_seven_days(client, frozen, add):
+    add("Ciné-débat", NOW + timedelta(days=3))
+    add("Trop loin pour la semaine", NOW + timedelta(days=8))
+    week = panel(client.get(URL).content.decode(), "semaine")
+    assert "Les 7 prochains jours" in week
+    assert "Ciné-débat" in week
+    assert "Trop loin pour la semaine" not in week
+    assert "data-empty" not in week
+
+
+def test_busy_day_in_week_view_says_how_many_more(client, frozen, add, other_room):
+    tomorrow = NOW.replace(hour=8) + timedelta(days=1)
+    for hour in range(8):
+        add(f"Atelier {hour}", tomorrow + timedelta(hours=hour), hours=1, place=None)
+    week = panel(client.get(URL).content.decode(), "semaine")
+    assert "Atelier 5" in week
+    assert "Atelier 6" not in week
+    assert "+ 2 autres" in week
+
+
+def test_month_view_covers_five_weeks_from_monday(client, frozen, add):
+    add("Dans trois semaines", NOW + timedelta(days=20))
+    add("Dans six semaines", NOW + timedelta(days=42))
+    month = panel(client.get(URL).content.decode(), "mois")
+    assert "Dans trois semaines" in month
+    assert "Dans six semaines" not in month
+    assert "9 novembre" in month  # le lundi de la semaine en cours, en premier
+
+
+def test_empty_views_are_marked_to_be_skipped(client, frozen):
+    body = client.get(URL).content.decode()
+    assert "data-empty" in panel(body, "semaine")
+    assert "data-empty" in panel(body, "mois")
+
+
+def test_views_and_duration_come_from_the_address(client, frozen):
+    response = client.get(f"{URL}?vues=mois,jour,inconnue&duree=500")
+    config = response.context["config"]
+    assert config["views"] == ["mois", "jour"]
+    assert config["duration"] == 120
+
+
+def test_default_views_and_duration(client, frozen):
+    config = client.get(f"{URL}?duree=abc").context["config"]
+    assert config["views"] == ["jour", "semaine", "mois"]
+    assert config["duration"] == 20
+
+
+@pytest.mark.parametrize("name", ["agenda:public_list", "agenda:calendar"])
+def test_agendas_link_to_the_board(client, member_client, name):
+    browser = member_client if name == "agenda:calendar" else client
+    assert URL in browser.get(reverse(name)).content.decode()

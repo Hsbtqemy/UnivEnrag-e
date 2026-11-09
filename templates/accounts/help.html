@@ -76,10 +76,11 @@
   <p>Mise en forme des textes : <code>**gras**</code>, <code>*italique*</code>, une liste avec des tirets, un lien avec <code>[texte](https://…)</code>. Une ligne vide sépare les paragraphes.</p>
 
   <h3 id="grand-ecran">Affichage grand écran</h3>
-  <p><strong>Gestion → Affichage grand écran</strong> (adresse <code>/p/affichage/</code>) montre l'agenda public en grand, sans menu : les rendez-vous du jour (celui en cours est encadré, ceux qui sont finis disparaissent), la permanence du jour, puis les prochains rendez-vous, avec un QR code vers l'agenda. Ouvrez-la sur le navigateur de l'écran ou de la tablette et cliquez sur « Plein écran ». Elle n'a besoin d'aucun code : elle ne montre que ce qui est déjà public.</p>
+  <p>Le bouton <strong>« Grand écran »</strong> de l'agenda (public ou des membres, adresse <code>/p/affichage/</code>) montre l'agenda public en grand, sans menu ni connexion : ne vous connectez jamais avec un compte de gestion sur un écran d'affichage, ce n'est pas nécessaire. Trois vues se succèdent, 20 secondes chacune : <strong>aujourd'hui</strong> (celui en cours est encadré, ceux qui sont finis disparaissent, la permanence du jour, les prochains rendez-vous à côté ; une journée trop chargée passe page par page), <strong>les 7 prochains jours</strong> et <strong>les prochaines semaines</strong>. Une vue sans rendez-vous est sautée ; quand une case est trop pleine, « + 3 autres » dit ce qui ne tient pas. Un QR code mène à l'agenda. Ouvrez la page sur le navigateur de l'écran ou de la tablette et cliquez sur « Plein écran ».</p>
   <ul>
     <li>Elle se met à jour toute seule chaque minute : un événement publié apparaît, et le jour change à minuit. Si la connexion tombe, l'écran garde le dernier affichage, le signale en bas et réessaie.</li>
     <li>Pour imposer un mode à l'écran : <code>/p/affichage/?theme=sombre</code>, <code>?theme=clair</code> ou <code>?theme=enrage</code>.</li>
+    <li>Pour choisir les vues et leur durée : <code>?vues=jour,semaine</code> (parmi <code>jour</code>, <code>semaine</code>, <code>mois</code>) et <code>?duree=30</code> (en secondes, de 8 à 120). Les réglages se combinent : <code>/p/affichage/?theme=sombre&amp;vues=jour,mois&amp;duree=30</code>.</li>
     <li>Pensez à désactiver la mise en veille de l'écran dans ses réglages ; la page demande aussi au navigateur de le garder allumé quand il le permet.</li>
   </ul>
 

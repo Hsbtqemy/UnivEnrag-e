@@ -1,7 +1,8 @@
 /*
- * Grand écran (/p/affichage/) : l'horloge avance, le contenu est redemandé chaque minute,
- * donc un nouvel événement apparaît et le jour change à minuit sans que personne ne touche
- * l'écran. Si le serveur ne répond pas, on garde l'affichage et on réessaie.
+ * Grand écran (/p/affichage/) : les vues tournent (aujourd'hui, 7 jours, le mois), une
+ * journée trop chargée passe page par page, l'horloge avance et le contenu est redemandé
+ * chaque minute. Un nouvel événement apparaît et le jour change à minuit sans que
+ * personne ne touche l'écran. Si le serveur ne répond pas, on garde l'affichage.
  */
 (function () {
   "use strict";
@@ -11,9 +12,11 @@
   const config = JSON.parse(configNode.textContent);
   const clock = document.getElementById("horloge");
   const status = document.getElementById("etat");
+  const indicator = document.getElementById("vues");
   const fullscreen = document.getElementById("plein-ecran");
 
   const REFRESH_MS = 60 * 1000;
+  const VIEW_MS = config.duration * 1000;
   // Recharger toute la page de temps en temps : après une mise en ligne, l'écran prend
   // les nouveaux fichiers. Seulement si le serveur vient de répondre, sinon l'écran
   // afficherait une page d'erreur et ne se relancerait plus.
@@ -24,11 +27,134 @@
     minute: "2-digit",
     timeZone: config.timeZone,
   });
+
   let lastHtml = board.innerHTML.trim();
+  let pendingHtml = null; // nouveau contenu, posé au prochain changement de vue
+  let currentView = null;
+  let pages = [];
+  let pageIndex = 0;
 
   function tick() {
     if (clock) clock.textContent = timeFormat.format(new Date());
   }
+
+  // --- Vues ------------------------------------------------------------------------------
+
+  function activePanels() {
+    return Array.from(board.querySelectorAll("[data-view]")).filter(
+      (panel) => config.views.includes(panel.dataset.view) && !panel.hasAttribute("data-empty"),
+    );
+  }
+
+  function renderIndicator(panels) {
+    if (!indicator) return;
+    indicator.replaceChildren();
+    indicator.hidden = panels.length < 2;
+    panels.forEach((panel) => {
+      const item = document.createElement("li");
+      item.textContent = config.labels[panel.dataset.view];
+      if (panel.dataset.view === currentView) item.className = "is-current";
+      indicator.append(item);
+    });
+  }
+
+  // Découpe une liste trop longue pour sa place en pages d'éléments entiers.
+  function paginate(list) {
+    const items = Array.from(list.children);
+    items.forEach((item) => {
+      item.hidden = false;
+    });
+    const room = list.clientHeight;
+    if (!items.length || list.scrollHeight <= room + 1) return [items];
+    const result = [];
+    let page = [];
+    let pageTop = items[0].offsetTop;
+    items.forEach((item) => {
+      const bottom = item.offsetTop + item.offsetHeight - pageTop;
+      if (page.length && bottom > room) {
+        result.push(page);
+        page = [];
+        pageTop = item.offsetTop;
+      }
+      page.push(item);
+    });
+    result.push(page);
+    return result;
+  }
+
+  // Un bloc trop rempli pour sa place (un jour de la semaine, une case du mois, « À
+  // venir ») : on masque ses derniers éléments, et « + N autres » les compte.
+  function fit(container) {
+    const units = Array.from(container.querySelectorAll(container.dataset.fit));
+    const more = container.querySelector("[data-more]");
+    const base = more ? Number(more.dataset.more) || 0 : 0;
+    let hidden = 0;
+    const label = () => {
+      if (!more) return;
+      const n = base + hidden;
+      more.hidden = n === 0;
+      more.textContent = more.hasAttribute("data-short") ? `+ ${n}` : `+ ${n} autre${n > 1 ? "s" : ""}`;
+    };
+    units.forEach((unit) => {
+      unit.hidden = false;
+    });
+    label();
+    for (let i = units.length - 1; i > 0 && container.scrollHeight > container.clientHeight + 1; i--) {
+      units[i].hidden = true;
+      hidden += 1;
+      label();
+    }
+  }
+
+  function showPage(panel) {
+    const list = panel.querySelector("[data-paginate]");
+    const pager = panel.querySelector("[data-pager]");
+    if (list && pages.length > 1) {
+      Array.from(list.children).forEach((item) => {
+        item.hidden = !pages[pageIndex].includes(item);
+      });
+    }
+    if (pager) pager.textContent = pages.length > 1 ? `${pageIndex + 1}/${pages.length}` : "";
+  }
+
+  function show(view) {
+    if (pendingHtml !== null) {
+      board.innerHTML = pendingHtml;
+      lastHtml = pendingHtml;
+      pendingHtml = null;
+    }
+    let panels = activePanels();
+    // Rien à montrer dans les vues demandées : la journée, toujours présente.
+    if (!panels.length) panels = [board.querySelector('[data-view="jour"]')].filter(Boolean);
+    if (!panels.length) return;
+    const panel = panels.find((p) => p.dataset.view === view) || panels[0];
+    currentView = panel.dataset.view;
+    board.querySelectorAll("[data-view]").forEach((p) => {
+      p.hidden = p !== panel;
+    });
+    panel.querySelectorAll("[data-fit]").forEach(fit);
+    const list = panel.querySelector("[data-paginate]");
+    pages = list ? paginate(list) : [[]];
+    pageIndex = 0;
+    showPage(panel);
+    renderIndicator(panels);
+  }
+
+  function next() {
+    if (pageIndex + 1 < pages.length) {
+      pageIndex += 1;
+      const panel = board.querySelector(`[data-view="${currentView}"]`);
+      if (panel) showPage(panel);
+    } else {
+      const panels = activePanels();
+      const position = panels.findIndex((p) => p.dataset.view === currentView);
+      const following = panels[(position + 1) % panels.length];
+      show(following ? following.dataset.view : null);
+    }
+    window.setTimeout(next, VIEW_MS);
+  }
+
+  // --- Rafraîchissement ------------------------------------------------------------------
 
   async function refresh() {
     try {
@@ -42,10 +168,7 @@
         window.location.reload();
         return;
       }
-      if (html !== lastHtml) {
-        board.innerHTML = html;
-        lastHtml = html;
-      }
+      if (html !== lastHtml) pendingHtml = html;
       if (status) {
         status.textContent = "";
         status.classList.remove("board__status--lost");
@@ -57,6 +180,8 @@
       }
     }
   }
+
+  // --- Écran -----------------------------------------------------------------------------
 
   // L'écran reste allumé (tablette, téléviseur avec navigateur) quand le navigateur le permet.
   let wakeLock = null;
@@ -75,7 +200,8 @@
     }
   });
 
-  // Plein écran : un clic suffit, le bouton disparaît ensuite.
+  // Plein écran : un clic suffit, le bouton disparaît ensuite. Le découpage en pages
+  // dépend de la hauteur : on le refait quand elle change.
   if (fullscreen && document.documentElement.requestFullscreen) {
     const sync = () => {
       fullscreen.hidden = Boolean(document.fullscreenElement);
@@ -86,6 +212,11 @@
     document.addEventListener("fullscreenchange", sync);
     sync();
   }
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => show(currentView), 300);
+  });
 
   // Le pointeur s'efface quand la souris ne bouge plus.
   let idleTimer = null;
@@ -97,6 +228,8 @@
 
   tick();
   keepAwake();
+  show(config.views[0]);
+  window.setTimeout(next, VIEW_MS);
   window.setInterval(tick, 1000);
   window.setInterval(refresh, REFRESH_MS);
 })();
