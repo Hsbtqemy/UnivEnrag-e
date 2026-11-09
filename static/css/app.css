@@ -787,6 +787,7 @@ body.board {
   --board-unit: clamp(14px, .8vw + .8vh, 40px);
   height: 100vh; height: 100dvh; margin: 0; padding: 1.2em 1.6em;
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 1em;
+  grid-template-columns: minmax(0, 1fr);  /* rien ne peut élargir la page au-delà de l'écran */
   font-size: var(--board-unit); overflow: hidden;
 }
 body.board.board--idle { cursor: none; }
@@ -861,18 +862,38 @@ body.board.board--idle { cursor: none; }
 .board-month .board-more:not([hidden]) { display: block; }
 
 /* Pied : QR code, adresse, vues qui tournent, état de la connexion. */
-.board__foot { display: flex; align-items: center; gap: 1em; border-top: 1px solid var(--border); padding-top: .5em; font-size: .85em; color: var(--muted); }
+.board__foot { display: flex; flex-wrap: wrap; align-items: center; gap: .6em 1em; border-top: 1px solid var(--border); padding-top: .5em; font-size: .85em; color: var(--muted); }
 .board__qr { width: 4.5em; height: 4.5em; border-radius: 4px; }
 .board__link { margin: 0; }
 .board__link strong { color: var(--text); }
 .board__views { display: flex; gap: .4em; list-style: none; margin: 0 0 0 auto; padding: 0; }
-.board__views li { white-space: nowrap; padding: .1em .6em; border-radius: 1em; border: 1px solid var(--border); }
-.board__views li.is-current { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.board__views button { font: inherit; color: inherit; white-space: nowrap; padding: .1em .6em; border-radius: 1em; border: 1px solid var(--border); background: none; cursor: pointer; }
+.board__views button:hover { border-color: var(--accent); }
+.board__views li.is-current button { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
 .board__status { margin: 0 0 0 auto; }
 .board__views:not([hidden]) + .board__status { margin-left: 0; }
 .board__status--lost { color: var(--warning); font-weight: 600; }
-.board__fullscreen { margin-left: auto; }
-.board__status:not(:empty) + .board__fullscreen, .board__views:not([hidden]) ~ .board__fullscreen { margin-left: 0; }
+.board__controls { display: flex; gap: .5em; align-items: center; margin-left: auto; }
+.board__status:not(:empty) + .board__controls, .board__views:not([hidden]) ~ .board__controls { margin-left: 0; }
+body.board--idle .board__controls { visibility: hidden; }
+.board__controls .button { margin: 0; line-height: 1.2; }
+/* Le panneau s'ancre au bord droit du pied de page : il reste dans l'écran même quand
+   le pied passe sur plusieurs lignes (portrait, téléphone). */
+.board__foot { position: relative; }
+.board__settings > summary { list-style: none; }
+.board__settings > summary::-webkit-details-marker { display: none; }
+.board-settings {
+  position: absolute; right: 0; bottom: calc(100% + .6em); z-index: 10;
+  display: grid; gap: .45em; width: max-content; max-width: min(22em, 90vw);
+  padding: .9em 1.1em; font-size: max(.9em, 15px); color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 .4em 1.4em rgb(0 0 0 / .25);
+}
+.board-settings fieldset { border: 0; margin: 0 0 .3em; padding: 0; display: grid; gap: .3em; }
+.board-settings legend, .board-settings > label { font-weight: 600; padding: 0; }
+.board-settings select { font: inherit; padding: .3em .5em; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.board-settings__hint { margin: .2em 0; color: var(--muted); font-size: .9em; }
+.board-settings .button { justify-self: start; }
 @media (orientation: portrait) {
   body.board { --board-unit: clamp(14px, 2vw + .4vh, 40px); }
   .board-panel--day { grid-template-columns: 1fr; grid-template-rows: minmax(0, auto) minmax(0, 1fr); }

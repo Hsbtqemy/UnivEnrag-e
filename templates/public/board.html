@@ -22,9 +22,34 @@
   <footer class="board__foot">
     <img class="board__qr" src="{% url 'agenda:public_board_qr' %}" alt="" width="96" height="96">
     <p class="board__link">Tout l'agenda&nbsp;: <strong>{{ request.get_host }}{% url 'agenda:public_list' %}</strong></p>
-    <ol class="board__views" id="vues" aria-hidden="true" hidden></ol>
+    {# Rempli par le script : un bouton par vue, pour passer directement à l'une d'elles. #}
+    <ol class="board__views" id="vues" aria-label="Vues" hidden></ol>
     <p class="board__status" id="etat" role="status"></p>
-    <button type="button" class="button button--secondary button--small board__fullscreen" id="plein-ecran" hidden>Plein écran</button>
+    {# Commandes de l'écran : elles s'effacent quand la souris ne bouge plus. #}
+    <div class="board__controls">
+      <details class="board__settings" id="reglages">
+        <summary class="button button--secondary button--small">Réglages</summary>
+        {% comment %}Un simple formulaire GET : les réglages restent dans l'adresse, donc dans les
+        favoris de l'écran, et passent le rechargement de toutes les 6 heures.{% endcomment %}
+        <form method="get" class="board-settings">
+          <fieldset>
+            <legend>Vues qui tournent</legend>
+            {% for key, label, checked in board_settings.views %}<label class="checkbox"><input type="checkbox" name="vues" value="{{ key }}"{% if checked %} checked{% endif %}> {{ label }}</label>{% endfor %}
+          </fieldset>
+          <label for="reglage-duree">Durée de chaque vue</label>
+          <select id="reglage-duree" name="duree">
+            {% for value, label in board_settings.durations %}<option value="{{ value }}"{% if value == board_settings.duration %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <label for="reglage-couleurs">Couleurs</label>
+          <select id="reglage-couleurs" name="theme">
+            {% for value, label in board_settings.themes %}<option value="{{ value }}"{% if value == board_settings.theme %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <p class="board-settings__hint">Une seule vue cochée : elle reste affichée. Les réglages s'inscrivent dans l'adresse ; mettez-la en favori sur l'écran.</p>
+          <button type="submit" class="button button--small">Appliquer</button>
+        </form>
+      </details>
+      <button type="button" class="button button--secondary button--small" id="plein-ecran" hidden>Plein écran</button>
+    </div>
   </footer>
   {{ config|json_script:"board-config" }}
   <script src="{% static 'js/board.js' %}"></script>

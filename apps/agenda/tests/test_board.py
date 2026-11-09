@@ -198,6 +198,32 @@ def test_default_views_and_duration(client, frozen):
     assert config["duration"] == 20
 
 
+def test_settings_form_sends_views_as_separate_values(client, frozen):
+    """Les cases cochées des réglages arrivent en `vues=…&vues=…`."""
+    config = client.get(f"{URL}?vues=semaine&vues=mois&duree=45&theme=sombre").context["config"]
+    assert (config["views"], config["duration"]) == (["semaine", "mois"], 45)
+
+
+def test_settings_form_shows_current_choices(client, frozen):
+    response = client.get(f"{URL}?vues=jour&duree=37&theme=enrage")
+    page = response.content.decode()
+    assert 'id="reglages"' in page and 'method="get"' in page
+    assert 'value="jour" checked' in page and 'value="mois" checked' not in page
+    # Une durée tapée à la main reste proposée, sélectionnée.
+    assert '<option value="37" selected>37 secondes</option>' in page
+    assert '<option value="60">1 minute</option>' in page
+    assert '<option value="90">1 min 30 s</option>' in page
+    assert '<option value="enrage" selected>Enragé</option>' in page
+
+
+def test_settings_form_defaults(client, frozen):
+    page = client.get(URL).content.decode()
+    for view in ["jour", "semaine", "mois"]:
+        assert f'value="{view}" checked' in page
+    assert '<option value="20" selected>20 secondes</option>' in page
+    assert '<option value="" selected>Comme l&#x27;appareil</option>' in page
+
+
 @pytest.mark.parametrize("name", ["agenda:public_list", "agenda:calendar"])
 def test_agendas_link_to_the_board(client, member_client, name):
     browser = member_client if name == "agenda:calendar" else client

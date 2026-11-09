@@ -1,6 +1,8 @@
 /*
- * Grand écran (/p/affichage/) : les vues tournent (aujourd'hui, 7 jours, le mois), une
- * journée trop chargée passe page par page, l'horloge avance et le contenu est redemandé
+ * Grand écran (/p/affichage/) : les vues tournent (aujourd'hui, 7 jours, le mois), un
+ * bouton par vue permet d'y passer directement, « Réglages » choisit les vues, leur durée
+ * et les couleurs. Une journée trop chargée passe page par page, l'horloge avance et le
+ * contenu est redemandé
  * chaque minute. Un nouvel événement apparaît et le jour change à minuit sans que
  * personne ne touche l'écran. Si le serveur ne répond pas, on garde l'affichage.
  */
@@ -14,6 +16,8 @@
   const status = document.getElementById("etat");
   const indicator = document.getElementById("vues");
   const fullscreen = document.getElementById("plein-ecran");
+  const settings = document.getElementById("reglages");
+  const footer = document.querySelector(".board__foot");
 
   const REFRESH_MS = 60 * 1000;
   const VIEW_MS = config.duration * 1000;
@@ -33,6 +37,7 @@
   let currentView = null;
   let pages = [];
   let pageIndex = 0;
+  let rotation = null;
 
   function tick() {
     if (clock) clock.textContent = timeFormat.format(new Date());
@@ -46,15 +51,35 @@
     );
   }
 
+  // Un bouton par vue : on passe directement à celle qu'on veut, la rotation reprend
+  // ensuite depuis elle.
   function renderIndicator(panels) {
     if (!indicator) return;
     indicator.replaceChildren();
     indicator.hidden = panels.length < 2;
     panels.forEach((panel) => {
       const item = document.createElement("li");
-      item.textContent = config.labels[panel.dataset.view];
-      if (panel.dataset.view === currentView) item.className = "is-current";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.goto = panel.dataset.view;
+      button.textContent = config.labels[panel.dataset.view];
+      if (panel.dataset.view === currentView) {
+        item.className = "is-current";
+        button.setAttribute("aria-current", "true");
+      }
+      item.append(button);
       indicator.append(item);
+    });
+  }
+
+  if (indicator) {
+    indicator.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-goto]");
+      if (!button) return;
+      show(button.dataset.goto);
+      schedule();
+      const current = indicator.querySelector("[aria-current]");
+      if (current) current.focus();
     });
   }
 
@@ -151,7 +176,12 @@
       const following = panels[(position + 1) % panels.length];
       show(following ? following.dataset.view : null);
     }
-    window.setTimeout(next, VIEW_MS);
+    schedule();
+  }
+
+  function schedule() {
+    window.clearTimeout(rotation);
+    rotation = window.setTimeout(next, VIEW_MS);
   }
 
   // --- Rafraîchissement ------------------------------------------------------------------
@@ -218,18 +248,32 @@
     resizeTimer = window.setTimeout(() => show(currentView), 300);
   });
 
-  // Le pointeur s'efface quand la souris ne bouge plus.
+  // Le pointeur et les commandes (réglages, plein écran) s'effacent quand personne ne
+  // touche l'écran ; ils reviennent au moindre mouvement, toucher ou appui sur une touche.
+  // Pas tant que les réglages sont ouverts ou qu'une commande a le focus.
   let idleTimer = null;
-  document.addEventListener("mousemove", () => {
+  function goIdle() {
+    const busy = (settings && settings.open) || (footer && footer.contains(document.activeElement));
+    if (busy) {
+      idleTimer = window.setTimeout(goIdle, 4000);
+      return;
+    }
+    document.body.classList.add("board--idle");
+  }
+  function wake() {
     document.body.classList.remove("board--idle");
     window.clearTimeout(idleTimer);
-    idleTimer = window.setTimeout(() => document.body.classList.add("board--idle"), 4000);
+    idleTimer = window.setTimeout(goIdle, 4000);
+  }
+  ["mousemove", "pointerdown", "keydown"].forEach((name) => {
+    document.addEventListener(name, wake, { passive: true });
   });
 
   tick();
   keepAwake();
+  wake();
   show(config.views[0]);
-  window.setTimeout(next, VIEW_MS);
+  schedule();
   window.setInterval(tick, 1000);
   window.setInterval(refresh, REFRESH_MS);
 })();

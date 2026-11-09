@@ -86,6 +86,14 @@ BOARD_VIEWS = {"jour": "Aujourd'hui", "semaine": "7 jours", "mois": "Le mois"}
 # chargée en passant ; un cycle complet dure une minute.
 BOARD_DURATION = 20
 BOARD_DURATION_RANGE = (8, 120)
+# Menu « Durée de chaque vue » des réglages de l'écran.
+BOARD_DURATION_CHOICES = (10, 15, 20, 30, 45, 60, 90, 120)
+BOARD_THEME_LABELS = {
+    "": "Comme l'appareil",
+    "clair": "Clair",
+    "sombre": "Sombre",
+    "enrage": "Enragé",
+}
 BOARD_WEEK_PER_DAY = 6  # au-delà : « + 2 autres » ; le script resserre selon l'écran
 BOARD_MONTH_PER_DAY = 4
 BOARD_MONTH_WEEKS = 5
@@ -156,8 +164,12 @@ def _board_context() -> dict:
 
 
 def _board_settings(request) -> tuple[list[str], int]:
-    """Vues et durée demandées dans l'adresse, sinon les valeurs par défaut."""
-    views = [v for v in request.GET.get("vues", "").split(",") if v in BOARD_VIEWS]
+    """Vues et durée demandées dans l'adresse, sinon les valeurs par défaut.
+
+    `?vues=jour,mois` (adresse écrite à la main) ou `?vues=jour&vues=mois` (cases cochées
+    dans les réglages de l'écran) reviennent au même."""
+    wanted = ",".join(request.GET.getlist("vues")).split(",")
+    views = [v for v in wanted if v in BOARD_VIEWS]
     raw = request.GET.get("duree", "")
     low, high = BOARD_DURATION_RANGE
     duration = min(max(int(raw), low), high) if raw.isdigit() else BOARD_DURATION
@@ -187,7 +199,23 @@ def public_board(request):
         "labels": BOARD_VIEWS,
         "duration": duration,
     }
+    theme = request.GET.get("theme", "")
+    context["board_settings"] = {
+        "views": [(key, label, key in views) for key, label in BOARD_VIEWS.items()],
+        "durations": [(s, _seconds_label(s)) for s in sorted({*BOARD_DURATION_CHOICES, duration})],
+        "duration": duration,
+        "themes": list(BOARD_THEME_LABELS.items()),
+        "theme": theme if theme in BOARD_THEMES else "",
+    }
     return render(request, "public/board.html", context)
+
+
+def _seconds_label(seconds: int) -> str:
+    minutes, rest = divmod(seconds, 60)
+    if not minutes:
+        return f"{seconds} secondes"
+    label = "1 minute" if minutes == 1 and not rest else f"{minutes} minutes"
+    return f"{minutes} min {rest} s" if rest else label
 
 
 @require_safe
