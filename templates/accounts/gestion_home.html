@@ -18,6 +18,7 @@
 <ul class="tool-list">
   {% if "moderate" in capabilities %}<li><a href="{% url 'ideas:moderation' %}">Modération des propositions</a>{% if pending.moderation %} <strong class="pending-badge">{{ pending.moderation }}</strong>{% endif %}<span>Accepter ou écarter les propositions reçues de l'extérieur.</span></li>{% endif %}
   {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:programming' %}">Programmation</a>{% if pending.to_place %} <strong class="pending-badge">{{ pending.to_place }}</strong>{% endif %}{% if pending.to_confirm %} <strong class="pending-badge">{{ pending.to_confirm }}</strong>{% endif %}<span>Placer les idées et confirmer les événements, salle par salle.</span></li>{% endif %}
+  {% if "manage_agenda" in capabilities %}<li><a href="{% url 'agenda:hidden_list' %}">Événements masqués</a><span>Erreurs et doublons retirés de l'agenda : les rétablir ou les supprimer.</span></li>{% endif %}
   {% if "manage_rooms" in capabilities %}<li><a href="{% url 'agenda:room_requests' %}">Réservations de salles à valider</a>{% if pending.rooms %} <strong class="pending-badge">{{ pending.rooms }}</strong>{% endif %}<span>Les demandes dans les salles soumises à validation.</span></li>{% endif %}
   {% if "manage_public" in capabilities %}<li><a href="{% url 'public:presentation' %}">Présentation du collectif</a><span>Le texte qui ouvre la page publique.</span></li>
   <li><a href="{% url 'public:news_manage' %}">Actualités</a><span>Écrire, publier ou dépublier les actualités de la page publique.</span></li>

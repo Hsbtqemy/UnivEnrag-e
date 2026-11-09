@@ -2,7 +2,12 @@
 {% load dates_fr %}
 {% block title %}{{ event.title }} — {{ site.collective_name }}{% endblock %}
 {% block content %}
+{% if event.status == "hidden" %}
+<p class="back"><a href="{% url 'agenda:hidden_list' %}">← Événements masqués</a></p>
+<p class="callout callout--warning">Cet événement est <strong>masqué</strong> : il n'apparaît nulle part ailleurs (agenda, flux, page publique). Seuls les gestionnaires de l'agenda le voient. Changez son statut pour le rétablir, ou supprimez-le.</p>
+{% else %}
 <p class="back"><a href="{% url 'agenda:calendar' %}?date={{ event.start|date:'Y-m-d' }}">← Agenda</a></p>
+{% endif %}
 <article class="event-detail event-detail--{{ event.status }}" style="--room-color: {{ event.display_color }}">
   <h1>{{ event.title }}</h1>
   <p class="badges">
@@ -29,7 +34,7 @@
     {% if can_edit_agenda %}<a class="button button--secondary" href="{% url 'agenda:new' %}?depuis={{ event.pk }}">Dupliquer</a>{% endif %}
   </div>
 
-  {% if can_edit %}
+  {% if can_edit and not can_manage %}
   <details class="danger-zone">
     <summary>Annuler l'événement…</summary>
     <form method="post" action="{% url 'agenda:cancel' event.pk %}" class="form form--narrow">
@@ -40,7 +45,7 @@
       <button type="submit" class="button button--danger">Confirmer l'annulation</button>
     </form>
   </details>
-  {% elif event.is_locked %}
+  {% elif event.is_locked and not can_manage %}
   <p class="hint">Verrouillé par un gestionnaire : il ne peut plus être modifié.</p>
   {% endif %}
 
@@ -58,11 +63,31 @@
   {% if can_manage or can_publish %}
   <div class="manager-actions">
     <h3>Gestion</h3>
-    <div class="actions">
-      {% if can_manage and event.status == "provisional" %}
-      <form method="post" action="{% url 'agenda:confirm' event.pk %}">{% csrf_token %}<button class="button">Confirmer</button></form>
+    {% if can_manage %}
+    {# Décision 26 : n'importe quel statut vers n'importe quel autre, depuis un seul menu. #}
+    <form method="post" action="{% url 'agenda:set_status' event.pk %}" class="status-form">
+      {% csrf_token %}
+      <input type="hidden" name="revision" value="{{ event.revision }}">
+      <label for="statut">Statut</label>
+      <div class="status-form__row">
+        <select id="statut" name="status" aria-describedby="statuts-aide">
+          {% for value, label, help in statuses %}<option value="{{ value }}"{% if value == event.status %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button class="button">Changer le statut</button>
+      </div>
+      {% if can_validate_room and event.room %}
+      <label class="checkbox"><input type="checkbox" name="override" value="1"> Passer outre si « {{ event.room.name }} » est prise ou fermée (dérogation journalisée)</label>
       {% endif %}
-      {% if can_publish and event.status != "cancelled" %}
+      <details class="status-help" id="statuts-aide">
+        <summary>Que veut dire chaque statut&nbsp;?</summary>
+        <dl>
+          {% for value, label, help in statuses %}<div><dt>{{ label }}</dt><dd>{{ help }}</dd></div>{% endfor %}
+        </dl>
+      </details>
+    </form>
+    {% endif %}
+    <div class="actions">
+      {% if can_publish and not event.is_closed %}
       <form method="post" action="{% url 'agenda:publish' event.pk %}">{% csrf_token %}
         <input type="hidden" name="public" value="{% if event.is_public %}0{% else %}1{% endif %}">
         <button class="button button--secondary">{% if event.is_public %}Retirer de l'agenda public{% else %}Publier sur l'agenda public{% endif %}</button>
@@ -72,6 +97,9 @@
       <form method="post" action="{% url 'agenda:lock' event.pk %}">{% csrf_token %}<button class="button button--secondary">{% if event.is_locked %}Retirer le verrou{% else %}Verrouiller{% endif %}</button></form>
       {% endif %}
     </div>
+    {% if can_manage %}
+    <p class="danger-link"><a href="{% url 'agenda:delete' event.pk %}">Supprimer définitivement…</a></p>
+    {% endif %}
   </div>
   {% endif %}
 </section>

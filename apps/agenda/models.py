@@ -9,7 +9,12 @@ class EventQuerySet(models.QuerySet):
         return self.filter(status=Event.Status.CONFIRMED, is_public=True)
 
     def active(self):
-        return self.exclude(status=Event.Status.CANCELLED)
+        """Ce qui doit avoir lieu à sa date : ni annulé, ni à reprogrammer."""
+        return self.exclude(status__in=[Event.Status.CANCELLED, Event.Status.RESCHEDULING])
+
+    def hidden(self):
+        """Masqués : à lire depuis `Event.all_objects`, le gestionnaire par défaut les écarte."""
+        return self.filter(status=Event.Status.HIDDEN)
 
     def awaiting_publication(self):
         """Demandes de publication d'un membre, pas encore tranchées (décision 11)."""
@@ -32,6 +37,18 @@ class EventQuerySet(models.QuerySet):
         return self.filter(start__lt=end, end__gt=start)
 
 
+class EventManager(models.Manager.from_queryset(EventQuerySet)):
+    """Gestionnaire par défaut : un événement masqué n'existe pas pour le reste du site.
+
+    Agenda, programmation, flux, page publique, grand écran, idées liées : tout passe par
+    `Event.objects` et ne le voit donc jamais. Seules la fiche (habilité « agenda »), la
+    liste des masqués, l'admin et les services lisent `Event.all_objects` (décision 26).
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().exclude(status=Event.Status.HIDDEN)
+
+
 class Event(models.Model):
     """Un événement de l'agenda collectif ; la salle est un attribut, pas un calendrier."""
 
@@ -52,7 +69,15 @@ class Event(models.Model):
     class Status(models.TextChoices):
         PROVISIONAL = "provisional", "Provisoire"
         CONFIRMED = "confirmed", "Confirmé"
+        # N'aura pas lieu à cette date, une autre est à trouver : reste dans l'agenda
+        # interne, ne réserve pas la salle, n'est jamais public (décision 26).
+        RESCHEDULING = "rescheduling", "À reprogrammer"
         CANCELLED = "cancelled", "Annulé"
+        # Erreur ou doublon : retiré de partout sauf de la gestion, réversible (décision 26).
+        HIDDEN = "hidden", "Masqué"
+
+    # Plus de modification ni de déplacement : on change d'abord le statut.
+    CLOSED_STATUSES = ("cancelled", "hidden")
 
     class RoomStatus(models.TextChoices):
         APPROVED = "approved", "Validée"
@@ -125,7 +150,8 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    objects = EventQuerySet.as_manager()
+    objects = EventManager()
+    all_objects = EventQuerySet.as_manager()
 
     class Meta:
         verbose_name = "événement"
@@ -139,6 +165,11 @@ class Event(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+    @property
+    def is_closed(self) -> bool:
+        """Annulé ou masqué : ni modification ni déplacement tant que le statut reste tel."""
+        return self.status in self.CLOSED_STATUSES
 
     @property
     def place_label(self) -> str:
@@ -191,6 +222,7 @@ class EventChange(models.Model):
         LOCKED = "locked", "Verrou"
         RESTORED = "restored", "Restauration"
         ROOM = "room", "Réservation de salle"
+        STATUS = "status", "Changement de statut"
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="changes")
     action = models.CharField(max_length=12, choices=Action.choices)

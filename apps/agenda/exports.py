@@ -44,7 +44,9 @@ class ExportForm(forms.Form):
         label="Espace", queryset=Space.objects.all(), required=False, empty_label="Tous"
     )
     provisoires = forms.BooleanField(label="Inclure les événements provisoires", required=False)
-    annules = forms.BooleanField(label="Inclure les événements annulés", required=False)
+    annules = forms.BooleanField(
+        label="Inclure les événements annulés ou à reprogrammer", required=False
+    )
 
     @staticmethod
     def defaults() -> dict:
@@ -73,7 +75,7 @@ class ExportForm(forms.Form):
         if not data["provisoires"]:
             events = events.exclude(status=Event.Status.PROVISIONAL)
         if not data["annules"]:
-            events = events.exclude(status=Event.Status.CANCELLED)
+            events = events.exclude(status__in=[Event.Status.CANCELLED, Event.Status.RESCHEDULING])
         return events.order_by("start")
 
     def summary(self) -> str:

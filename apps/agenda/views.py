@@ -292,7 +292,10 @@ def programming(request):
 @require_safe
 def programming_events(request):
     start, end = from_wall_clock(request.GET.get("start")), from_wall_clock(request.GET.get("end"))
-    base = Event.objects.active().select_related("owner", "room", "space", "idea")
+    # Les « à reprogrammer » y restent : c'est ici qu'on leur trouve une autre date.
+    base = Event.objects.exclude(status=Event.Status.CANCELLED).select_related(
+        "owner", "room", "space", "idea"
+    )
     events = base.overlapping(start, end) if start and end else base
     events = list(events.prefetch_related("idea__slots"))
     # Un provisoire placé hors de la période peut y avoir un autre créneau envisagé :

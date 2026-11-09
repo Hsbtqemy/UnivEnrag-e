@@ -90,7 +90,7 @@ def room_conflicts(room, start, end, *, exclude_id=None):
 
 def warnings_for(event) -> list[str]:
     """Avertissements non bloquants (AGE-7) : même salle, ou mêmes intervenants."""
-    if event.status == Event.Status.CANCELLED:
+    if event.status not in (Event.Status.PROVISIONAL, Event.Status.CONFIRMED):
         return []
     return slot_warnings(
         event.room, event.start, event.end, exclude_id=event.pk, speakers=event.speakers
@@ -202,12 +202,16 @@ def _check_space(space):
 
 
 def _lock_for_update(event: Event, *, user, revision: int | None) -> Event:
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     if revision is not None and revision != event.revision:
         raise StaleRevisionError()
     if event.is_locked and not can_manage(user):
         raise LockedError()
     return event
+
+
+def _closed_message(event: Event, what: str) -> str:
+    return f"Un événement {event.get_status_display().lower()} {what}."
 
 
 def _save(event: Event, action: str, *, actor, user, before: dict, audit_action: str = ""):
@@ -349,8 +353,8 @@ def update(
 ) -> Event:
     """Modification par le formulaire. `wants_public=None` laisse la publication en l'état."""
     event = _lock_for_update(event, user=user, revision=revision)
-    if event.status == Event.Status.CANCELLED:
-        raise EventError("Un événement annulé ne se modifie plus.")
+    if event.is_closed:
+        raise EventError(_closed_message(event, "ne se modifie plus"))
     _check_slot(start, end)
     if space is not None and space.pk != event.space_id:
         _check_space(space)
@@ -383,8 +387,8 @@ def move(
 ) -> Event:
     """Déplace ou redimensionne un événement (glisser-déposer ou formulaire)."""
     event = _lock_for_update(event, user=user, revision=revision)
-    if event.status == Event.Status.CANCELLED:
-        raise EventError("Un événement annulé ne se déplace pas.")
+    if event.is_closed:
+        raise EventError(_closed_message(event, "ne se déplace pas"))
     _check_slot(start, end)
     derogations = _check_booking(
         event.status, room, start, end, exclude_id=event.pk, user=user, override=override
@@ -409,7 +413,7 @@ def cancel(event: Event, *, actor, user=None, revision: int) -> Event:
     from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
 
     event = _lock_for_update(event, user=user, revision=revision)
-    if event.status == Event.Status.CANCELLED:
+    if event.is_closed:
         return event
     before = history.snapshot(event)
     event.status = Event.Status.CANCELLED
@@ -428,16 +432,21 @@ def cancel(event: Event, *, actor, user=None, revision: int) -> Event:
 
 @transaction.atomic
 def confirm(event: Event, *, user, actor=None, override=False) -> Event:
-    """Passe un événement en confirmé. Seul un conflit de salle l'empêche."""
-    from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
-
+    """Passe un provisoire (ou un « à reprogrammer ») en confirmé. Seul un conflit de salle
+    l'empêche. Un annulé ou un masqué passe par le menu « Statut » de sa fiche."""
     if not can_manage(user):
         raise EventError("Seul un gestionnaire de l'agenda peut confirmer un événement.")
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     if event.status == Event.Status.CONFIRMED:
         return event
-    if event.status == Event.Status.CANCELLED:
-        raise EventError("Un événement annulé ne peut pas être confirmé.")
+    if event.is_closed:
+        raise EventError(_closed_message(event, "ne peut pas être confirmé"))
+    return _confirm_locked(event, user=user, actor=actor, override=override)
+
+
+def _confirm_locked(event: Event, *, user, actor, override) -> Event:
+    from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
+
     derogations = _check_booking(
         Event.Status.CONFIRMED,
         event.room,
@@ -467,6 +476,74 @@ def confirm(event: Event, *, user, actor=None, override=False) -> Event:
     return event
 
 
+@transaction.atomic
+def set_status(
+    event: Event, status: str, *, user, revision: int, actor=None, override=False
+) -> Event:
+    """Menu « Statut » de la fiche : n'importe quel statut vers n'importe quel autre, pour
+    un habilité « agenda » seulement (décision 26).
+
+    Vers « Confirmé », les contrôles de salle s'appliquent comme pour une confirmation.
+    Quitter « Confirmé » libère la salle, retire l'événement de l'agenda public, et ramène
+    l'idée d'origine « En préparation » s'il ne lui reste aucun événement confirmé.
+    """
+    from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
+
+    if status not in Event.Status.values:
+        raise EventError("Statut inconnu.")
+    if not can_manage(user):
+        raise EventError("Seul un gestionnaire de l'agenda change le statut d'un événement.")
+    event = _lock_for_update(event, user=user, revision=revision)
+    if event.status == status:
+        return event
+    if status == Event.Status.CONFIRMED:
+        return _confirm_locked(event, user=user, actor=actor, override=override)
+    was_confirmed = event.status == Event.Status.CONFIRMED
+    before = history.snapshot(event)
+    event.status = status
+    _save(
+        event,
+        Action.CANCELLED if status == Event.Status.CANCELLED else Action.STATUS,
+        actor=actor,
+        user=user,
+        before=before,
+        audit_action="agenda.event_status_changed",
+    )
+    if was_confirmed and event.idea_id:
+        ideas_services.event_cancelled(event.idea)
+    return event
+
+
+@transaction.atomic
+def delete(event: Event, *, user) -> None:
+    """Suppression définitive, pour les erreurs et les doublons (décision 26).
+
+    Réservée à l'habilité « agenda ». L'historique de l'événement part avec lui ; le
+    journal d'activité garde le titre, la date et le statut, sans aucun nom.
+    """
+    from apps.ideas import services as ideas_services  # les idées dépendent de l'agenda
+
+    # DÉCISION (à confirmer) : l'habilité « agenda », pas seulement le superuser.
+    if not can_manage(user):
+        raise EventError("Seul un gestionnaire de l'agenda peut supprimer un événement.")
+    event = Event.all_objects.select_for_update().select_related("room").get(pk=event.pk)
+    idea = event.idea if event.idea_id else None
+    audit.log(
+        user,
+        "agenda.event_deleted",
+        event,
+        title=event.title,
+        start=event.start,
+        end=event.end,
+        place=event.place_label,
+        status=event.status,
+        was_public=event.is_public,
+    )
+    event.delete()
+    if idea is not None:
+        ideas_services.event_cancelled(idea)
+
+
 def confirm_many(events, *, user) -> ConfirmReport:
     """Confirme une sélection, dans l'ordre chronologique.
 
@@ -486,7 +563,7 @@ def confirm_many(events, *, user) -> ConfirmReport:
 def set_public(event: Event, *, is_public: bool, user) -> Event:
     if not can_publish(user):
         raise EventError("Seul un gestionnaire peut publier un événement.")
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     before = history.snapshot(event)
     event.is_public = is_public
     event.public_requested = False
@@ -504,7 +581,7 @@ def set_public(event: Event, *, is_public: bool, user) -> Event:
 def set_locked(event: Event, *, locked: bool, user) -> Event:
     if not can_manage(user):
         raise EventError("Seul un gestionnaire de l'agenda peut verrouiller un événement.")
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     before = history.snapshot(event)
     event.is_locked = locked
     return _save(
@@ -524,7 +601,7 @@ def restore(event: Event, change: EventChange, *, user) -> Event:
         raise EventError("Seul un gestionnaire de l'agenda peut restaurer une version.")
     if change.event_id != event.pk:
         raise EventError("Cette version n'appartient pas à cet événement.")
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     values = history.restore_values(change)
     _check_slot(values["start"], values["end"])
     _check_booking(
@@ -553,7 +630,7 @@ def restore(event: Event, change: EventChange, *, user) -> Event:
 def approve_room(event: Event, *, user) -> Event:
     if not can_override(user):
         raise EventError("Seul un gestionnaire des salles peut valider une réservation.")
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     if not event.room_pending:
         return event
     before = history.snapshot(event)
@@ -573,7 +650,7 @@ def refuse_room(event: Event, *, user, reason: str = "") -> Event:
     """Refus : l'événement garde sa date mais perd la salle (« Lieu à préciser »)."""
     if not can_override(user):
         raise EventError("Seul un gestionnaire des salles peut refuser une réservation.")
-    event = Event.objects.select_for_update().get(pk=event.pk)
+    event = Event.all_objects.select_for_update().get(pk=event.pk)
     if not event.room_pending:
         raise EventError("Cette réservation n'est pas en attente.")
     before = history.snapshot(event)

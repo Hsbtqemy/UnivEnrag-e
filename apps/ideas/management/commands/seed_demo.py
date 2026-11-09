@@ -52,7 +52,7 @@ class Command(BaseCommand):
                 Poll.objects.all().delete()
                 Reaction.objects.all().delete()
                 Presence.objects.all().delete()
-                Event.objects.all().delete()
+                Event.all_objects.all().delete()
                 IdeaSlot.objects.all().delete()
                 Idea.objects.all().delete()
                 Actor.objects.all().delete()

@@ -9,7 +9,7 @@
     <li><a href="#nom">Votre nom</a></li>
     <li><a href="#evenement">{% if can_edit_agenda %}Ajouter{% else %}Proposer{% endif %} un événement</a></li>
     {% if can_edit_agenda %}<li><a href="#modifier">Modifier, déplacer, dupliquer, annuler</a></li>{% endif %}
-    <li><a href="#provisoire">Provisoire ou confirmé ?</a></li>
+    <li><a href="#provisoire">Provisoire, confirmé, à reprogrammer ?</a></li>
     <li><a href="#idees">Les idées</a></li>
     <li><a href="#programmation">La programmation par salle</a></li>
     <li><a href="#presences">Qui est là ?</a></li>
@@ -42,13 +42,14 @@
   <ul>
     <li><strong>Déplacer</strong> : faites glisser l'événement dans l'agenda, ou ouvrez-le puis « Modifier ».</li>
     <li><strong>Dupliquer</strong> : pour un événement qui revient, ouvrez-le puis « Dupliquer » ; il ne reste qu'à changer la date.</li>
-    <li><strong>Annuler</strong> : « Annuler l'événement… » sur sa fiche. Il reste visible, barré : rien n'est jamais effacé.</li>
+    <li><strong>Annuler</strong> : « Annuler l'événement… » sur sa fiche. Il reste visible, barré. Seul un gestionnaire de l'agenda peut le rétablir.</li>
   </ul>
   <p>Chaque changement est noté dans l'historique de l'événement (qui, quand, avant, après). Un événement verrouillé ne se modifie plus que par un gestionnaire.</p>
   {% endif %}
 
-  <h2 id="provisoire">Provisoire ou confirmé ?</h2>
+  <h2 id="provisoire">Provisoire, confirmé, à reprogrammer ?</h2>
   <p>{% if can_edit_agenda %}Un événement que vous créez directement est confirmé, si sa salle est libre. {% endif %}Un événement issu d'une idée commence <strong>provisoire</strong> (hachuré) : un gestionnaire de l'agenda le confirme une fois le créneau arrêté.</p>
+  <p>Un événement <strong>à reprogrammer</strong> (cadre en pointillé, titre en italique) n'aura pas lieu à la date affichée : une autre date est à trouver. Un événement <strong>annulé</strong> est barré.</p>
 
   <h2 id="idees">Les idées</h2>
   <p><strong>Idées → « + Déposer une idée »</strong> : un titre et un type (idée d'événement, projet, envie) suffisent, chacun peut compléter ensuite. Une idée ne passe jamais par un vote.</p>

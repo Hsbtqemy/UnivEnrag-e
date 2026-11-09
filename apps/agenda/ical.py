@@ -11,6 +11,7 @@ from .models import Event
 ICAL_STATUS = {
     Event.Status.CONFIRMED: "CONFIRMED",
     Event.Status.PROVISIONAL: "TENTATIVE",
+    Event.Status.RESCHEDULING: "TENTATIVE",
     Event.Status.CANCELLED: "CANCELLED",
 }
 
@@ -36,7 +37,11 @@ def build_calendar(events, *, base_url: str, name: str, detail_path, with_visio=
         item.add("sequence", event.revision)
         item.add("dtstart", event.start)
         item.add("dtend", event.end)
-        item.add("summary", event.title)
+        # iCal n'a pas de statut « reporté » : on l'écrit dans le titre (décision 26).
+        if event.status == Event.Status.RESCHEDULING:
+            item.add("summary", f"À reprogrammer : {event.title}")
+        else:
+            item.add("summary", event.title)
         # Le nom du porteur est affiché, son e-mail jamais (CLAUDE.md PUB-2).
         description = f"Porté par {event.owner.display_name}"
         # Flux public : intervenants seulement s'ils sont déclarés publics (PUB-1).

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load dates_fr %}
+{% block title %}Événements masqués — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Événements masqués <span class="count">{{ events|length }}</span></h1>
+<p class="lead">Retirés de l'agenda, des flux et de la page publique, sans être effacés. Ouvrez-en un pour lui rendre un statut, ou pour le supprimer définitivement.</p>
+{% if events %}
+<table class="table table--stack">
+  <thead><tr><th scope="col">Événement</th><th scope="col">Quand</th><th scope="col">Où</th><th scope="col">Porté par</th></tr></thead>
+  <tbody>
+    {% for event in events %}
+    <tr>
+      <td><a href="{% url 'agenda:detail' event.pk %}">{{ event.title }}</a></td>
+      <td data-label="Quand">{{ event.start|date_fr:"D j F Y" }}, {{ event.start|time:"H:i" }}</td>
+      <td data-label="Où">{{ event.place_label }}</td>
+      <td data-label="Porté par">{{ event.owner.display_name }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Aucun événement masqué.</p>
+{% endif %}
+{% endblock %}

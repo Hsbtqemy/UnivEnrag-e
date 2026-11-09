@@ -37,6 +37,21 @@ def _done(response, form):
     return response
 
 
+# Sous le menu « Statut » de la fiche (décision 26).
+STATUS_HELP = {
+    Event.Status.PROVISIONAL: "Envisagé, pas encore arrêté. Ne réserve pas la salle.",
+    Event.Status.CONFIRMED: "Aura lieu. Réserve la salle ; peut figurer sur l'agenda public.",
+    Event.Status.RESCHEDULING: (
+        "N'aura pas lieu à cette date, une autre est à trouver. Reste dans l'agenda des "
+        "membres, libère la salle, sort de l'agenda public."
+    ),
+    Event.Status.CANCELLED: "N'aura pas lieu. Reste visible, barré.",
+    Event.Status.HIDDEN: (
+        "Erreur ou doublon. Retiré de l'agenda, des flux et de la page publique ; visible "
+        "seulement des gestionnaires de l'agenda, dans Gestion → Événements masqués."
+    ),
+}
+
 EDITING_CLOSED = (
     "Les gestionnaires de l'agenda placent les événements : proposez le vôtre en déposant une idée."
 )
@@ -270,7 +285,10 @@ def new(request):
 
 
 def detail(request, pk):
-    event = get_object_or_404(Event.objects.select_related("owner", "room", "idea"), pk=pk)
+    manager = services.can_manage(request.user)
+    # Un événement masqué n'existe que pour l'habilité « agenda » (décision 26).
+    events = Event.all_objects if manager else Event.objects
+    event = get_object_or_404(events.select_related("owner", "room", "idea"), pk=pk)
     changes = list(event.changes.select_related("actor", "user"))
     for change in changes:
         change.lines = history.describe(change)
@@ -283,12 +301,15 @@ def detail(request, pk):
             "cancel_form": ActionForm(
                 initial={"revision": event.revision}, actor_name=request.actor_name
             ),
-            "can_manage": services.can_manage(request.user),
+            "statuses": [
+                (value, label, STATUS_HELP[value]) for value, label in Event.Status.choices
+            ],
+            "can_manage": manager,
             "can_validate_room": services.can_override(request.user),
             "can_publish": services.can_publish(request.user),
             "can_edit": services.can_edit(request.user)
-            and event.status != Event.Status.CANCELLED
-            and (not event.is_locked or services.can_manage(request.user)),
+            and not event.is_closed
+            and (not event.is_locked or manager),
         },
     )
 
@@ -298,7 +319,7 @@ def edit(request, pk):
     if not services.can_edit(request.user):
         messages.error(request, EDITING_CLOSED)
         return redirect("agenda:detail", pk=pk)
-    if event.status == Event.Status.CANCELLED:
+    if event.is_closed:
         messages.error(request, "Un événement annulé ne se modifie plus.")
         return redirect("agenda:detail", pk=pk)
     if event.is_locked and not services.can_manage(request.user):
@@ -431,6 +452,64 @@ def confirm(request, pk):
     else:
         messages.success(request, "Événement confirmé.")
     return redirect("agenda:detail", pk=pk)
+
+
+@require_POST
+@require_capability("manage_agenda")
+def set_status(request, pk):
+    """Menu « Statut » de la fiche (décision 26)."""
+    event = get_object_or_404(Event.all_objects, pk=pk)
+    try:
+        revision = int(request.POST.get("revision", ""))
+    except ValueError:
+        revision = None
+    status = request.POST.get("status", "")
+    try:
+        event = services.set_status(
+            event,
+            status,
+            user=request.user,
+            revision=revision,
+            override=request.POST.get("override") == "1",
+        )
+    except services.EventError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"Statut : {event.get_status_display().lower()}.")
+    return redirect("agenda:detail", pk=pk)
+
+
+@require_capability("manage_agenda")
+def delete(request, pk):
+    """Suppression définitive, après une page de confirmation (décision 26)."""
+    event = get_object_or_404(Event.all_objects.select_related("owner", "room"), pk=pk)
+    if request.method == "POST":
+        day = timezone.localtime(event.start).date()
+        title = event.title
+        try:
+            services.delete(event, user=request.user)
+        except services.EventError as error:
+            messages.error(request, str(error))
+            return redirect("agenda:detail", pk=pk)
+        messages.success(request, f"« {title} » est supprimé définitivement.")
+        return redirect(_calendar_url(day))
+    return render(
+        request,
+        "agenda/event_delete.html",
+        {
+            "event": event,
+            "change_count": event.changes.count(),
+            "poll": getattr(event, "poll", None),
+        },
+    )
+
+
+@require_safe
+@require_capability("manage_agenda")
+def hidden_list(request):
+    """Gestion → Événements masqués : pour les rétablir ou les supprimer (décision 26)."""
+    events = Event.all_objects.hidden().select_related("owner", "room").order_by("-start")
+    return render(request, "gestion/hidden_events.html", {"events": events})
 
 
 @require_POST

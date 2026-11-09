@@ -144,7 +144,8 @@ def set_status(idea: Idea, status: str, *, actor) -> Idea:
             "« Réalisée » une fois l'événement passé."
         )
     if status == Status.ABANDONED:
-        for event in idea.events.filter(status=Event.Status.PROVISIONAL):
+        open_statuses = [Event.Status.PROVISIONAL, Event.Status.RESCHEDULING]
+        for event in idea.events.filter(status__in=open_statuses):
             agenda_services.cancel(event, actor=actor, revision=event.revision)
     idea.status = status
     idea.updated_by = actor

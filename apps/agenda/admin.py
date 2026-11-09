@@ -23,7 +23,6 @@ class EventAdminForm(forms.ModelForm):
             "room",
             "place_text",
             "visio_link",
-            "status",
             "is_public",
             "public_requested",
             "is_locked",
@@ -31,14 +30,11 @@ class EventAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        status = cleaned.get("status")
-        was_confirmed = self.instance.pk and self.instance.status == Event.Status.CONFIRMED
-        if status == Event.Status.CONFIRMED and not was_confirmed:
-            # La confirmation passe par le service : contrôle des salles et passage de la
-            # proposition d'origine en « Planifiée ».
-            raise forms.ValidationError("Confirmez l'événement depuis la page Programmation.")
+        # Le statut se change sur la fiche de l'événement (menu « Statut », décision 26) :
+        # contrôle des salles, idée d'origine, historique. Ici, on garde seulement la règle
+        # des salles pour un événement déjà confirmé qu'on déplace.
         start, end = cleaned.get("start"), cleaned.get("end")
-        if status == Event.Status.CONFIRMED and start and end:
+        if self.instance.status == Event.Status.CONFIRMED and start and end:
             conflicts = services.room_conflicts(
                 cleaned.get("room"), start, end, exclude_id=self.instance.pk
             )
@@ -55,15 +51,27 @@ class EventAdmin(AuditedAdminMixin, CapabilityAdminMixin, admin.ModelAdmin):
     list_filter = ["status", "is_public", "room"]
     search_fields = ["title", "owner__display_name"]
     date_hierarchy = "start"
-    readonly_fields = ["idea", "revision", "confirmed_at", "confirmed_by", "created_at"]
+    readonly_fields = [
+        "status",
+        "idea",
+        "revision",
+        "confirmed_at",
+        "confirmed_by",
+        "created_at",
+    ]
+
+    def get_queryset(self, request):
+        return Event.all_objects.all()  # masqués compris (décision 26)
 
     def has_delete_permission(self, request, obj=None):
-        return False  # on annule, on ne supprime pas (CLAUDE.md AGE-1)
+        # La suppression passe par la fiche de l'événement, qui la journalise et met
+        # l'idée d'origine à jour (décision 26).
+        return False
 
     def save_model(self, request, obj, form, change):
         # Une modification dans l'admin périme la version affichée dans la programmation,
         # et entre dans l'historique comme toute autre (CLAUDE.md AGE-4).
-        before = history.snapshot(Event.objects.get(pk=obj.pk)) if change else {}
+        before = history.snapshot(Event.all_objects.get(pk=obj.pk)) if change else {}
         if change:
             obj.revision += 1
         super().save_model(request, obj, form, change)

@@ -474,6 +474,16 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .swatch--cancelled { background: linear-gradient(to bottom right, transparent 45%, var(--muted) 45% 55%, transparent 55%); }
 
 .ec-event.ev-cancelled { opacity: .55; text-decoration: line-through; }
+/* À reprogrammer (décision 26) : éclairci comme un provisoire, sans hachures, cadre en
+   pointillé et titre en italique : il n'aura pas lieu à cette date. */
+.swatch--rescheduling { background: var(--surface); border: 2px dotted var(--muted); }
+.ec-event.ev-rescheduling {
+  background-image: linear-gradient(rgb(255 255 255 / .8), rgb(255 255 255 / .8));
+  color: #14171a;
+  outline: 2px dotted rgb(0 0 0 / .55);
+  opacity: .85;
+}
+.ec-event.ev-rescheduling .ev-title { font-style: italic; }
 .ec-event.ev-locked .ev-title::before { content: "🔒 "; }
 .ec-list .ev-meta { display: inline; margin-left: .5em; }
 
@@ -509,6 +519,21 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 .badge--public { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 a.badge { text-decoration: none; }
 .event-detail--cancelled h1 { text-decoration: line-through; }
+.badge--rescheduling { background: color-mix(in srgb, var(--warning) 22%, transparent); }
+.badge--hidden { background: color-mix(in srgb, var(--muted) 25%, transparent); }
+.event-detail--rescheduling h1 { font-style: italic; }
+.status-form { display: grid; gap: .5rem; margin-bottom: .75rem; }
+.status-form > label:not(.checkbox) { font-weight: 600; }
+.callout > p:first-child { margin-top: 0; }
+.callout > p:last-child { margin-bottom: 0; }
+.status-form__row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.status-form select { font: inherit; padding: .35rem .5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); min-width: 12rem; }
+.status-help summary { cursor: pointer; color: var(--muted); font-size: .92rem; }
+.status-help dl { margin: .5rem 0 0; display: grid; gap: .4rem; font-size: .92rem; }
+.status-help dt { font-weight: 600; }
+.status-help dd { margin: 0; color: var(--muted); }
+.danger-link { margin: .75rem 0 0; }
+.danger-link a { color: var(--danger); font-weight: 600; }
 
 .actions-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin: 1.5rem 0; display: grid; gap: .75rem; }
 .danger-zone summary { cursor: pointer; color: var(--danger); font-weight: 600; }

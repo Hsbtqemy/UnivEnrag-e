@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load dates_fr %}
+{% block title %}Supprimer « {{ event.title }} » — {{ site.collective_name }}{% endblock %}
+{% block content %}
+<p class="back"><a href="{% url 'agenda:detail' event.pk %}">← Retour à l'événement</a></p>
+<h1>Supprimer « {{ event.title }} »&nbsp;?</h1>
+<p class="lead">{{ event.start|date_fr:"l j F Y"|capfirst }}, {{ event.start|time:"H:i" }} – {{ event.end|time:"H:i" }} · {{ event.place_label }} · {{ event.get_status_display }}</p>
+
+<div class="callout callout--warning">
+  <p><strong>La suppression est définitive</strong>, à réserver aux erreurs et aux doublons. L'événement et son historique ({{ change_count }} entrée{{ change_count|pluralize }}) disparaissent ; le journal d'activité garde seulement le titre, la date et le statut, avec votre compte.</p>
+  {% if event.status == "confirmed" or event.is_public %}
+  <p>Cet événement a pu être annoncé{% if event.is_public %} sur l'agenda public{% endif %}. Les personnes abonnées à un agenda ne seront pas prévenues : il disparaît de leur flux sans mention. S'il n'aura simplement pas lieu, choisissez plutôt le statut « Annulé » ou « À reprogrammer ».</p>
+  {% endif %}
+  {% if poll %}<p>Il a été fixé depuis le sondage « {{ poll.title }} » : le sondage reste, sans lien vers lui.</p>{% endif %}
+  <p>Pour le retirer sans rien perdre, choisissez le statut « Masqué » : il disparaît de partout et peut être rétabli.</p>
+</div>
+
+<form method="post" class="actions">
+  {% csrf_token %}
+  <button type="submit" class="button button--danger">Supprimer définitivement</button>
+  <a class="button button--secondary" href="{% url 'agenda:detail' event.pk %}">Garder l'événement</a>
+</form>
+{% endblock %}
