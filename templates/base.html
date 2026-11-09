@@ -24,16 +24,16 @@
           <ul class="nav">
             {% for item in nav.items %}
             <li class="nav__item{% if item.primary %} nav__item--primary{% endif %}">
-              <a class="nav__link{% if item.cta %} nav__link--cta{% endif %}" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}<span class="nav__label">{{ item.label }}</span><span class="nav__short" aria-hidden="true">{{ item.short }}</span></a>
+              <a class="nav__link{% if item.cta %} nav__link--cta{% endif %}" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}<span class="nav__label">{{ item.label }}</span><span class="nav__short" aria-hidden="true">{{ item.short }}</span>{% include "includes/nav_badge.html" with count=item.badge %}</a>
             </li>
             {% endfor %}
             {% if nav.more %}
             <li class="nav__more{% if nav.more_current %} nav__more--current{% endif %}">
               <details>
-                <summary>{% include "includes/nav_icon.html" with name="more" %}<span>Plus</span></summary>
+                <summary>{% include "includes/nav_icon.html" with name="more" %}<span>Plus</span>{% include "includes/nav_badge.html" with count=nav.more_badge %}</summary>
                 <ul class="nav__menu">
                   {% for item in nav.more %}
-                  <li><a href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}{{ item.label }}</a></li>
+                  <li><a href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{% include "includes/nav_icon.html" with name=item.icon %}{{ item.label }}{% include "includes/nav_badge.html" with count=item.badge %}</a></li>
                   {% endfor %}
                 </ul>
               </details>

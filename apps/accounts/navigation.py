@@ -24,6 +24,7 @@ class NavItem:
     # Aussi dans l'en-tête sur téléphone, où la barre du bas n'a pas de place pour lui.
     header: bool = False
     short: str = ""
+    badge: int = 0  # nombre à traiter, en pastille (onglet « Gestion »)
     url: str = field(init=False, default="")
     current: bool = field(init=False, default=False)
 
@@ -59,7 +60,7 @@ def _member_items(is_manager: bool) -> list[NavItem]:
         NavItem("Site public", "public:home", "globe"),
     ]
     if is_manager:
-        items.append(NavItem("Gestion", "accounts:gestion_home", "sliders"))
+        items.append(NavItem("Gestion", GESTION, "sliders"))
     return items
 
 
@@ -107,11 +108,14 @@ def _public_items(*, has_access: bool, is_manager: bool) -> list[NavItem]:
     if has_access or not is_manager:
         items.append(NavItem("Espace membres", members_home, "key", header=True, short="Membres"))
     if is_manager:
-        items.append(NavItem("Gestion", "accounts:gestion_home", "sliders"))
+        items.append(NavItem("Gestion", GESTION, "sliders"))
     return items
 
 
-def build(request, *, has_access: bool, is_manager: bool) -> dict:
+GESTION = "accounts:gestion_home"
+
+
+def build(request, *, has_access: bool, is_manager: bool, pending: int = 0) -> dict:
     match = getattr(request, "resolver_match", None)
     view_name = match.view_name if match else ""
     public = request.path.startswith(PUBLIC_PREFIX) or not has_access
@@ -122,6 +126,8 @@ def build(request, *, has_access: bool, is_manager: bool) -> dict:
     for item in items:
         item.url = reverse(item.url_name)
         item.short = item.short or item.label
+        if item.url_name == GESTION:
+            item.badge = pending
         names = item.matches or (item.url_name,)
         item.current = any(
             view_name.startswith(name) if name.endswith(":") else view_name == name
@@ -133,5 +139,7 @@ def build(request, *, has_access: bool, is_manager: bool) -> dict:
         "more": more,
         "header": [item for item in items if item.header],
         "more_current": any(item.current for item in more),
+        # Sur téléphone, « Gestion » est sous « Plus » : la pastille y remonte.
+        "more_badge": sum(item.badge for item in more),
         "public": public,
     }

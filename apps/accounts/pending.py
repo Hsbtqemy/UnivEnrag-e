@@ -39,16 +39,25 @@ class Waiting:
         return self.label
 
 
+def _counts(user):
+    """(compteur, nombre) des files que ce compte peut traiter."""
+    for counter in _counters.values():
+        if any(has_capability(user, cap) for cap in counter.capabilities):
+            yield counter, counter.count()
+
+
 def for_user(user) -> dict[str, Waiting]:
     """{repère: (libellé, lien)} des files non vides que ce compte peut traiter."""
-    result = {}
-    for counter in _counters.values():
-        if not any(has_capability(user, cap) for cap in counter.capabilities):
-            continue
-        n = counter.count()
-        if n:
-            result[counter.key] = Waiting(counter.label(n), reverse(counter.url_name))
-    return result
+    return {
+        counter.key: Waiting(counter.label(n), reverse(counter.url_name))
+        for counter, n in _counts(user)
+        if n
+    }
+
+
+def total_for(user) -> int:
+    """Tout ce qui attend ce compte : la pastille de l'onglet « Gestion »."""
+    return sum(n for _, n in _counts(user))
 
 
 def plural(n: int, singular: str, plural_form: str) -> str:

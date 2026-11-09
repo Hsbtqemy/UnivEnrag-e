@@ -49,3 +49,29 @@ def test_gestion_home_shows_counts(client, make_manager, queues):
 def test_gestion_home_says_when_nothing_waits(admin_client):
     body = admin_client.get(reverse("accounts:gestion_home")).content.decode()
     assert "Rien en attente" in body
+
+
+# --- Pastille de l'onglet « Gestion » ------------------------------------------------------
+
+
+def test_total_counts_only_the_queues_of_the_account(admin_user, make_manager, queues):
+    assert pending.total_for(admin_user) == 3
+    assert pending.total_for(make_manager("moderate")) == 1
+    assert pending.total_for(make_manager(username="sans-droit")) == 0
+
+
+def test_gestion_tab_shows_the_badge(client, make_manager, queues, site):
+    login_verified(client, make_manager("moderate"))
+    html = client.get(reverse("agenda:public_list")).content.decode()
+    assert 'class="nav__badge" aria-hidden="true">1<' in html
+    assert "(1 à traiter)" in html
+
+
+def test_no_badge_when_nothing_waits(admin_client):
+    html = admin_client.get(reverse("accounts:gestion_home")).content.decode()
+    assert "nav__badge" not in html
+
+
+def test_visitors_and_members_never_see_a_badge(client, member_client, queues):
+    assert "nav__badge" not in client.get(reverse("public:home")).content.decode()
+    assert "nav__badge" not in member_client.get(reverse("agenda:calendar")).content.decode()
