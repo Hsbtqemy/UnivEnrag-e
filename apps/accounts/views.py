@@ -1,14 +1,18 @@
+import hashlib
+import hmac
 import io
 from base64 import b32encode
 
 import segno
 from django import forms
 from django.conf import settings
+from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from django_otp import login as otp_login
 
 from apps.audit import audit
@@ -57,8 +61,45 @@ def setup(request):
             "form": form,
             "secret": b32encode(device.bin_key).decode(),
             "next": request.GET.get("next", ""),
+            "optional": two_factor.is_optional(request.user),
         },
     )
+
+
+@login_required
+@require_POST
+def postpone(request):
+    """« Plus tard » : un gestionnaire entre sans double authentification pour cette fois."""
+    if not two_factor.is_optional(request.user):
+        return redirect("accounts:2fa_setup")
+    request.session[two_factor.POSTPONED_KEY] = True
+    return redirect(two_factor.safe_next(request, HOME))
+
+
+# Échecs de connexion par mot de passe : 5 par quart d'heure, par (IP + identifiant)
+# (CLAUDE.md, « Sécurité et RGPD »).
+LOGIN_FAILURES = (5, 15 * 60)
+
+
+def _login_bucket(request) -> str:
+    """Le seau des échecs pour cet identifiant, sans l'écrire en clair dans la table."""
+    username = request.POST.get("username", "").strip().casefold()
+    digest = hmac.new(settings.SECRET_KEY.encode(), username.encode(), hashlib.sha256)
+    return f"login:{digest.hexdigest()[:24]}"
+
+
+def admin_login(request):
+    """Connexion des comptes de gestion : celle de l'admin Django, avec une limite d'échecs."""
+    if request.method != "POST":
+        return admin.site.login(request)
+    bucket = _login_bucket(request)
+    limit, window = LOGIN_FAILURES
+    if ratelimit.exceeded(request, bucket, limit, window):
+        return render(request, "429.html", status=429)
+    response = admin.site.login(request)
+    if not request.user.is_authenticated:
+        ratelimit.record(request, bucket)
+    return response
 
 
 @login_required
@@ -108,7 +149,12 @@ def gestion_home(request):
     return render(
         request,
         "accounts/gestion_home.html",
-        {"capability_labels": labels, "pending": pending.for_user(request.user)},
+        {
+            "capability_labels": labels,
+            "pending": pending.for_user(request.user),
+            "two_factor_missing": settings.ADMIN_2FA_REQUIRED
+            and two_factor.confirmed_totp(request.user) is None,
+        },
     )
 
 

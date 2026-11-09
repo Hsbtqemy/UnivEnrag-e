@@ -113,3 +113,95 @@ def test_unverified_session_has_no_rights_outside_gestion(logged_in, device, sit
     assert response.status_code == 302
     event.refresh_from_db()
     assert event.status == Event.Status.PROVISIONAL
+
+
+# --- Gestionnaires : double authentification proposée, pas imposée (09/11/2026) ---------
+
+
+@pytest.fixture
+def manager(make_manager):
+    return make_manager("moderate")
+
+
+@pytest.fixture
+def manager_client(client, manager):
+    client.force_login(manager)
+    return client
+
+
+def test_manager_is_offered_setup_with_a_later_button(manager_client):
+    response = manager_client.get(GESTION_PAGE)
+    assert response["Location"].startswith(reverse("accounts:2fa_setup"))
+    page = manager_client.get(response["Location"]).content.decode()
+    assert "Plus tard" in page
+
+
+def test_later_lets_the_manager_in_for_this_session(manager_client):
+    response = manager_client.post(reverse("accounts:2fa_postpone"), {"next": GESTION_PAGE})
+    assert response["Location"] == GESTION_PAGE
+    assert manager_client.get(GESTION_PAGE).status_code == 200
+    # Hors de /gestion/, la session garde ses droits : pas de code d'accès demandé.
+    assert manager_client.get(reverse("agenda:calendar")).status_code == 200
+
+
+def test_later_reminds_on_gestion_home(manager_client):
+    manager_client.post(reverse("accounts:2fa_postpone"))
+    page = manager_client.get(reverse("accounts:gestion_home")).content.decode()
+    assert "La double authentification n'est pas activée" in page
+
+
+def test_setup_is_offered_again_at_next_login(client, manager):
+    client.force_login(manager)
+    client.post(reverse("accounts:2fa_postpone"))
+    client.logout()
+    client.force_login(manager)
+    response = client.get(GESTION_PAGE)
+    assert response["Location"].startswith(reverse("accounts:2fa_setup"))
+
+
+def test_superuser_cannot_postpone(logged_in):
+    page = logged_in.get(reverse("accounts:2fa_setup")).content.decode()
+    assert "Plus tard" not in page
+    logged_in.post(reverse("accounts:2fa_postpone"))
+    response = logged_in.get(GESTION_PAGE)
+    assert response["Location"].startswith(reverse("accounts:2fa_setup"))
+
+
+def test_manager_with_device_must_verify(manager_client, manager):
+    TOTPDevice.objects.create(user=manager, name="Téléphone", confirmed=True)
+    manager_client.post(reverse("accounts:2fa_postpone"))
+    response = manager_client.get(GESTION_PAGE)
+    assert response["Location"].startswith(reverse("accounts:2fa_verify"))
+    assert manager_client.get(reverse("agenda:calendar"))["Location"].startswith(
+        reverse("core:access")
+    )
+
+
+# --- Connexion par mot de passe : 5 échecs par quart d'heure ------------------------------
+
+LOGIN = "/gestion/admin/login/"
+
+
+def test_login_with_right_password_works(client, admin_user):
+    response = client.post(LOGIN, {"username": "admin", "password": "mot-de-passe-de-test"})
+    assert response.status_code == 302
+
+
+def test_five_wrong_passwords_block_this_username(client, admin_user, make_manager):
+    for _ in range(5):
+        assert client.post(LOGIN, {"username": "admin", "password": "faux"}).status_code == 200
+    response = client.post(LOGIN, {"username": "Admin ", "password": "mot-de-passe-de-test"})
+    assert response.status_code == 429
+    # Un autre identifiant, depuis la même adresse, n'est pas bloqué.
+    other = make_manager(username="camille")
+    other.set_password("autre-mot-de-passe-long")
+    other.save()
+    response = client.post(LOGIN, {"username": "camille", "password": "autre-mot-de-passe-long"})
+    assert response.status_code == 302
+
+
+def test_login_failures_do_not_store_the_username(client, db):
+    from apps.core.models import RateLimitHit
+
+    client.post(LOGIN, {"username": "quelquun", "password": "faux"})
+    assert "quelquun" not in RateLimitHit.objects.get().bucket

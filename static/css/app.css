@@ -240,6 +240,7 @@ body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 
 .callout { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin: 2rem 0; }
 .callout--strong { border: 2px solid var(--accent); margin-top: 0; }
+.callout--warning { border: 2px solid var(--warning); margin: 1rem 0; }
 .notice { background: var(--accent-soft); padding: .6rem .9rem; border-radius: var(--radius); }
 
 .tracking-link label { display: block; font-weight: 600; }

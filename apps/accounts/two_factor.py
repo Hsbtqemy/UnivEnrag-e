@@ -63,6 +63,20 @@ def safe_next(request, default: str) -> str:
 # Pages de /gestion/ accessibles avant la vérification : connexion, déconnexion, 2FA.
 EXEMPT_PREFIXES = ("/gestion/admin/login/", "/gestion/admin/logout/", "/gestion/2fa/")
 
+# « Plus tard » choisi pendant cette session : la configuration sera reproposée à la
+# prochaine connexion (une connexion ouvre une nouvelle session).
+POSTPONED_KEY = "two_factor_postponed"
+
+
+def is_optional(user) -> bool:
+    """Un gestionnaire peut remettre la configuration à plus tard ; l'administrateur
+    principal, non. Une fois l'appareil confirmé, le code est exigé à chaque connexion.
+
+    DÉCISION du porteur du projet (09/11/2026), qui assouplit ACC-3 (CDC §2, §9) pour les
+    gestionnaires : proposer la double authentification à chaque connexion sans l'imposer.
+    """
+    return not user.is_superuser and confirmed_totp(user) is None
+
 
 class RequireTwoFactorMiddleware:
     def __init__(self, get_response):
@@ -71,9 +85,19 @@ class RequireTwoFactorMiddleware:
     def __call__(self, request):
         user = request.user
         if settings.ADMIN_2FA_REQUIRED and user.is_authenticated and not user.is_verified():
-            if not request.path.startswith("/gestion/"):
-                # Hors de /gestion/, une session sans TOTP n'a aucun droit (ACC-3) : elle
-                # navigue comme un participant, code d'accès compris.
+            if is_optional(user):
+                # Gestionnaire sans double authentification : on la propose une fois par
+                # connexion, en arrivant dans la gestion ; la session garde ses droits.
+                if (
+                    request.path.startswith("/gestion/")
+                    and not request.path.startswith(EXEMPT_PREFIXES)
+                    and not request.session.get(POSTPONED_KEY)
+                ):
+                    url = reverse("accounts:2fa_setup")
+                    return redirect(f"{url}?next={request.get_full_path()}")
+            elif not request.path.startswith("/gestion/"):
+                # Hors de /gestion/, une session qui doit saisir son code et ne l'a pas fait
+                # n'a aucun droit (ACC-3) : elle navigue comme un participant.
                 request.user = AnonymousUser()
             elif not request.path.startswith(EXEMPT_PREFIXES):
                 name = "accounts:2fa_verify" if confirmed_totp(user) else "accounts:2fa_setup"

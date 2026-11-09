@@ -8,7 +8,7 @@ Ce qui existe :
 
 - **Public, sans code** : page du collectif (`/p/` : présentation, prochains rendez-vous, actualités), agenda public (`/p/agenda/`, semaine et liste, flux `/p/agenda.ics`), actualités (`/p/actualites/`, flux RSS), contact (`/p/contact/`), proposition d'événement (`/p/proposer/`) avec lien de suivi personnel. Le site n'envoie aucun e-mail. Voir [la fiche du POC](docs/poc-calendrier-propositions.md).
 - **Membres, avec le code d'accès commun** (`/acces/`) : accueil (`/accueil/`), agenda (`/agenda/`) où chacun crée, modifie, déplace ou annule un événement sous son nom, avec historique ; salles (`/salles/`, avec leur planning), abonnement iCal à l'agenda, à un espace ou à une salle (`/agenda/abonnements/`) ; « Qui est là ? » (`/presences/`), où chacun annonce ses demi-journées de présence ; sondages de dates (`/sondages/`), dont le meilleur créneau devient un événement ; idées et projets (`/idees/`) : dépôt en trois champs, réactions « Je participe », « Je peux aider », « Intéressé·e », tableau triable et filtrable, statuts ; programmation en colonnes par salle (`/agenda/programmation/`), où chacun place les idées et déplace les provisoires ; nom ou pseudo retenu par le navigateur (`/nom/`). Pas de compte.
-- **Gestion** (`/gestion/`), comptes de l'administrateur principal et des gestionnaires, avec double authentification :
+- **Gestion** (`/gestion/`), comptes de l'administrateur principal (double authentification obligatoire) et des gestionnaires (proposée à chaque connexion, pas imposée) :
   - modération des propositions reçues, demandes de publication, réservations de salles à valider ;
   - sur chaque événement : confirmer, publier, verrouiller, restaurer une version ;
   - dans la programmation : confirmer (à l'unité ou par sélection, bloqué par les seuls conflits de salle) et publier ;
@@ -37,7 +37,7 @@ Démo :
 | Administrateur principal | `admin` / `demo-collectif-2026` |
 | Gestionnaire (agenda + modération) | `camille` / `demo-collectif-2026` |
 
-La démo commence **lundi prochain** : avancez dans les calendriers. En développement, la double authentification est désactivée ; `DJANGO_ADMIN_2FA=1 make dev` permet de l'essayer (QR code à scanner avec une application d'authentification). Elle est toujours obligatoire en production.
+La démo commence **lundi prochain** : avancez dans les calendriers. En développement, la double authentification est désactivée ; `DJANGO_ADMIN_2FA=1 make dev` permet de l'essayer (QR code à scanner avec une application d'authentification). En production, elle est obligatoire pour l'administrateur principal et proposée aux gestionnaires à chaque connexion.
 
 Pour créer le vrai compte de l'administrateur principal : `uv run python manage.py createsuperuser`, puis choisir le code d'accès dans l'administration (Réglages du site).
 

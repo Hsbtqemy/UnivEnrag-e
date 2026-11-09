@@ -4,6 +4,9 @@
 {% block content %}
 <h1>Gestion</h1>
 <p class="lead">{% if user.is_superuser %}Administrateur principal : vous avez tous les droits.{% else %}Vos droits : {{ capability_labels|join:", "|default:"aucun pour l'instant" }}.{% endif %}</p>
+{% if two_factor_missing %}
+<p class="callout callout--warning">La double authentification n'est pas activée sur votre compte. <a href="{% url 'accounts:2fa_setup' %}?next={{ request.path|urlencode }}">L'activer maintenant</a> (deux minutes, avec une application sur votre téléphone).</p>
+{% endif %}
 {% if pending %}
 <section class="todo" aria-labelledby="a-traiter">
   <h2 id="a-traiter">À traiter</h2>

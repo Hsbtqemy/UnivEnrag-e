@@ -18,4 +18,15 @@
   {% include "includes/field.html" with field=form.token %}
   <button type="submit" class="button">Activer</button>
 </form>
+{% if optional %}
+<section class="callout" aria-labelledby="plus-tard">
+  <h2 id="plus-tard">Pas maintenant ?</h2>
+  <p>Vous pouvez continuer sans, pour cette fois : la configuration vous sera reproposée à la prochaine connexion. Sans double authentification, quiconque obtient votre mot de passe agit en votre nom.</p>
+  <form method="post" action="{% url 'accounts:2fa_postpone' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="button button--secondary">Plus tard</button>
+  </form>
+</section>
+{% endif %}
 {% endblock %}

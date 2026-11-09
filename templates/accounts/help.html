@@ -27,7 +27,12 @@
   <p>En haut de la page Gestion, « À traiter » compte ce qui attend une décision, pour vos seuls droits : propositions à modérer, idées à placer, provisoires à confirmer, réservations de salles, demandes de publication, messages de contact. Chaque ligne mène à la page où la traiter. Rien n'est envoyé par e-mail : c'est ici qu'on regarde.</p>
 
   <h2 id="connexion">Connexion et double authentification</h2>
-  <p>Chaque compte de gestion se connecte avec son mot de passe <strong>et</strong> un code à six chiffres donné par une application d'authentification (FreeOTP, Aegis, Google Authenticator…). À la première connexion, scannez le QR code, puis notez les codes de secours : chacun sert une fois si le téléphone est perdu. Sans ce code, une session n'a aucun droit, même dans l'agenda.</p>
+  <p>La double authentification ajoute au mot de passe un code à six chiffres donné par une application d'authentification (FreeOTP, Aegis, Google Authenticator…). Pour l'activer, scannez le QR code, puis notez les codes de secours : chacun sert une fois si le téléphone est perdu.</p>
+  <ul>
+    <li><strong>Administrateur principal</strong> : elle est obligatoire. Sans le code, la session n'a aucun droit, même dans l'agenda.</li>
+    <li><strong>Gestionnaires</strong> : elle est proposée à chaque connexion tant qu'elle n'est pas activée, avec un bouton « Plus tard », et un rappel reste en tête de la page Gestion. Une fois activée, le code est demandé à chaque connexion. La colonne « double authentification » de Administration → Comptes de gestion montre qui l'a activée.</li>
+    <li>Après 5 mots de passe faux en un quart d'heure pour un même identifiant, la connexion est bloquée un moment depuis cette adresse.</li>
+  </ul>
   <p>Téléphone perdu et plus de codes de secours : l'administrateur principal choisit le compte dans Administration → Comptes de gestion, puis l'action « Réinitialiser la double authentification ».</p>
 
   <h2 id="droits">Les droits</h2>
