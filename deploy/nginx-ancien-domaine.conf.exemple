@@ -1,4 +1,4 @@
-# Ancienne adresse du site, après un changement de nom de domaine (docs/deploiement.md,
+# Ancienne adresse du site (univ-enragee.edito-revue.fr), après le passage à univ-enragee.fr (docs/deploiement.md,
 # « Changer de nom de domaine »). Elle ne sert plus le site : elle renvoie chaque page vers
 # la même page sur la nouvelle adresse (301), pour les favoris, les affiches et les
 # abonnements iCal qui suivent les redirections.
@@ -11,4 +11,4 @@
 # Garder le domaine (et donc ce bloc) au moins un an : certbot continue de renouveler
 # son certificat tant que le nom pointe vers ce serveur.
 
-    return 301 https://NOUVEAU-DOMAINE$request_uri;   # NOUVEAU-DOMAINE = SITE_DOMAINE
+    return 301 https://univ-enragee.fr$request_uri;   # = SITE_DOMAINE

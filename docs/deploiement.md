@@ -91,9 +91,11 @@ Pour restaurer une archive venue d'ailleurs, la copier d'abord dans le volume : 
 
 Sur ce serveur, le Nginx de l'hôte tient déjà les ports 80 et 443 et gère les certificats (certbot) pour les autres sites. Le Caddy du collectif écoute donc seulement en local, et Nginx lui relaie le trafic : c'est la même organisation que BD_ditor.
 
-**Adresse : `univ-enragee.edito-revue.fr`.** Préalable : chez le gestionnaire DNS de `edito-revue.fr`, ajouter un enregistrement `A` (`univ-enragee` → `83.228.221.204`) et un `AAAA` (`univ-enragee` → `2001:1600:18:203::242`), les mêmes que `edito-revue.fr` et `lspo`, puis vérifier qu'il répond : `dig +short univ-enragee.edito-revue.fr`.
+**Adresse : `univ-enragee.fr`** (domaine du collectif, chez Infomaniak ; `www.univ-enragee.fr` y renvoie). Préalable : dans la zone DNS du domaine (Manager Infomaniak → Domaines → `univ-enragee.fr` → Zone DNS), un `A` vers `83.228.221.204` et un `AAAA` vers `2001:1600:18:203::242`, pour le domaine nu et pour `www`. **Supprimer ou modifier les `A`, `AAAA` et `CNAME` créés d'office par Infomaniak** (page d'attente) : sinon une partie des visites part chez eux. Vérifier : `dig +short univ-enragee.fr`, `dig +short AAAA univ-enragee.fr`, `dig +short www.univ-enragee.fr`.
 
-*Solution de repli, sans toucher au DNS* : `univ-enragee.83-228-221-204.sslip.io` résout vers le serveur sans rien configurer. Mais `sslip.io` n'est pas un suffixe public : le quota de Let's Encrypt est partagé avec tous ses utilisateurs, et certbot peut refuser (`rateLimited`). Il faut alors réessayer plus tard. Changer d'adresse ensuite revient à modifier `SITE_DOMAINE` et le `server_name`, puis à relancer certbot. Les abonnements iCal déjà pris seront à refaire.
+L'ancienne adresse, `univ-enragee.edito-revue.fr`, renvoie vers la nouvelle (voir « Changer de nom de domaine »).
+
+*Solution de repli, sans toucher au DNS* : `univ-enragee.83-228-221-204.sslip.io` résout vers le serveur sans rien configurer. Mais `sslip.io` n'est pas un suffixe public : le quota de Let's Encrypt est partagé avec tous ses utilisateurs, et certbot peut refuser (`rateLimited`). Il faut alors réessayer plus tard.
 
 1. Vérifier qu'un port local est libre (BD_ditor utilise 8080) :
    ```bash
@@ -101,20 +103,20 @@ Sur ce serveur, le Nginx de l'hôte tient déjà les ports 80 et 443 et gère le
    ```
 2. Dans le clone, régler `.env` **une fois pour toutes**. Sans `COMPOSE_FILE`, un `docker compose up -d` tapé à la main tenterait de prendre 80 et 443, à côté de Nginx (leçon de BD_ditor) :
    ```
-   SITE_DOMAINE=univ-enragee.edito-revue.fr
+   SITE_DOMAINE=univ-enragee.fr
    COMPOSE_FILE=compose.yaml:compose.derriere-proxy.yaml
    PORT_LOCAL=8081
    DJANGO_SECRET_KEY=…
    ```
    Contrôle : `docker compose config | grep Caddyfile.derriere-proxy` doit afficher une ligne.
-3. Démarrer : `./deploy/deployer.sh`. Le contrôle final échoue tant que Nginx n'est pas réglé : c'est attendu la première fois. `curl -H "Host: univ-enragee.edito-revue.fr" http://127.0.0.1:8081/sante/` doit déjà répondre `ok`.
-4. Nginx : copier `deploy/nginx-hote.conf.exemple` dans `/etc/nginx/sites-available/univ-enragee`, y vérifier le nom et le port, puis :
+3. Démarrer : `./deploy/deployer.sh`. Le contrôle final échoue tant que Nginx n'est pas réglé : c'est attendu la première fois. `curl -H "Host: univ-enragee.fr" http://127.0.0.1:8081/sante/` doit déjà répondre `ok`.
+4. Nginx : copier `deploy/nginx-hote.conf.exemple` dans `/etc/nginx/sites-available/univ-enragee-fr`, y vérifier le nom et le port, puis :
    ```bash
-   sudo ln -s /etc/nginx/sites-available/univ-enragee /etc/nginx/sites-enabled/
+   sudo ln -s /etc/nginx/sites-available/univ-enragee-fr /etc/nginx/sites-enabled/
    sudo nginx -t && sudo systemctl reload nginx     # nginx -t TOUJOURS avant : une erreur coupe aussi les autres sites
-   sudo certbot --nginx -d univ-enragee.edito-revue.fr
+   sudo certbot --nginx -d univ-enragee.fr -d www.univ-enragee.fr
    ```
-5. `https://univ-enragee.edito-revue.fr/sante/` répond `ok` : passer à « Créer l'administrateur principal » ci-dessus.
+5. `https://univ-enragee.fr/sante/` répond `ok` : passer à « Créer l'administrateur principal » ci-dessus.
 
 Le bloc Nginx n'écrit pas de journal d'accès (`access_log off`) et transmet l'adresse du client par `X-Forwarded-For $remote_addr`, sans reprendre un en-tête fourni par le client.
 
