@@ -118,6 +118,31 @@ Sur ce serveur, le Nginx de l'hôte tient déjà les ports 80 et 443 et gère le
 
 Le bloc Nginx n'écrit pas de journal d'accès (`access_log off`) et transmet l'adresse du client par `X-Forwarded-For $remote_addr`, sans reprendre un en-tête fourni par le client.
 
+## Changer de nom de domaine
+
+Le site n'écrit son adresse nulle part en dur : tout part de `SITE_DOMAINE`. Changer de domaine, c'est donc pointer le nouveau nom, lui donner un certificat, changer `.env`, puis faire de l'ancienne adresse une redirection. Les étapes 3 et 4 se suivent sans attendre : entre les deux, l'ancienne adresse ne répond plus.
+
+1. **DNS** du nouveau domaine : un `A` vers `83.228.221.204` et un `AAAA` vers `2001:1600:18:203::242` (pour un domaine nu, faire de même pour `www`). Attendre que `dig +short <nouveau-domaine>` et `dig +short AAAA <nouveau-domaine>` répondent ces adresses.
+2. **Nginx et certificat** du nouveau nom, à côté de l'ancien :
+   ```bash
+   sudo cp deploy/nginx-hote.conf.exemple /etc/nginx/sites-available/univ-enragee-nouveau
+   sudo nano /etc/nginx/sites-available/univ-enragee-nouveau      # server_name <nouveau-domaine> (et www.<nouveau-domaine>)
+   sudo ln -s /etc/nginx/sites-available/univ-enragee-nouveau /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
+   sudo certbot --nginx -d <nouveau-domaine>                      # ajouter -d www.<nouveau-domaine> s'il existe
+   ```
+   À ce stade, la nouvelle adresse répond une erreur : le site attend encore l'ancien nom. C'est normal.
+3. **Le site** : dans `.env`, `SITE_DOMAINE=<nouveau-domaine>`, puis `./deploy/deployer.sh`. Son contrôle final vérifie `https://<nouveau-domaine>/sante/`.
+4. **L'ancienne adresse** devient une redirection : suivre `deploy/nginx-ancien-domaine.conf.exemple`, puis `sudo nginx -t && sudo systemctl reload nginx`. Contrôle : `curl -sI https://<ancien-domaine>/agenda/` répond `301` avec `location: https://<nouveau-domaine>/agenda/`.
+5. **Garder l'ancien domaine** au moins un an, pour les favoris, les affiches et les abonnements.
+
+Ce que les personnes remarquent (les cookies sont propres à chaque adresse) :
+
+- chacun ressaisit **une fois** le code d'accès et son nom ; les gestionnaires se reconnectent (leur application de double authentification reste valable) ;
+- les **abonnements iCal** suivent la redirection dans la plupart des agendas, pas dans tous : les nouvelles adresses sont sur « S'abonner » (`/agenda/abonnements/`), le mieux est de se réabonner ;
+- le site **installé sur un téléphone** reste lié à l'ancienne adresse : le supprimer, puis l'installer de nouveau ;
+- un **grand écran** déjà ouvert garde son affichage et signale « Connexion perdue » : rouvrir `/p/affichage/` sur la nouvelle adresse (son QR code suit tout seul).
+
 ## Au quotidien
 
 | Besoin | Commande |
