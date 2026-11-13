@@ -906,3 +906,27 @@ body.board--idle .board__controls { visibility: hidden; }
   .board__main, .board-panel, .board__events, .board__next { overflow: visible; }
   .board__foot { flex-wrap: wrap; }
 }
+
+/* Statistiques de visite (/gestion/statistiques/, décision 28) : une seule série, à la
+   couleur d'accent ; chaque barre porte son libellé et son nombre, lisibles sans elle. */
+.segmented { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1rem; }
+.segmented a { padding: .3rem .8rem; border: 1px solid var(--border); border-radius: 999px; text-decoration: none; color: var(--text); background: var(--surface); }
+.segmented a:hover { border-color: var(--accent); }
+.segmented a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.stat-tiles { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .75rem; }
+.stat-tile { display: grid; gap: .1rem; padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.stat-tile__value { font-size: 1.8rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat-tile__label { color: var(--muted); font-size: .9rem; }
+.stats-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 0 2rem; }
+.stat-bars { list-style: none; padding: 0; margin: .5rem 0 1.5rem; display: grid; gap: .3rem; }
+.stat-bars li { display: grid; grid-template-columns: minmax(7rem, 2fr) 3fr 3.5rem; align-items: center; gap: .6rem; font-size: .92rem; }
+.stat-bars__label { overflow-wrap: anywhere; }
+.stat-bars__track { height: .7rem; }
+.stat-bars__bar { display: block; height: 100%; min-width: 2px; background: var(--accent); border-radius: 0 4px 4px 0; }
+.stat-bars__value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+@media (max-width: 40rem) {
+  /* Sur téléphone, le libellé passe au-dessus de sa barre, qui garde toute la largeur. */
+  .stat-bars { gap: .55rem; }
+  .stat-bars li { grid-template-columns: minmax(0, 1fr) 3.5rem; gap: .15rem .6rem; }
+  .stat-bars__label { grid-column: 1 / -1; }
+}

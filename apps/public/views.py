@@ -20,7 +20,7 @@ from apps.core.models import SiteSettings
 from apps.ideas.models import Idea
 from apps.presences import services as presences_services
 
-from . import services
+from . import services, stats
 from .forms import ContactForm, NewsForm, PresentationForm
 from .models import NewsPost
 
@@ -131,6 +131,20 @@ def contact(request):
         messages.success(request, "Merci, votre message est bien arrivé.")
         return redirect("public:contact")
     return render(request, "public/contact.html", {"form": form})
+
+
+@require_safe
+# DÉCISION (à confirmer) : les statistiques vont avec le droit « Page publique ».
+@require_capability("manage_public")
+def statistics(request):
+    """Pages vues, comptées sans rien retenir des personnes (décision 28)."""
+    period = request.GET.get("periode", stats.DEFAULT_PERIOD)
+    if period not in stats.PERIODS:
+        period = stats.DEFAULT_PERIOD
+    context = stats.summary(period, timezone.localdate())
+    context["period"] = period
+    context["periods"] = [(key, label) for key, (_, label) in stats.PERIODS.items()]
+    return render(request, "gestion/statistics.html", context)
 
 
 @require_capability("manage_public")

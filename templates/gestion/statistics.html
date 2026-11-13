@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Statistiques de visite — {{ site.collective_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Statistiques de visite</h1>
+<p class="lead">Les pages vues, comptées par le site lui-même, sans adresse IP, sans cookie ni aucun identifiant. Ces nombres ne disent rien de qui visite : il n'y a donc pas de «&nbsp;visiteurs uniques&nbsp;». Ne comptent ni les robots, ni les comptes de gestion.</p>
+
+<nav class="segmented" aria-label="Période">
+  {% for key, label in periods %}<a href="?periode={{ key }}"{% if key == period %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+
+<ul class="stat-tiles" aria-label="Totaux sur les {{ period_label }}">
+  {% for label, value in tiles %}<li class="stat-tile"><span class="stat-tile__value">{{ value }}</span><span class="stat-tile__label">{{ label }}</span></li>{% endfor %}
+</ul>
+<p class="hint">Grand écran : chaque ouverture de la page compte, pas ses mises à jour de chaque minute. Flux : chaque fois qu'un agenda ou un lecteur RSS vient chercher les nouveautés.</p>
+
+<section aria-labelledby="stats-courbe">
+  <h2 id="stats-courbe">Site public, {% if by_month %}mois par mois{% else %}jour par jour{% endif %}</h2>
+  {% include "gestion/_stat_bars.html" with bars=timeline empty="Aucune page publique vue sur cette période." %}
+</section>
+
+<div class="stats-columns">
+  <section aria-labelledby="stats-public">
+    <h2 id="stats-public">Pages publiques les plus vues</h2>
+    {% include "gestion/_stat_bars.html" with bars=public_pages empty="Rien pour l'instant." %}
+  </section>
+  <section aria-labelledby="stats-sources">
+    <h2 id="stats-sources">D'où viennent les visites publiques</h2>
+    <p class="hint">Le site d'où l'on a cliqué un lien, quand le navigateur l'indique. Les visites tapées à la main, depuis un favori ou un QR code n'en ont pas.</p>
+    {% include "gestion/_stat_bars.html" with bars=sources empty="Aucune provenance connue." %}
+  </section>
+  <section aria-labelledby="stats-membres">
+    <h2 id="stats-membres">Espace des membres</h2>
+    {% include "gestion/_stat_bars.html" with bars=member_pages empty="Rien pour l'instant." %}
+  </section>
+  <section aria-labelledby="stats-flux">
+    <h2 id="stats-flux">Flux iCal et RSS</h2>
+    {% include "gestion/_stat_bars.html" with bars=feeds empty="Aucun abonnement relevé." %}
+  </section>
+</div>
+{% endblock %}

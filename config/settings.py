@@ -64,6 +64,8 @@ MIDDLEWARE = [
     "apps.core.middleware.SecurityHeadersMiddleware",
     "apps.core.access.AccessCodeMiddleware",
     "apps.actors.resolvers.ActorMiddleware",
+    # Compte les pages vues, sans rien retenir de la personne (décision 28).
+    "apps.core.visits.VisitCounterMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

@@ -1,0 +1,8 @@
+{# Une liste de barres : chaque ligne porte son libellé et son nombre, lisibles sans la barre. #}
+{% if bars %}
+<ol class="stat-bars">
+  {% for bar in bars %}<li><span class="stat-bars__label">{{ bar.label }}</span><span class="stat-bars__track" aria-hidden="true"><span class="stat-bars__bar" style="width: {{ bar.percent|stringformat:'s' }}%"></span></span><span class="stat-bars__value">{{ bar.count }}</span></li>{% endfor %}
+</ol>
+{% else %}
+<p class="empty">{{ empty }}</p>
+{% endif %}

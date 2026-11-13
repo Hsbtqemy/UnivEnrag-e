@@ -93,3 +93,36 @@ class SiteSettings(models.Model):
     def regenerate_feeds_token(self) -> None:
         self.feeds_token = _token()
         self.save(update_fields=["feeds_token", "updated_at"])
+
+
+class PageCount(models.Model):
+    """Pages vues par jour, sans rien qui désigne une personne (décision 28).
+
+    Ni adresse IP, ni cookie, ni navigateur, ni heure : seulement « telle page, tel jour,
+    tant de fois ». Ces nombres ne sont pas des données personnelles et ne se purgent pas.
+    """
+
+    class Kind(models.TextChoices):
+        PUBLIC = "public", "Site public"
+        MEMBERS = "members", "Espace des membres"
+        FEED = "feed", "Flux iCal et RSS"
+        BOARD = "board", "Grand écran"
+        SOURCE = "source", "Provenance des visites publiques"
+
+    day = models.DateField("jour")
+    kind = models.CharField("catégorie", max_length=10, choices=Kind.choices)
+    # Nom de la page (« agenda:public_list »), suivi de l'objet pour une fiche publique
+    # (« agenda:public_detail:12 ») ; pour une provenance, le domaine du site d'origine.
+    # Jamais l'adresse visitée : elle peut contenir un jeton (flux, lien de suivi).
+    key = models.CharField("page", max_length=120)
+    count = models.PositiveIntegerField("nombre", default=0)
+
+    class Meta:
+        verbose_name = "compteur de pages vues"
+        verbose_name_plural = "compteurs de pages vues"
+        constraints = [
+            models.UniqueConstraint(fields=["day", "kind", "key"], name="pagecount_unique_day"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.day} · {self.key} · {self.count}"
